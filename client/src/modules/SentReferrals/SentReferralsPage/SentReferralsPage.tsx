@@ -121,11 +121,14 @@ export const SentReferralsPage = () => {
   const onExportReferralsClick = async (pagination: PaginationContext) => {
     setImpexActionLoading(true);
     try {
-      const exportedData = await getReferralsExport({
-        ...pagination,
-        pageSize: sentReferralsData?.meta.totalRows || 999,
-        filters: sentReferralsFilters,
-      });
+      const exportedData = await getReferralsExport(
+        {
+          ...pagination,
+          pageSize: 999,
+          filters: sentReferralsFilters,
+        },
+        false
+      );
       downloadFile(exportedData, 'referrals-export');
     } catch (error: any) {
       toast({

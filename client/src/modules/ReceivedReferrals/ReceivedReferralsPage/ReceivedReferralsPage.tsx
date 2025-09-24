@@ -91,11 +91,14 @@ export const ReceivedReferralsPage = () => {
   const onExportReferralsClick = async (pagination: PaginationContext) => {
     setExportLoading(true);
     try {
-      const exportedData = await getReferralsExport({
-        ...pagination,
-        pageSize: receivedReferralsData?.meta.totalRows || 999,
-        filters: receivedReferralsFilters,
-      });
+      const exportedData = await getReferralsExport(
+        {
+          ...pagination,
+          pageSize: 999,
+          filters: receivedReferralsFilters,
+        },
+        true
+      );
       downloadFile(exportedData, 'referrals-export');
     } catch (error: any) {
       toast({

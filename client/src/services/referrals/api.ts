@@ -116,14 +116,18 @@ const postBatchCreateReferrals = async (
 };
 
 export const getReferralsExport = async (
-  pagination: PaginationContext
+  pagination: PaginationContext,
+  received: boolean
 ): Promise<any> => {
   const url = paginationRequestToUrl(
     'referrals/export',
     paginationContextToPaginationRequest(pagination)
   );
 
-  const resp = await api.get(url, { responseType: 'blob' });
+  const resp = await api.get(
+    url + (received ? '&received=true' : '&received=false'),
+    { responseType: 'blob' }
+  );
   return resp.data;
 };
 
