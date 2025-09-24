@@ -71,6 +71,7 @@ export const ReferralDiscussions = ({ referralId }: Props) => {
         </CardHeader>
         <div className="flex gap-2 sm:px-6 pb-6 pt-2">
           <Input
+            maxLength={300}
             value={discussionInputValue}
             onChange={(e) => setDiscussionInputValue(e.target.value)}
             placeholder="Send message..."
@@ -121,7 +122,7 @@ export const ReferralDiscussions = ({ referralId }: Props) => {
                       )}
                     </div>
                     <p
-                      className={cn('text-sm mt-1', {
+                      className={cn('text-sm mt-1 break-words', {
                         'italic text-muted-foreground': isBot,
                       })}
                       dangerouslySetInnerHTML={{ __html: text }}

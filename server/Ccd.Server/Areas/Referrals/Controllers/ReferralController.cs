@@ -19,8 +19,12 @@ public class ReferralController : ControllerBaseExtended
     private readonly ReferralService _referralService;
     private readonly UserService _userService;
 
-    public ReferralController(ReferralService referralService, UserService userService, IMapper mapper,
-        ExportService exportService)
+    public ReferralController(
+        ReferralService referralService,
+        UserService userService,
+        IMapper mapper,
+        ExportService exportService
+    )
     {
         _referralService = referralService;
         _userService = userService;
@@ -35,7 +39,11 @@ public class ReferralController : ControllerBaseExtended
         [FromQuery] bool received = false
     )
     {
-        var referrals = await _referralService.GetReferralsApi(OrganizationId, requestParams, received);
+        var referrals = await _referralService.GetReferralsApi(
+            OrganizationId,
+            requestParams,
+            received
+        );
         return Ok(referrals);
     }
 
@@ -52,12 +60,13 @@ public class ReferralController : ControllerBaseExtended
     }
 
     [HttpGet("{caseNumber}/case-number")]
-    public async Task<ActionResult<ReferralCaseNumberResponse>> GetReferralByCaseNumber(string caseNumber)
+    public async Task<ActionResult<ReferralCaseNumberResponse>> GetReferralByCaseNumber(
+        string caseNumber
+    )
     {
         var result = await _referralService.GetReferralByCaseNumberApi(caseNumber);
         return Ok(result);
     }
-
 
     [HttpPost]
     [PermissionLevel(UserRole.User)]
@@ -84,11 +93,11 @@ public class ReferralController : ControllerBaseExtended
             if (missingFields.Count != 0)
             {
                 var missingFieldsMessage = string.Join(", ", missingFields);
-                var errorMessage = $"The following fields are required but missing: {missingFieldsMessage}.";
+                var errorMessage =
+                    $"The following fields are required but missing: {missingFieldsMessage}.";
                 throw new BadRequestException(errorMessage);
             }
         }
-
 
         var newReferral = await _referralService.AddReferral(OrganizationId, model);
         var result = await _referralService.GetReferralApi(OrganizationId, newReferral.Id);
@@ -103,8 +112,9 @@ public class ReferralController : ControllerBaseExtended
         [FromBody] ReferralPatchRequest model
     )
     {
-        var referral = await _referralService.GetReferralById(OrganizationId, id) ??
-                       throw new NotFoundException("Referral not found.");
+        var referral =
+            await _referralService.GetReferralById(OrganizationId, id)
+            ?? throw new NotFoundException("Referral not found.");
         if (model.Status != null && !ReferralStatus.IsValid(model.Status))
             throw new BadRequestException("Invalid status.");
         if (referral.IsDraft)
@@ -118,14 +128,18 @@ public class ReferralController : ControllerBaseExtended
         var result = await _referralService.GetReferralApi(OrganizationId, id);
 
         var userUpdated = await _userService.GetUserById(UserId);
-        await _referralService.AddDiscussionBot(id, new DiscussionAddRequest
-        {
-            Text = @$"
+        await _referralService.AddDiscussionBot(
+            id,
+            new DiscussionAddRequest
+            {
+                Text =
+                    @$"
                 Referral has been updated by {userUpdated.FirstName} {userUpdated.LastName}.<br>
                 Changes:<br>
                 {updatedFieldsText}
             "
-        });
+            }
+        );
 
         return Ok(result);
     }
@@ -134,7 +148,9 @@ public class ReferralController : ControllerBaseExtended
     [PermissionLevel(UserRole.User)]
     public async Task<ActionResult<ReferralResponse>> Delete(Guid id)
     {
-        var referral = await _referralService.GetReferralById(OrganizationId, id) ?? throw new NotFoundException();
+        var referral =
+            await _referralService.GetReferralById(OrganizationId, id)
+            ?? throw new NotFoundException();
 
         var result = await _referralService.GetReferralApi(OrganizationId, referral.Id);
 
@@ -145,9 +161,14 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpPatch("{id}/withdraw")]
     [PermissionLevel(UserRole.User)]
-    public async Task<ActionResult<ReferralResponse>> RefferalWithdraw(Guid id, [FromBody] DiscussionAddRequest model)
+    public async Task<ActionResult<ReferralResponse>> RefferalWithdraw(
+        Guid id,
+        [FromBody] DiscussionAddRequest model
+    )
     {
-        var referral = await _referralService.GetReferralById(OrganizationId, id) ?? throw new NotFoundException();
+        var referral =
+            await _referralService.GetReferralById(OrganizationId, id)
+            ?? throw new NotFoundException();
 
         // Since we removed the Withdrawn status and the client wants all "withdrawn" referrals to go into draft, this is the change that reflects on that
         if (referral.IsDraft)
@@ -164,22 +185,31 @@ public class ReferralController : ControllerBaseExtended
         var result = await _referralService.GetReferralApi(OrganizationId, id);
 
         var userUpdated = await _userService.GetUserById(UserId);
-        await _referralService.AddDiscussionBot(id, new DiscussionAddRequest
-        {
-            Text = @$"
+        await _referralService.AddDiscussionBot(
+            id,
+            new DiscussionAddRequest
+            {
+                Text =
+                    @$"
                 Referral has been withdrawn by {userUpdated.FirstName} {userUpdated.LastName}.<br>
                 Reason: {model.Text}
             "
-        });
+            }
+        );
 
         return Ok(result);
     }
 
     [HttpPatch("{id}/reject")]
     [PermissionLevel(UserRole.User)]
-    public async Task<ActionResult<ReferralResponse>> RefferalReject(Guid id, [FromBody] DiscussionAddRequest model)
+    public async Task<ActionResult<ReferralResponse>> RefferalReject(
+        Guid id,
+        [FromBody] DiscussionAddRequest model
+    )
     {
-        var referral = await _referralService.GetReferralById(OrganizationId, id) ?? throw new NotFoundException();
+        var referral =
+            await _referralService.GetReferralById(OrganizationId, id)
+            ?? throw new NotFoundException();
 
         // Same here, we dont have "rejected" status anymore but a new flag "isRejected" which we check for instead of that previous status
         if (referral.IsRejected)
@@ -192,13 +222,17 @@ public class ReferralController : ControllerBaseExtended
         var result = await _referralService.GetReferralApi(OrganizationId, id);
 
         var userUpdated = await _userService.GetUserById(UserId);
-        await _referralService.AddDiscussionBot(id, new DiscussionAddRequest
-        {
-            Text = @$"
+        await _referralService.AddDiscussionBot(
+            id,
+            new DiscussionAddRequest
+            {
+                Text =
+                    @$"
                 Referral has been rejected by {userUpdated.FirstName} {userUpdated.LastName}.<br>
                 Reason: {model.Text}
             "
-        });
+            }
+        );
 
         return Ok(result);
     }
@@ -213,7 +247,10 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpPost("{id}/discussions")]
     [PermissionLevel(UserRole.User)]
-    public async Task<ActionResult<DiscussionResponse>> AddDiscussion(Guid id, [FromBody] DiscussionAddRequest model)
+    public async Task<ActionResult<DiscussionResponse>> AddDiscussion(
+        Guid id,
+        [FromBody] DiscussionAddRequest model
+    )
     {
         var newDiscussion = await _referralService.AddDiscussion(id, model);
         var result = await _referralService.GetDiscussionApi(newDiscussion.Id);
@@ -224,22 +261,29 @@ public class ReferralController : ControllerBaseExtended
     [HttpGet("focal-point/users")]
     [PermissionLevel(UserRole.User)]
     public async Task<ActionResult<PagedApiResponse<FocalPointUsersResponse>>> GetFocalPointUsers(
-        [FromQuery] RequestParameters requestParams, [FromQuery] string permission)
+        [FromQuery] RequestParameters requestParams,
+        [FromQuery] string permission
+    )
     {
-        var userResponse = await _userService.GetUsersApi(OrganizationId, requestParams, permission);
-        var data = _mapper.Map<List<UserResponse>, List<FocalPointUsersResponse>>(userResponse.Data);
+        var userResponse = await _userService.GetUsersApi(
+            OrganizationId,
+            requestParams,
+            permission
+        );
+        var data = _mapper.Map<List<UserResponse>, List<FocalPointUsersResponse>>(
+            userResponse.Data
+        );
 
-        return Ok(new PagedApiResponse<FocalPointUsersResponse>
-        {
-            Data = data,
-            Meta = userResponse.Meta
-        });
+        return Ok(
+            new PagedApiResponse<FocalPointUsersResponse> { Data = data, Meta = userResponse.Meta }
+        );
     }
 
     [HttpPost("batch-create")]
     [PermissionLevel(UserRole.User)]
     public async Task<ActionResult<BatchCreateResponse>> BatchCreate(
-        [FromForm] BatchCreateRequest model)
+        [FromForm] BatchCreateRequest model
+    )
     {
         var response = await _referralService.CreateBatchReferrals(OrganizationId, UserId, model);
         return Ok(response);
@@ -248,12 +292,14 @@ public class ReferralController : ControllerBaseExtended
     [HttpGet("export")]
     [PermissionLevel(UserRole.User)]
     public async Task<ActionResult> ExportReferrals(
-        [FromQuery] RequestParameters requestParameters
+        [FromQuery] RequestParameters requestParameters,
+        [FromQuery] bool received = false
     )
     {
         var referrals = await _referralService.GetReferralsApi(
             OrganizationId,
-            requestParameters
+            requestParameters,
+            received
         );
 
         var xlsx = _exportService.ExportXls<ReferralResponse, ReferralExportResponse>(
@@ -275,16 +321,13 @@ public class ReferralController : ControllerBaseExtended
             "Ccd.Server.Templates.Referrals_templates.zip" // Updated resource name
         );
 
-        if (resourceStream == null) return NotFound();
+        if (resourceStream == null)
+            return NotFound();
 
         using var memoryStream = new MemoryStream();
         await resourceStream.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
 
-        return File(
-            memoryStream.ToArray(),
-            "application/zip",
-            "Referrals_templates.zip"
-        );
+        return File(memoryStream.ToArray(), "application/zip", "Referrals_templates.zip");
     }
 }
