@@ -27,6 +27,13 @@ workflow:
         API_URL: "https://poc-ccd-api.initdevelopment.com"
         DIRECTUS_URL: "https://hotpot-directus.initdevelopment.com"
         DIRECTUS_TOKEN: "oGnFt9LogzdrBmueNZm_VNffgj3ZLrm2"
+    - if: '$CI_COMMIT_TAG == "gaza-dev"'
+      variables:
+        IMAGE_TAG: "gaza-dev"
+        REMOTE_URL: "212.14.227.203"
+        API_URL: "https://hotpot-save-api.initdevelopment.com"
+        DIRECTUS_URL: "https://hotpot-save-directus.initdevelopment.com"
+        DIRECTUS_TOKEN: "oGnFt9LogzdrBmueNZm_VNffgj3ZLrm2"
     - if: '$CI_COMMIT_TAG == "ukraine"'
       variables:
         IMAGE_TAG: "ukraine"
