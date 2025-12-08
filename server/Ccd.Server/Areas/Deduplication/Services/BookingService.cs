@@ -76,7 +76,7 @@ public class BookingService
         var allValidNationalIds = GetAllValidNationalIds(worksheet, lastRowNumber);
 
         // STEP 2 — Validate duplicates from DB
-        ValidateDatabaseDuplicates(worksheet, lastRowNumber, lastColumnIndex + 1, allValidNationalIds, ref isExcelValid);
+        ValidateDatabaseDuplicates(worksheet, lastRowNumber, lastColumnIndex, allValidNationalIds, ref isExcelValid);
 
         if (isExcelValid)
         {
