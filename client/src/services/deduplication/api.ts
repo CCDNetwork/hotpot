@@ -4,6 +4,7 @@ import {
   paginationRequestToUrl,
   SortDirection,
 } from '@/helpers/pagination';
+import { useBookingProvider } from '@/modules/BookingPage';
 import { useDeduplicationProvider } from '@/modules/DeduplicationPage';
 import { api } from '@/services';
 import {
@@ -14,6 +15,7 @@ import {
   resToSystemDedupeResponse,
 } from '@/services/deduplication/transformations';
 import {
+  BookingDataset,
   DeduplicationDataset,
   DeduplicationListing,
   SameOrgDedupeResponse,
@@ -84,6 +86,24 @@ const postDeduplicationFinish = async (data: {
   return resToDatasetResponse(resp.data);
 };
 
+const postBookingStep1 = async (data: {
+  file: File;
+}): Promise<BookingDataset> => {
+  const resp = await api.post('/deduplication/booking/step-1', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  return resp.data;
+};
+
+const postBookingStep2 = async (data: {
+  fileId: string;
+}): Promise<BookingDataset> => {
+  const resp = await api.post('/deduplication/booking/step-2', data);
+
+  return resp.data;
+};
+
 export const useDeduplicationListings = ({
   currentPage,
   pageSize,
@@ -111,6 +131,19 @@ export const useDeduplicationListings = ({
   );
 };
 
+export const useBookingMutation = () => {
+  const { setBookingWizardError } = useBookingProvider();
+
+  return {
+    bookingStep1: useMutation(postBookingStep1, {
+      onError: (error) => setBookingWizardError(error),
+    }),
+    bookingStep2: useMutation(postBookingStep2, {
+      onError: (error) => setBookingWizardError(error),
+    }),
+  };
+};
+
 export const useDeduplicationMutation = () => {
   const queryClient = useQueryClient();
   const { setDeduplicationWizardError } = useDeduplicationProvider();
@@ -134,6 +167,12 @@ export const useDeduplicationMutation = () => {
     deduplicateFinish: useMutation(postDeduplicationFinish, {
       onSuccess: () =>
         queryClient.invalidateQueries([QueryKeys.DeduplicationListings]),
+      onError: (error) => setDeduplicationWizardError(error),
+    }),
+    bookingStep1: useMutation(postBookingStep1, {
+      onError: (error) => setDeduplicationWizardError(error),
+    }),
+    bookingStep2: useMutation(postBookingStep2, {
       onError: (error) => setDeduplicationWizardError(error),
     }),
   };

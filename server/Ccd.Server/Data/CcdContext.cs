@@ -37,6 +37,7 @@ public class CcdContext : DbContext
     public DbSet<UserOrganization> UserOrganizations { get; set; }
     public DbSet<Beneficary> Beneficaries { get; set; }
     public DbSet<BeneficaryDeduplication> BeneficaryDeduplications { get; set; }
+    public DbSet<Booking> Bookings { get; set; }
     public DbSet<BeneficiaryAttribute> BeneficiaryAttributes { get; set; }
     public DbSet<List> Lists { get; set; }
     public DbSet<Referral> Referrals { get; set; }
@@ -57,94 +58,158 @@ public class CcdContext : DbContext
         modelBuilder.Entity<BeneficiaryAttribute>().HasData(
             new BeneficiaryAttribute
             {
-                Id = 1, Name = "First Name", AttributeName = "FirstName", Type = "string", UsedForDeduplication = true
+                Id = 1,
+                Name = "First Name",
+                AttributeName = "FirstName",
+                Type = "string",
+                UsedForDeduplication = true
             },
             new BeneficiaryAttribute
             {
-                Id = 2, Name = "Family Name", AttributeName = "FamilyName", Type = "string", UsedForDeduplication = true
+                Id = 2,
+                Name = "Family Name",
+                AttributeName = "FamilyName",
+                Type = "string",
+                UsedForDeduplication = true
             },
             new BeneficiaryAttribute
-                { Id = 3, Name = "Gender", AttributeName = "Gender", Type = "string", UsedForDeduplication = false },
+            { Id = 3, Name = "Gender", AttributeName = "Gender", Type = "string", UsedForDeduplication = false },
             new BeneficiaryAttribute
             {
-                Id = 4, Name = "Date of Birth", AttributeName = "DateOfBirth", Type = "DateTime",
+                Id = 4,
+                Name = "Date of Birth",
+                AttributeName = "DateOfBirth",
+                Type = "DateTime",
                 UsedForDeduplication = false
             },
             new BeneficiaryAttribute
-                { Id = 5, Name = "HH ID", AttributeName = "HhId", Type = "string", UsedForDeduplication = false },
+            { Id = 5, Name = "HH ID", AttributeName = "HhId", Type = "string", UsedForDeduplication = false },
             new BeneficiaryAttribute
             {
-                Id = 6, Name = "Mobile Phone ID", AttributeName = "MobilePhoneId", Type = "int",
-                UsedForDeduplication = false
-            },
-            new BeneficiaryAttribute
-            {
-                Id = 7, Name = "Gov ID Type", AttributeName = "GovIdType", Type = "string", UsedForDeduplication = false
-            },
-            new BeneficiaryAttribute
-            {
-                Id = 8, Name = "Gov ID Number", AttributeName = "GovIdNumber", Type = "string",
-                UsedForDeduplication = false
-            },
-            new BeneficiaryAttribute
-            {
-                Id = 9, Name = "Other ID Type", AttributeName = "OtherIdType", Type = "string",
-                UsedForDeduplication = false
-            },
-            new BeneficiaryAttribute
-            {
-                Id = 10, Name = "Other ID Number", AttributeName = "OtherIdNumber", Type = "string",
+                Id = 6,
+                Name = "Mobile Phone ID",
+                AttributeName = "MobilePhoneId",
+                Type = "int",
                 UsedForDeduplication = false
             },
             new BeneficiaryAttribute
             {
-                Id = 11, Name = "Assistance Details", AttributeName = "AssistanceDetails", Type = "string",
+                Id = 7,
+                Name = "Gov ID Type",
+                AttributeName = "GovIdType",
+                Type = "string",
                 UsedForDeduplication = false
             },
             new BeneficiaryAttribute
             {
-                Id = 12, Name = "Activity", AttributeName = "Activity", Type = "string", UsedForDeduplication = false
-            },
-            new BeneficiaryAttribute
-            {
-                Id = 13, Name = "Currency", AttributeName = "Currency", Type = "string", UsedForDeduplication = false
-            },
-            new BeneficiaryAttribute
-            {
-                Id = 14, Name = "Currency Amount", AttributeName = "CurrencyAmount", Type = "int",
+                Id = 8,
+                Name = "Gov ID Number",
+                AttributeName = "GovIdNumber",
+                Type = "string",
                 UsedForDeduplication = false
             },
             new BeneficiaryAttribute
             {
-                Id = 15, Name = "Start Date", AttributeName = "StartDate", Type = "DateTime",
+                Id = 9,
+                Name = "Other ID Type",
+                AttributeName = "OtherIdType",
+                Type = "string",
                 UsedForDeduplication = false
             },
             new BeneficiaryAttribute
             {
-                Id = 16, Name = "End Date", AttributeName = "EndDate", Type = "DateTime", UsedForDeduplication = false
-            },
-            new BeneficiaryAttribute
-            {
-                Id = 17, Name = "Frequency", AttributeName = "Frequency", Type = "string", UsedForDeduplication = false
-            },
-            new BeneficiaryAttribute
-            {
-                Id = 18, Name = "AdminLevel1", AttributeName = "AdminLevel1", Type = "string",
+                Id = 10,
+                Name = "Other ID Number",
+                AttributeName = "OtherIdNumber",
+                Type = "string",
                 UsedForDeduplication = false
             },
             new BeneficiaryAttribute
             {
-                Id = 19, Name = "AdminLevel2", AttributeName = "AdminLevel2", Type = "string",
+                Id = 11,
+                Name = "Assistance Details",
+                AttributeName = "AssistanceDetails",
+                Type = "string",
                 UsedForDeduplication = false
             },
             new BeneficiaryAttribute
             {
-                Id = 20, Name = "AdminLevel3", AttributeName = "AdminLevel3", Type = "string",
+                Id = 12,
+                Name = "Activity",
+                AttributeName = "Activity",
+                Type = "string",
                 UsedForDeduplication = false
             },
             new BeneficiaryAttribute
             {
-                Id = 21, Name = "AdminLevel4", AttributeName = "AdminLevel4", Type = "string",
+                Id = 13,
+                Name = "Currency",
+                AttributeName = "Currency",
+                Type = "string",
+                UsedForDeduplication = false
+            },
+            new BeneficiaryAttribute
+            {
+                Id = 14,
+                Name = "Currency Amount",
+                AttributeName = "CurrencyAmount",
+                Type = "int",
+                UsedForDeduplication = false
+            },
+            new BeneficiaryAttribute
+            {
+                Id = 15,
+                Name = "Start Date",
+                AttributeName = "StartDate",
+                Type = "DateTime",
+                UsedForDeduplication = false
+            },
+            new BeneficiaryAttribute
+            {
+                Id = 16,
+                Name = "End Date",
+                AttributeName = "EndDate",
+                Type = "DateTime",
+                UsedForDeduplication = false
+            },
+            new BeneficiaryAttribute
+            {
+                Id = 17,
+                Name = "Frequency",
+                AttributeName = "Frequency",
+                Type = "string",
+                UsedForDeduplication = false
+            },
+            new BeneficiaryAttribute
+            {
+                Id = 18,
+                Name = "AdminLevel1",
+                AttributeName = "AdminLevel1",
+                Type = "string",
+                UsedForDeduplication = false
+            },
+            new BeneficiaryAttribute
+            {
+                Id = 19,
+                Name = "AdminLevel2",
+                AttributeName = "AdminLevel2",
+                Type = "string",
+                UsedForDeduplication = false
+            },
+            new BeneficiaryAttribute
+            {
+                Id = 20,
+                Name = "AdminLevel3",
+                AttributeName = "AdminLevel3",
+                Type = "string",
+                UsedForDeduplication = false
+            },
+            new BeneficiaryAttribute
+            {
+                Id = 21,
+                Name = "AdminLevel4",
+                AttributeName = "AdminLevel4",
+                Type = "string",
                 UsedForDeduplication = false
             }
         );

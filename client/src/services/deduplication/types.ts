@@ -32,6 +32,12 @@ export interface DeduplicationDataset {
   duplicates: number;
 }
 
+export interface BookingDataset {
+  isValid: boolean;
+  fileUrl: string;
+  fileId: string;
+}
+
 export interface SameOrgDedupeResponse {
   totalRecords: number;
   identicalRecords: number;

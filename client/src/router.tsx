@@ -57,6 +57,7 @@ import { SettingsPage } from './modules/SettingsPage';
 import { BeneficiaryDataViewPage } from './modules/Public/BeneficiaryDataView';
 import { RequestNewPasswordPage } from './modules/Public/RequestNewPasswordPage';
 import { SetNewPasswordPage } from './modules/Public/SetNewPasswordPage';
+import { BookingPage, BookingProvider } from './modules/BookingPage';
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -104,6 +105,13 @@ export const router = createBrowserRouter(
               path=":id"
               element={<DynamicRoute component={<TemplatePage />} />}
             />
+          </Route>
+        </Route>
+
+        {/* BOOKING */}
+        <Route element={<ProtectedRoute userPermissions={[]} />}>
+          <Route path={APP_ROUTE.Booking} element={<BookingProvider />}>
+            <Route index element={<BookingPage />} />
           </Route>
         </Route>
 

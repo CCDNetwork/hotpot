@@ -13,10 +13,12 @@ namespace Ccd.Server.Deduplication;
 public class DeduplicationController : ControllerBaseExtended
 {
     private readonly DeduplicationService _deduplicationService;
+    private readonly BookingService _bookingService;
 
-    public DeduplicationController(DeduplicationService deduplicationService)
+    public DeduplicationController(DeduplicationService deduplicationService, BookingService bookingService)
     {
         _deduplicationService = deduplicationService;
+        _bookingService = bookingService;
     }
 
     [HttpGet("listings")]
@@ -69,5 +71,21 @@ public class DeduplicationController : ControllerBaseExtended
     {
         var result = await _deduplicationService.FinishDeduplication(this.OrganizationId, this.UserId, model);
         return Ok(result);
+    }
+
+    [HttpPost("booking/step-1")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult> BookingDeduplicateStep1([FromForm] BookingDeduplicationRequestStep1 model)
+    {
+        var (isValid, savedFileUrl, savedFileId) = await _bookingService.BookingDeduplicationStep1(this.OrganizationId, this.UserId, model);
+        return Ok(new { isValid, fileUrl = savedFileUrl, fileId = savedFileId });
+    }
+
+    [HttpPost("booking/step-2")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult> BookingDeduplicateStep2([FromBody] BookingDeduplicationRequestStep2 model)
+    {
+        var (isValid, savedFileUrl, savedFileId) = await _bookingService.BookingDeduplicationStep2(this.OrganizationId, this.UserId, model);
+        return Ok(new { isValid, fileUrl = savedFileUrl, fileId = savedFileId });
     }
 }

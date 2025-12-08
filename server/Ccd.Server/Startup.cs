@@ -162,6 +162,7 @@ public class Startup
         services.AddScoped<UserService>();
         services.AddScoped<AuthenticationService>();
         services.AddScoped<DeduplicationService>();
+        services.AddScoped<BookingService>();
         services.AddScoped<BeneficiaryAttributeService>();
         services.AddScoped<BeneficiaryAttributeGroupService>();
         services.AddScoped<BeneficaryService>();

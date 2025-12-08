@@ -39,7 +39,7 @@ export const MyProfileItemWithDropdown = ({
   const { setTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
 
-  const userInitials = `${user.firstName[0] ?? ''} ${user.lastName[0] ?? ''}`;
+  const userInitials = `${user.firstName?.[0] ?? ''} ${user.lastName?.[0] ?? ''}`;
 
   return (
     <DropdownMenu>
@@ -76,7 +76,7 @@ export const MyProfileItemWithDropdown = ({
                 aria-hidden="true"
                 className="text-sm truncate opacity-80 font-normal"
               >
-                {user.organizations.length
+                {user.organizations?.length
                   ? user.organizations?.[0].name
                   : user.email ?? '-'}
               </span>

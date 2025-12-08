@@ -8,6 +8,8 @@ using Ccd.Server.Organizations;
 using Ccd.Server.Storage;
 using Ccd.Server.Users;
 
+namespace Ccd.Server.Deduplication;
+
 public class BeneficaryDeduplication
 {
     public Guid Id { get; set; } = IdProvider.NewId();
