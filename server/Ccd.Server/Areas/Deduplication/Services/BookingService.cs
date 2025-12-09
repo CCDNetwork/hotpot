@@ -8,6 +8,7 @@ using Ccd.Server.Data;
 using Ccd.Server.Helpers;
 using Ccd.Server.Storage;
 using ClosedXML.Excel;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ccd.Server.Deduplication;
 
@@ -243,6 +244,7 @@ public class BookingService
         var existingBookings = _context.Bookings
             .Where(b => allExcelIds.Contains(b.HouseholdId) ||
                         allExcelIds.Contains(b.SpouseId))
+            .Include(b => b.Organization)
             .ToList();
 
         for (int row = 2; row <= lastRowNumber; row++)
@@ -287,7 +289,7 @@ public class BookingService
             {
                 var alreadyBookedCell = worksheet.Cell(row, alreadyBookedColumnIndex);
                 alreadyBookedCell.Value =
-                    $"{matchedId} already has a booking ending on {dbRecord.EndDate:yyyy-MM-dd}";
+                    $"{matchedId} already has a booking by {dbRecord.Organization.Name} ending on {dbRecord.EndDate:yyyy-MM-dd}";
                 alreadyBookedCell.Style.Fill.BackgroundColor = XLColor.RedPigment;
 
                 isExcelValid = false;
