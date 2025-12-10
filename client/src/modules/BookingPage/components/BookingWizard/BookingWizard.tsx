@@ -181,7 +181,7 @@ export const BookingWizard = ({ isOpen, setIsOpen }: Props) => {
                     {currentStep === WIZARD_STEP.BOOKING_STEP_2 && (
                       <AnimationWrapper key={WIZARD_STEP.BOOKING_STEP_2}>
                         <InternalFileBookingStep
-                          isStepLoading={bookingStep2.isLoading}
+                          isStepLoading={bookingStep1.isLoading}
                           stepBookingResponse={step1BookingResponse}
                         />
                       </AnimationWrapper>
