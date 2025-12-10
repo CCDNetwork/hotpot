@@ -471,6 +471,7 @@ public class DeduplicationService
     {
         await _context.Database.ExecuteSqlRawAsync("DELETE FROM beneficary");
         await _context.Database.ExecuteSqlRawAsync("DELETE FROM list");
+        await _context.Database.ExecuteSqlRawAsync("DELETE FROM booking");
     }
 
     private int GetHeaderIndex(string templateValue, IXLWorksheet worksheet)
