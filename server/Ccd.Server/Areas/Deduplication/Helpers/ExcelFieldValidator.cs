@@ -100,7 +100,7 @@ public static class ExcelFieldValidator
         if (string.IsNullOrWhiteSpace(frequency))
             return false;
 
-        return int.TryParse(frequency, out value) && value > 0;
+        return int.TryParse(frequency, out value) && value == 1;
     }
 
     // ----------------------------
