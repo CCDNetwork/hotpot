@@ -103,7 +103,7 @@ public class BookingService
         {
             var headOfHouseHoldCell = worksheet.Cell(i, GetHeaderIndex("headofhouseholdid", worksheet));
             var spouseIdCell = worksheet.Cell(i, GetHeaderIndex("spouseid", worksheet));
-            var activityCell = worksheet.Cell(i, GetHeaderIndex("activity", worksheet));
+            var modalityCell = worksheet.Cell(i, GetHeaderIndex("modality", worksheet));
             var amountCell = worksheet.Cell(i, GetHeaderIndex("amount", worksheet));
             var currencyCell = worksheet.Cell(i, GetHeaderIndex("currency", worksheet));
             var startDateCell = worksheet.Cell(i, GetHeaderIndex("startdate", worksheet));
@@ -114,7 +114,7 @@ public class BookingService
             {
                 HeadOfHouseHoldId = headOfHouseHoldCell.Value.ToString(),
                 SpouseId = spouseIdCell.Value.ToString(),
-                Activity = activityCell.Value.ToString(),
+                Modality = modalityCell.Value.ToString(),
                 Amount = amountCell.Value.ToString(),
                 Currency = currencyCell.Value.ToString(),
                 StartDate = startDateCell.Value.ToString(),
@@ -314,6 +314,7 @@ public class BookingService
         var amountIndex = GetHeaderIndex("amount", worksheet);
         var currencyIndex = GetHeaderIndex("currency", worksheet);
         var frequencyIndex = GetHeaderIndex("frequency", worksheet);
+        var modalityIndex = GetHeaderIndex("modality", worksheet);
 
         // NEW DB fetch: get all bookings that match any Excel ID in either column
         var existingBookings = _context.Bookings
@@ -346,6 +347,7 @@ public class BookingService
             var amount = decimal.Parse(worksheet.Cell(row, amountIndex).GetString().Replace(",", ""));
             var currency = worksheet.Cell(row, currencyIndex).GetString().Trim();
             var frequency = int.Parse(worksheet.Cell(row, frequencyIndex).GetString());
+            var modality = worksheet.Cell(row, modalityIndex).GetString().Trim();
 
             // Find existing using new unified ID-space logic
             Booking existing = null;
@@ -366,6 +368,7 @@ public class BookingService
                 existing.Amount = amount;
                 existing.Currency = currency;
                 existing.Frequency = frequency;
+                existing.Modality = modality;
                 existing.UpdatedAt = DateTime.UtcNow;
             }
             else
@@ -384,6 +387,7 @@ public class BookingService
                     OrganizationId = organizationId,
                     UploadedById = userId,
                     FileId = savedFileId,
+                    Modality = modality,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };

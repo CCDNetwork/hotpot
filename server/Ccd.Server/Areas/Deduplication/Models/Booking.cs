@@ -15,6 +15,7 @@ public class Booking
     public string Currency { get; set; }
     public decimal Amount { get; set; }
     public int Frequency { get; set; }
+    public string Modality { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     [ForeignKey("User")] public Guid UploadedById { get; set; }

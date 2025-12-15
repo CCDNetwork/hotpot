@@ -69,14 +69,14 @@ public static class ExcelFieldValidator
     }
 
     // ----------------------------
-    // ACTIVITY
+    // MODALITY
     // ----------------------------
-    public static bool IsActivityValid(string activity)
+    public static bool IsModalityValid(string modality)
     {
-        if (string.IsNullOrWhiteSpace(activity))
+        if (string.IsNullOrWhiteSpace(modality))
             return false;
 
-        return AllowedActivities.Contains(activity.Trim().ToUpper());
+        return AllowedActivities.Contains(modality.Trim().ToUpper());
     }
 
     // ----------------------------

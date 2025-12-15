@@ -6,7 +6,7 @@ public class BookingFileRecord
 {
     public string HeadOfHouseHoldId { get; set; }
     public string SpouseId { get; set; }
-    public string Activity { get; set; }
+    public string Modality { get; set; }
     public string Amount { get; set; }
     public string Currency { get; set; }
     public string StartDate { get; set; }

@@ -41,12 +41,12 @@ public static class BookingRecordExcelValidator
         }
 
         // ----------------------------
-        // ACTIVITY
+        // Modality
         // ----------------------------
-        if (!ExcelFieldValidator.IsActivityValid(record.Activity))
+        if (!ExcelFieldValidator.IsModalityValid(record.Modality))
         {
-            errors.Add("Invalid Activity");
-            MarkInvalid("activity");
+            errors.Add("Invalid Modality");
+            MarkInvalid("Modality");
         }
 
 
