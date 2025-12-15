@@ -145,6 +145,6 @@ public static class ExcelFieldValidator
     // ----------------------------
     public static bool IsDateRangeValid(DateTime start, DateTime end)
     {
-        return end >= start;
+        return end >= start && end <= start.AddMonths(3);
     }
 }
