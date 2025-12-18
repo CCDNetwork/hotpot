@@ -3,9 +3,9 @@ import { CheckCircleIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const BOOKING_STEPS: { step: string }[] = [
-  { step: 'File upload' },
-  { step: 'Internal file check' },
-  { step: 'Registry booking' },
+  { step: 'Upload data' },
+  { step: 'File check' },
+  { step: 'Booking check' },
 ];
 
 export const BookingWizardHeader = ({

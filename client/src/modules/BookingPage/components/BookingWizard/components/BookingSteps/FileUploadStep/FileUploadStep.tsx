@@ -39,10 +39,13 @@ export const FileUploadStep: React.FC<Props> = ({
         <div className="grid grid-cols-1 place-items-center mx-auto max-w-[400px] divide-y">
           <div className="pb-4 flex flex-col gap-1 text-center">
             <h1 className="font-semibold tracking-tight text-2xl">
-              Welcome to the booking wizard
+              Welcome to the CWG booking wizard
             </h1>
             <p className="text-sm text-muted-foreground">
-              Let&apos;s start the booking process.
+              Let&apos;s start the booking process. To start, upload your data
+              in a Excel file Your Excel spreadsheet should be in the format
+              agreed by the CWG. If you are unsure what that template is, you
+              can download a copy here.
             </p>
           </div>
           <div className="pt-4 w-full">

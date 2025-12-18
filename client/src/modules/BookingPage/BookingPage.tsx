@@ -17,7 +17,7 @@ export const BookingPage = () => {
   return (
     <PageContainer
       pageTitle="Booking Cases"
-      pageSubtitle="On this page you can run a booking wizard. To run booking, click on the Booking Wizard button below."
+      pageSubtitle="On this page you can run a CWG booking wizard. To run CWG booking, click on the Booking Wizard button below."
       breadcrumbs={[
         {
           href: `${APP_ROUTE.Booking}`,

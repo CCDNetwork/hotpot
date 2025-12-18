@@ -37,20 +37,28 @@ export const RegistryBookingStep: React.FC<Props> = ({
   return stepBookingResponse?.isValid ? (
     <div className="flex flex-col items-center justify-center gap-4 text-sm">
       <CheckCircleIcon className="w-16 h-16 text-green-600" />
-      <p className="pb-4">
-        The platform has found no duplicates in the registry.
+      <p>The platform has found no duplicate records within this file.</p>
+      <p className="text-center">
+        You have booked all of the households that you have uploaded for
+        assistance. Good work!
       </p>
-      <p>Your booking data has been successfully added to the registry.</p>
     </div>
   ) : (
     <div className="flex flex-col text-sm items-center justify-center gap-2">
       <AlertTriangle className="w-16 h-16 text-yellow-500" />
       <p className="text-sm self-start">
-        The platform has found duplicates between your upload and the registry.
+        The platform has found duplicate records from your uploaded file in the
+        registry. Some or all of the households in your file have been booked by
+        another organization.
       </p>
       <p className="text-sm self-start">
-        To assist you, we created a version of your file with a “Duplicate”
-        column. You can download it below.
+        To assist you, we have created a version of your file with an “Already
+        Booked” column which shows the duplicates. You can download it below and
+        update your internal records.
+      </p>
+      <p className="text-sm self-start">
+        You have booked all the households for assistance which are not
+        duplicates. Congratulations!
       </p>
 
       <div className="flex flex-col gap-4">
@@ -74,10 +82,6 @@ export const RegistryBookingStep: React.FC<Props> = ({
             Download
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          For privacy reasons, the platform will not keep any information about
-          the file you uploaded once you exit the wizard.
-        </p>
       </div>
     </div>
   );

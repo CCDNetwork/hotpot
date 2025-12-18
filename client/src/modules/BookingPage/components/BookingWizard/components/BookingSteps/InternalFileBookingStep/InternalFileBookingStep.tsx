@@ -37,11 +37,13 @@ export const InternalFileBookingStep: React.FC<Props> = ({
     <div className="flex flex-col items-center justify-center gap-4 text-sm">
       <CheckCircleIcon className="w-16 h-16 text-green-600" />
       <p className="pb-4">
-        The platform has found no duplicate records within this file.
+        Your file and its content are in the right format and no internal
+        duplicates were found. Now let’s check if your households are availalbe
+        for booking.
       </p>
       <p>
-        Next, we will add your data to the registry and check for potential
-        duplicates with other organisations’ records.
+        Next, we will add your booking records to the registry and check for
+        potential duplicates.
       </p>
       {/* <p className="text-xs text-muted-foreground max-w-[500px] pt-6">
         <strong>Note: </strong>
