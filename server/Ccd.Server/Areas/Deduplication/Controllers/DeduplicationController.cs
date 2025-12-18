@@ -88,4 +88,12 @@ public class DeduplicationController : ControllerBaseExtended
         var (isValid, savedFileUrl, savedFileId) = await _bookingService.BookingDeduplicationStep2(this.OrganizationId, this.UserId, model);
         return Ok(new { isValid, fileUrl = savedFileUrl, fileId = savedFileId });
     }
+
+    [HttpGet("bookings")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult<PagedApiResponse<BookingResponse>>> GetAllBookingListings([FromQuery] RequestParameters requestParameters)
+    {
+        var bookings = await _bookingService.GetAllBookingsApi(this.OrganizationId, requestParameters);
+        return Ok(bookings);
+    }
 }

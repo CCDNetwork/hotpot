@@ -38,6 +38,21 @@ export interface BookingDataset {
   fileId: string;
 }
 
+export interface BookingResponse {
+  id: string;
+  householdId: string;
+  spouseId: string;
+  currency: string;
+  amount: number;
+  frequency: number;
+  modality: string;
+  startDate: Date | null;
+  endDate: Date | null;
+  organizationId: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
+
 export interface SameOrgDedupeResponse {
   totalRecords: number;
   identicalRecords: number;

@@ -28,6 +28,38 @@ public class BookingService
         _storageService = storageService;
     }
 
+    private readonly string _selectSql =
+    @"SELECT DISTINCT ON (b.id)
+                 b.*
+            FROM
+                 booking as b
+            WHERE
+                (@organizationId is null OR b.organization_id = @organizationId)";
+
+    private object getSelectSqlParams(Guid? organizationId = null)
+    {
+        return new { organizationId };
+    }
+
+    private async Task resolveDependencies(BookingResponse listing)
+    {
+        await Task.CompletedTask;
+    }
+
+
+    public async Task<PagedApiResponse<BookingResponse>> GetAllBookingsApi(Guid organizationId,
+    RequestParameters requestParameters)
+    {
+        return await PagedApiResponse<BookingResponse>.GetFromSql(
+            _context,
+            _selectSql,
+            getSelectSqlParams(organizationId),
+            requestParameters,
+            resolveDependencies
+        );
+    }
+
+
     public async Task<(bool, string, Guid)> BookingDeduplicationStep1(Guid organizationId, Guid userId, BookingDeduplicationRequestStep1 model)
     {
         var file = model.File ?? throw new BadRequestException("File is required");

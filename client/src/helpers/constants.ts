@@ -23,6 +23,7 @@ export enum APP_ROUTE {
   BeneficiaryList = '/beneficiary-list',
   Deduplication = '/deduplication',
   Booking = '/booking',
+  ViewBooking = '/view-booking',
   SentReferrals = '/sent-referrals',
   ReceivedReferrals = '/received-referrals',
   ServiceList = '/service-list',
@@ -72,10 +73,16 @@ export const getNavigationItems = (cmsData?: HomepageData) => [
     userPermissions: [],
     routes: [
       {
-        name: 'Booking',
+        name: 'Make Bookings',
         to: APP_ROUTE.Booking,
         userPermissions: [],
         icon: BookCopyIcon,
+      },
+      {
+        name: 'View Bookings',
+        to: APP_ROUTE.ViewBooking,
+        userPermissions: [],
+        icon: BookOpenTextIcon,
       },
     ],
   },

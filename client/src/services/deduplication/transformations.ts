@@ -1,6 +1,7 @@
 import { resToOrganization } from '@/services/organizations';
 
 import {
+  BookingResponse,
   DeduplicationDataset,
   DeduplicationListing,
   SameOrgDedupeResponse,
@@ -33,6 +34,23 @@ export const resToDeduplicationListing = (res: any): DeduplicationListing => {
     userCreated: res.userCreated ? resToUserCreated(res.userCreated) : null,
     createdAt: res.createdAt ?? null,
     updatedAt: res.updatedAt ?? null,
+  };
+};
+
+export const resToBooking = (res: any): BookingResponse => {
+  return {
+    id: res.id ?? '',
+    householdId: res.householdId ?? '',
+    spouseId: res.spouseId ?? '',
+    currency: res.currency ?? '',
+    amount: res.amount ?? 0,
+    frequency: res.frequency ?? 0,
+    modality: res.modality ?? '',
+    startDate: res.startDate ? new Date(res.startDate) : null,
+    endDate: res.endDate ? new Date(res.endDate) : null,
+    organizationId: res.organizationId ?? '',
+    createdAt: res.createdAt ? new Date(res.createdAt) : null,
+    updatedAt: res.updatedAt ? new Date(res.updatedAt) : null,
   };
 };
 

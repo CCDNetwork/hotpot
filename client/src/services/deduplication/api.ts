@@ -9,6 +9,7 @@ import { useDeduplicationProvider } from '@/modules/DeduplicationPage';
 import { api } from '@/services';
 import {
   dataToDatasetRequest,
+  resToBooking,
   resToDatasetResponse,
   resToDeduplicationListing,
   resToSameOrgDedupResponse,
@@ -25,6 +26,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 enum QueryKeys {
   DeduplicationListings = 'deduplication-listings',
+  Bookings = 'bookings',
 }
 
 export const fetchDeduplicationListings = async (
@@ -36,6 +38,18 @@ export const fetchDeduplicationListings = async (
   return {
     meta: resp.data.meta,
     data: resp.data.data?.map(resToDeduplicationListing) ?? [],
+  };
+};
+
+export const fetchBookings = async (
+  pagination: PaginationRequest
+): Promise<DataWithMeta<DeduplicationListing>> => {
+  const url = paginationRequestToUrl('deduplication/bookings', pagination);
+
+  const resp = await api.get(url);
+  return {
+    meta: resp.data.meta,
+    data: resp.data.data?.map(resToBooking) ?? [],
   };
 };
 
@@ -122,6 +136,33 @@ export const useDeduplicationListings = ({
     ],
     () =>
       fetchDeduplicationListings({
+        page: currentPage,
+        pageSize,
+        sortBy,
+        sortDirection,
+        search: debouncedSearch,
+      })
+  );
+};
+
+export const useBookings = ({
+  currentPage,
+  pageSize,
+  sortBy = 'createdAt',
+  sortDirection = SortDirection.Desc,
+  debouncedSearch,
+}: any) => {
+  return useQuery(
+    [
+      QueryKeys.Bookings,
+      currentPage,
+      pageSize,
+      sortBy,
+      sortDirection,
+      debouncedSearch,
+    ],
+    () =>
+      fetchBookings({
         page: currentPage,
         pageSize,
         sortBy,

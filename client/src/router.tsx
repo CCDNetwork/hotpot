@@ -58,6 +58,7 @@ import { BeneficiaryDataViewPage } from './modules/Public/BeneficiaryDataView';
 import { RequestNewPasswordPage } from './modules/Public/RequestNewPasswordPage';
 import { SetNewPasswordPage } from './modules/Public/SetNewPasswordPage';
 import { BookingPage, BookingProvider } from './modules/BookingPage';
+import { ViewBookingPage } from './modules/ViewBookingPage';
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -112,6 +113,13 @@ export const router = createBrowserRouter(
         <Route element={<ProtectedRoute userPermissions={[]} />}>
           <Route path={APP_ROUTE.Booking} element={<BookingProvider />}>
             <Route index element={<BookingPage />} />
+            <Route path="view" element={<ViewBookingPage />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute userPermissions={[]} />}>
+          <Route path={APP_ROUTE.ViewBooking} element={<BookingProvider />}>
+            <Route index element={<ViewBookingPage />} />
           </Route>
         </Route>
 
