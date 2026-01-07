@@ -47,7 +47,7 @@ export const AddUserModal = () => {
       confirmPassword: '',
       organization: undefined,
       role: 'user',
-      permissions: ['deduplication', 'referral'],
+      permissions: ['deduplication', 'referral', 'booking'],
     },
     mode: 'onSubmit',
     resolver: zodResolver(AddUserModalFormSchema),
@@ -189,6 +189,16 @@ export const AddUserModal = () => {
                   />
                   <div className="space-y-1 leading-3">
                     <FormLabel>Make Referrals</FormLabel>
+                  </div>
+                </div>
+                <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                  <Checkbox
+                    className="shadow-none"
+                    checked={currentFormPermissions?.includes('booking')}
+                    onCheckedChange={() => onPermissionClick('booking')}
+                  />
+                  <div className="space-y-1 leading-3">
+                    <FormLabel>Booking</FormLabel>
                   </div>
                 </div>
               </div>

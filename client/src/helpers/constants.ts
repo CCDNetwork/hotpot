@@ -70,18 +70,18 @@ export const getNavigationItems = (cmsData?: HomepageData) => [
   },
   {
     categoryName: 'Booking',
-    userPermissions: [],
+    userPermissions: [UserPermission.Booking],
     routes: [
       {
         name: 'Make Bookings',
         to: APP_ROUTE.Booking,
-        userPermissions: [],
+        userPermissions: [UserPermission.Booking],
         icon: BookCopyIcon,
       },
       {
         name: 'View Bookings',
         to: APP_ROUTE.ViewBooking,
-        userPermissions: [],
+        userPermissions: [UserPermission.Booking],
         icon: BookOpenTextIcon,
       },
     ],

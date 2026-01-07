@@ -8,6 +8,7 @@ export enum UserRole {
 export enum UserPermission {
   Deduplication = 'deduplication',
   Referrals = 'referral',
+  Booking = 'booking',
 }
 
 export const initialUser: User = {
