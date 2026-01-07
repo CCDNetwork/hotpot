@@ -9,6 +9,8 @@ export const ProtectedRoute = ({
   userPermissions,
 }: Props) => {
   const { user } = useAuth();
+  console.log('ProtectedRoute userPermissions:', userPermissions);
+  console.log('ProtectedRoute user.permissions:', user.permissions);
 
   if (
     user.role === UserRole.User &&

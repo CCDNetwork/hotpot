@@ -110,14 +110,22 @@ export const router = createBrowserRouter(
         </Route>
 
         {/* BOOKING */}
-        <Route element={<ProtectedRoute userPermissions={[]} />}>
+        <Route
+          element={
+            <ProtectedRoute userPermissions={[UserPermission.Booking]} />
+          }
+        >
           <Route path={APP_ROUTE.Booking} element={<BookingProvider />}>
             <Route index element={<BookingPage />} />
             <Route path="view" element={<ViewBookingPage />} />
           </Route>
         </Route>
 
-        <Route element={<ProtectedRoute userPermissions={[]} />}>
+        <Route
+          element={
+            <ProtectedRoute userPermissions={[UserPermission.Booking]} />
+          }
+        >
           <Route path={APP_ROUTE.ViewBooking} element={<BookingProvider />}>
             <Route index element={<ViewBookingPage />} />
           </Route>
