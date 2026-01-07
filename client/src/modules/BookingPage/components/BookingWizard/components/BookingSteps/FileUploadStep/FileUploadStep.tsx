@@ -45,7 +45,15 @@ export const FileUploadStep: React.FC<Props> = ({
               Let&apos;s start the booking process. To start, upload your data
               in a Excel file Your Excel spreadsheet should be in the format
               agreed by the CWG. If you are unsure what that template is, you
-              can download a copy here.
+              can download a copy{' '}
+              <a
+                href="/booking-empty-upload-template.xlsx"
+                download
+                className="text-primary font-semibold"
+              >
+                here
+              </a>
+              .
             </p>
           </div>
           <div className="pt-4 w-full">
