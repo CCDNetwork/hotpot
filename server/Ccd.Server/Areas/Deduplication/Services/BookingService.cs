@@ -111,11 +111,7 @@ public class BookingService
         // STEP 2 — Validate duplicates from DB
         ValidateDatabaseDuplicates(worksheet, lastRowNumber, lastColumnIndex, allValidNationalIds, ref isExcelValid);
 
-        if (isExcelValid)
-        {
-            // Process valid bookings into DB
-            await ProcessValidBookings(organizationId, userId, file.Id, worksheet, lastRowNumber, allValidNationalIds);
-        }
+        await ProcessValidBookings(organizationId, userId, file.Id, worksheet, lastRowNumber, lastColumnIndex, allValidNationalIds);
 
         using var memoryStream = new MemoryStream();
         workbook.SaveAs(memoryStream);
@@ -336,6 +332,7 @@ public class BookingService
         Guid savedFileId,
         IXLWorksheet worksheet,
         int lastRowNumber,
+        int alreadyBookedColumnIndex,
         HashSet<string> allValidExcelIds
     )
     {
@@ -370,6 +367,12 @@ public class BookingService
             // If Excel validation colored this row red → skip
             if (worksheet.Cell(row, hohIndex).Style.Fill.BackgroundColor == XLColor.Red ||
                 worksheet.Cell(row, spouseIndex).Style.Fill.BackgroundColor == XLColor.Red)
+            {
+                continue;
+            }
+
+            // Already has booking according to previous step → skip
+            if (worksheet.Cell(row, alreadyBookedColumnIndex).Style.Fill.BackgroundColor == XLColor.RedPigment)
             {
                 continue;
             }
