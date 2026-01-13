@@ -45,6 +45,24 @@ export enum APP_ROUTE {
 
 export const getNavigationItems = (cmsData?: HomepageData) => [
   {
+    categoryName: 'Booking',
+    userPermissions: [UserPermission.Booking],
+    routes: [
+      {
+        name: 'Make Bookings',
+        to: APP_ROUTE.Booking,
+        userPermissions: [UserPermission.Booking],
+        icon: BookCopyIcon,
+      },
+      {
+        name: 'View Bookings',
+        to: APP_ROUTE.ViewBooking,
+        userPermissions: [UserPermission.Booking],
+        icon: BookOpenTextIcon,
+      },
+    ],
+  },
+  {
     categoryName: cmsData?.deduplication ?? '',
     userPermissions: [UserPermission.Deduplication],
     routes: [
@@ -65,24 +83,6 @@ export const getNavigationItems = (cmsData?: HomepageData) => [
         to: APP_ROUTE.Templates,
         icon: FilesIcon,
         userPermissions: [UserPermission.Deduplication],
-      },
-    ],
-  },
-  {
-    categoryName: 'Booking',
-    userPermissions: [UserPermission.Booking],
-    routes: [
-      {
-        name: 'Make Bookings',
-        to: APP_ROUTE.Booking,
-        userPermissions: [UserPermission.Booking],
-        icon: BookCopyIcon,
-      },
-      {
-        name: 'View Bookings',
-        to: APP_ROUTE.ViewBooking,
-        userPermissions: [UserPermission.Booking],
-        icon: BookOpenTextIcon,
       },
     ],
   },
