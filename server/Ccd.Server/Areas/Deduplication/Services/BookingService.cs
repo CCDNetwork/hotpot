@@ -393,43 +393,26 @@ public class BookingService
             if (existing == null && !string.IsNullOrWhiteSpace(spouseId))
                 existing = FindExisting(spouseId);
 
-            if (existing != null)
+            var booking = new Booking
             {
-                // UPDATE existing booking
-                // existing.HouseholdId = hohId;
-                // existing.SpouseId = spouseId;
-                existing.StartDate = startDate;
-                existing.EndDate = endDate;
-                existing.Amount = amount;
-                existing.Currency = currency;
-                existing.Frequency = frequency;
-                existing.Modality = modality;
-                existing.UpdatedAt = DateTime.UtcNow;
-            }
-            else
-            {
-                // INSERT NEW booking
-                var booking = new Booking
-                {
-                    Id = IdProvider.NewId(),
-                    HouseholdId = hohId,
-                    SpouseId = spouseId,
-                    StartDate = startDate,
-                    EndDate = endDate,
-                    Amount = amount,
-                    Currency = currency,
-                    Frequency = frequency,
-                    OrganizationId = organizationId,
-                    UploadedById = userId,
-                    FileId = savedFileId,
-                    Modality = modality,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
+                Id = IdProvider.NewId(),
+                HouseholdId = hohId,
+                SpouseId = spouseId,
+                StartDate = startDate,
+                EndDate = endDate,
+                Amount = amount,
+                Currency = currency,
+                Frequency = frequency,
+                OrganizationId = organizationId,
+                UploadedById = userId,
+                FileId = savedFileId,
+                Modality = modality,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
 
-                _context.Bookings.Add(booking);
-                existingBookings.Add(booking); // IMPORTANT — keep lookup updated for next rows
-            }
+            _context.Bookings.Add(booking);
+            existingBookings.Add(booking);
         }
 
         await _context.SaveChangesAsync();
