@@ -29,16 +29,26 @@ public class BookingService
     }
 
     private readonly string _selectSql =
-    @"SELECT DISTINCT ON (b.id)
+    @$"SELECT DISTINCT ON (b.id)
                  b.*
             FROM
                  booking as b
             WHERE
-                (@organizationId is null OR b.organization_id = @organizationId)";
+                (@organizationId is null OR b.organization_id = @organizationId)
+                AND (
+                    @activities::text[] IS NULL
+                    OR (
+                        ('previous' = ANY(@activities::text[]) AND b.end_date < CURRENT_DATE)
+                        OR
+                        ('current'  = ANY(@activities::text[]) AND b.start_date <= CURRENT_DATE AND b.end_date >= CURRENT_DATE)
+                        OR
+                        ('upcoming' = ANY(@activities::text[]) AND b.start_date > CURRENT_DATE)
+                    )
+                )";
 
-    private object getSelectSqlParams(Guid? organizationId = null)
+    private object getSelectSqlParams(Guid? organizationId = null, string[] activities = null)
     {
-        return new { organizationId };
+        return new { organizationId, activities };
     }
 
     private async Task resolveDependencies(BookingResponse listing)
@@ -47,13 +57,21 @@ public class BookingService
     }
 
 
-    public async Task<PagedApiResponse<BookingResponse>> GetAllBookingsApi(Guid organizationId,
-    RequestParameters requestParameters)
+    public async Task<PagedApiResponse<BookingResponse>> GetAllBookingsApi(Guid organizationId, RequestParameters requestParameters, string activity)
     {
+        var activityFilter = activity?
+            .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(BookingActivity.IsValidActivity)
+            .Distinct()
+            .ToArray();
+
+        if (activityFilter?.Length == 0)
+            activityFilter = null;
+
         return await PagedApiResponse<BookingResponse>.GetFromSql(
             _context,
             _selectSql,
-            getSelectSqlParams(organizationId),
+            getSelectSqlParams(organizationId, activityFilter),
             requestParameters,
             resolveDependencies
         );

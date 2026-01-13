@@ -19,8 +19,12 @@ export const DateRangePickerFilter = ({
   className,
   placeholder,
   setCurrentFilters,
+  filterNameFrom = 'createdAt[gt]',
+  filterNameTo = 'createdAt[lt]',
 }: React.HTMLAttributes<HTMLDivElement> & {
   placeholder?: string;
+  filterNameFrom?: string;
+  filterNameTo?: string;
   setCurrentFilters: React.Dispatch<
     React.SetStateAction<Record<string, string>>
   >;
@@ -35,14 +39,14 @@ export const DateRangePickerFilter = ({
     if (date.from) {
       setCurrentFilters((old) => ({
         ...old,
-        'createdAt[gt]': date.from!.toISOString(),
+        [filterNameFrom]: date.from!.toISOString(),
       }));
     }
 
     if (date.to) {
       setCurrentFilters((old) => ({
         ...old,
-        'createdAt[lt]': date.to!.toISOString(),
+        [filterNameTo]: date.to!.toISOString(),
       }));
     }
   };
@@ -80,8 +84,8 @@ export const DateRangePickerFilter = ({
                     setDate(undefined);
                     setCurrentFilters((old) => ({
                       ...old,
-                      'createdAt[gt]': '',
-                      'createdAt[lt]': '',
+                      [filterNameFrom]: '',
+                      [filterNameTo]: '',
                     }));
                   }}
                   className="w-4 h-4"

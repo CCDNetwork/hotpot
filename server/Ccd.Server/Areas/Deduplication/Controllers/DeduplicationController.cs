@@ -91,9 +91,9 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpGet("bookings")]
     [PermissionLevel(UserRole.User)]
-    public async Task<ActionResult<PagedApiResponse<BookingResponse>>> GetAllBookingListings([FromQuery] RequestParameters requestParameters)
+    public async Task<ActionResult<PagedApiResponse<BookingResponse>>> GetAllBookingListings([FromQuery] RequestParameters requestParameters, string activity)
     {
-        var bookings = await _bookingService.GetAllBookingsApi(this.OrganizationId, requestParameters);
+        var bookings = await _bookingService.GetAllBookingsApi(this.OrganizationId, requestParameters, activity);
         return Ok(bookings);
     }
 }

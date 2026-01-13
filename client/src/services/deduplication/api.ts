@@ -42,9 +42,13 @@ export const fetchDeduplicationListings = async (
 };
 
 export const fetchBookings = async (
-  pagination: PaginationRequest
+  pagination: PaginationRequest,
+  activity: string
 ): Promise<DataWithMeta<DeduplicationListing>> => {
-  const url = paginationRequestToUrl('deduplication/bookings', pagination);
+  let url = paginationRequestToUrl('deduplication/bookings', pagination);
+  if (activity) {
+    url += `&activity=${activity}`;
+  }
 
   const resp = await api.get(url);
   return {
@@ -151,6 +155,8 @@ export const useBookings = ({
   sortBy = 'createdAt',
   sortDirection = SortDirection.Desc,
   debouncedSearch,
+  filters,
+  activity,
 }: any) => {
   return useQuery(
     [
@@ -160,15 +166,21 @@ export const useBookings = ({
       sortBy,
       sortDirection,
       debouncedSearch,
+      filters,
+      activity,
     ],
     () =>
-      fetchBookings({
-        page: currentPage,
-        pageSize,
-        sortBy,
-        sortDirection,
-        search: debouncedSearch,
-      })
+      fetchBookings(
+        {
+          page: currentPage,
+          pageSize,
+          sortBy,
+          sortDirection,
+          search: debouncedSearch,
+          filters,
+        },
+        activity
+      )
   );
 };
 
