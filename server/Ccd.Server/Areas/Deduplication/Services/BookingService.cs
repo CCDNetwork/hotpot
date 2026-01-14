@@ -369,6 +369,8 @@ public class BookingService
                         allValidExcelIds.Contains(b.SpouseId))
             .ToList();
 
+        var bookingLogs = new List<BookingLog>();
+
         // For fast lookup
         Booking FindExisting(string id)
         {
@@ -382,25 +384,51 @@ public class BookingService
             var hohId = worksheet.Cell(row, hohIndex).GetString().Trim();
             var spouseId = worksheet.Cell(row, spouseIndex).GetString().Trim();
 
-            // If Excel validation colored this row red → skip
+            var isSuccess = true;
+
+            // If Excel validation colored this row red → fail
             if (worksheet.Cell(row, hohIndex).Style.Fill.BackgroundColor == XLColor.Red ||
                 worksheet.Cell(row, spouseIndex).Style.Fill.BackgroundColor == XLColor.Red)
             {
-                continue;
+                isSuccess = false;
             }
 
-            // Already has booking according to previous step → skip
+            // Already has booking according to previous step → fail
             if (worksheet.Cell(row, alreadyBookedColumnIndex).Style.Fill.BackgroundColor == XLColor.RedPigment)
             {
-                continue;
+                isSuccess = false;
             }
 
             var startDate = ParseExcelDateUtc(worksheet.Cell(row, startDateIndex).GetString());
             var endDate = ParseExcelDateUtc(worksheet.Cell(row, endDateIndex).GetString());
             var amount = decimal.Parse(worksheet.Cell(row, amountIndex).GetString().Replace(",", ""));
-            var currency = worksheet.Cell(row, currencyIndex).GetString().Trim();
             var frequency = int.Parse(worksheet.Cell(row, frequencyIndex).GetString());
+
+            var currency = worksheet.Cell(row, currencyIndex).GetString().Trim();
             var modality = worksheet.Cell(row, modalityIndex).GetString().Trim();
+
+            var bookingLog = new BookingLog
+            {
+                Id = IdProvider.NewId(),
+                HouseholdId = hohId,
+                SpouseId = spouseId,
+                StartDate = startDate,
+                EndDate = endDate,
+                Amount = amount,
+                Currency = currency,
+                Frequency = frequency,
+                OrganizationId = organizationId,
+                UploadedById = userId,
+                FileId = savedFileId,
+                Modality = modality,
+                IsSuccess = isSuccess,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            bookingLogs.Add(bookingLog);
+
+            if (!isSuccess)
+                continue;
 
             // Find existing using new unified ID-space logic
             Booking existing = null;
@@ -432,6 +460,8 @@ public class BookingService
             _context.Bookings.Add(booking);
             existingBookings.Add(booking);
         }
+
+        _context.BookingLogs.AddRange(bookingLogs);
 
         await _context.SaveChangesAsync();
     }
