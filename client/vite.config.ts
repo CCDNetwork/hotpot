@@ -1,7 +1,23 @@
-import { defineConfig } from 'vite';
+import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import checker from 'vite-plugin-checker';
 import path from 'path';
+
+// Plugin to remove CSP meta tag in development mode
+// This allows Vite's HMR scripts to work without manual index.html editing
+const removeCSPInDev = (): Plugin => ({
+  name: 'remove-csp-in-dev',
+  transformIndexHtml(html, ctx) {
+    if (ctx.server) {
+      // In dev mode, remove the CSP meta tag that blocks inline scripts
+      return html.replace(
+        /<meta http-equiv="Content-Security-Policy"[^>]*>/,
+        '<!-- CSP disabled in development mode -->'
+      );
+    }
+    return html;
+  },
+});
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -10,6 +26,7 @@ export default defineConfig({
     checker({
       typescript: true,
     }),
+    removeCSPInDev(),
   ],
   resolve: {
     alias: {
