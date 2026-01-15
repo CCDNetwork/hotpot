@@ -95,6 +95,21 @@ const deleteOrganization = async (id: string): Promise<Organization> => {
 // GET HOOKS
 //
 
+// Check if any organizations exist (used for initial setup detection)
+export const useHasOrganizations = (options?: { enabled?: boolean }) => {
+  return useQuery(
+    [QueryKeys.Organizations, 'hasAny'],
+    async () => {
+      const result = await fetchOrganizations({ page: 1, pageSize: 1 });
+      return result.meta.totalRows > 0;
+    },
+    {
+      enabled: options?.enabled ?? true,
+      staleTime: 30000, // Cache for 30 seconds
+    }
+  );
+};
+
 export const useOrganizations = ({
   currentPage,
   pageSize,
