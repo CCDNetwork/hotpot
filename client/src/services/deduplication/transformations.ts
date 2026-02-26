@@ -44,7 +44,7 @@ export const resToBooking = (res: any): BookingResponse => {
     spouseId: res.spouseId ?? '',
     currency: res.currency ?? '',
     amount: res.amount ?? 0,
-    frequency: res.frequency ?? 0,
+    rounds: res.rounds ?? 0,
     modality: res.modality ?? '',
     startDate: res.startDate ? new Date(res.startDate) : null,
     endDate: res.endDate ? new Date(res.endDate) : null,

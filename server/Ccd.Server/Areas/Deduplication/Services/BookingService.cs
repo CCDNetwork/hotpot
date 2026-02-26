@@ -154,7 +154,7 @@ public class BookingService
             var currencyCell = worksheet.Cell(i, GetHeaderIndex("currency", worksheet));
             var startDateCell = worksheet.Cell(i, GetHeaderIndex("startdate", worksheet));
             var endDateCell = worksheet.Cell(i, GetHeaderIndex("enddate", worksheet));
-            var frequencyCell = worksheet.Cell(i, GetHeaderIndex("frequency", worksheet));
+            var roundsCell = worksheet.Cell(i, GetHeaderIndex("rounds", worksheet));
 
             var fileRecord = new BookingFileRecord
             {
@@ -165,7 +165,7 @@ public class BookingService
                 Currency = currencyCell.Value.ToString(),
                 StartDate = startDateCell.Value.ToString(),
                 EndDate = endDateCell.Value.ToString(),
-                Frequency = frequencyCell.Value.ToString(),
+                Rounds = roundsCell.Value.ToString(),
             };
 
             var errors = BookingRecordExcelValidator.ValidateAndColorRow(
@@ -335,7 +335,7 @@ public class BookingService
             {
                 var alreadyBookedCell = worksheet.Cell(row, alreadyBookedColumnIndex);
                 alreadyBookedCell.Value =
-                    $"{matchedId} already has a booking by {dbRecord.Organization.Name} ending on {dbRecord.EndDate:yyyy-MM-dd}";
+                    $"{matchedId} already has a booking by {dbRecord.Organization.Name} from {dbRecord.StartDate:yyyy-MM-dd} until {dbRecord.EndDate:yyyy-MM-dd}";
                 alreadyBookedCell.Style.Fill.BackgroundColor = XLColor.RedPigment;
 
                 isExcelValid = false;
@@ -360,7 +360,7 @@ public class BookingService
         var endDateIndex = GetHeaderIndex("enddate", worksheet);
         var amountIndex = GetHeaderIndex("amount", worksheet);
         var currencyIndex = GetHeaderIndex("currency", worksheet);
-        var frequencyIndex = GetHeaderIndex("frequency", worksheet);
+        var roundsIndex = GetHeaderIndex("rounds", worksheet);
         var modalityIndex = GetHeaderIndex("modality", worksheet);
 
         // NEW DB fetch: get all bookings that match any Excel ID in either column
@@ -402,7 +402,7 @@ public class BookingService
             var startDate = ParseExcelDateUtc(worksheet.Cell(row, startDateIndex).GetString());
             var endDate = ParseExcelDateUtc(worksheet.Cell(row, endDateIndex).GetString());
             var amount = decimal.Parse(worksheet.Cell(row, amountIndex).GetString().Replace(",", ""));
-            var frequency = int.Parse(worksheet.Cell(row, frequencyIndex).GetString());
+            var rounds = int.Parse(worksheet.Cell(row, roundsIndex).GetString());
 
             var currency = worksheet.Cell(row, currencyIndex).GetString().Trim();
             var modality = worksheet.Cell(row, modalityIndex).GetString().Trim();
@@ -416,7 +416,7 @@ public class BookingService
                 EndDate = endDate,
                 Amount = amount,
                 Currency = currency,
-                Frequency = frequency,
+                Rounds = rounds,
                 OrganizationId = organizationId,
                 UploadedById = userId,
                 FileId = savedFileId,
@@ -448,7 +448,7 @@ public class BookingService
                 EndDate = endDate,
                 Amount = amount,
                 Currency = currency,
-                Frequency = frequency,
+                Rounds = rounds,
                 OrganizationId = organizationId,
                 UploadedById = userId,
                 FileId = savedFileId,

@@ -91,16 +91,16 @@ public static class ExcelFieldValidator
     }
 
     // ----------------------------
-    // FREQUENCY
+    // ROUNDS
     // ----------------------------
-    public static bool IsFrequencyValid(string frequency, out int value)
+    public static bool IsRoundsValid(string rounds, out int value)
     {
         value = default;
 
-        if (string.IsNullOrWhiteSpace(frequency))
+        if (string.IsNullOrWhiteSpace(rounds))
             return false;
 
-        return int.TryParse(frequency, out value) && value == 1;
+        return int.TryParse(rounds, out value) && value > 0;
     }
 
     // ----------------------------

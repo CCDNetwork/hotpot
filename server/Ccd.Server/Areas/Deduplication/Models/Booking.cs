@@ -14,7 +14,7 @@ public class Booking
     public string SpouseId { get; set; }
     public string Currency { get; set; }
     public decimal Amount { get; set; }
-    public int Frequency { get; set; }
+    public int Rounds { get; set; }
     public string Modality { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }

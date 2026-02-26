@@ -44,7 +44,7 @@ export interface BookingResponse {
   spouseId: string;
   currency: string;
   amount: number;
-  frequency: number;
+  rounds: number;
   modality: string;
   startDate: Date | null;
   endDate: Date | null;

@@ -11,5 +11,5 @@ public class BookingFileRecord
     public string Currency { get; set; }
     public string StartDate { get; set; }
     public string EndDate { get; set; }
-    public string Frequency { get; set; }
+    public string Rounds { get; set; }
 }

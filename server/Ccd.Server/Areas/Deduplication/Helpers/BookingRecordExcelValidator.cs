@@ -87,12 +87,12 @@ public static class BookingRecordExcelValidator
         }
 
         // ----------------------------
-        // FREQUENCY
+        // ROUNDS
         // ----------------------------
-        if (!ExcelFieldValidator.IsFrequencyValid(record.Frequency, out var _))
+        if (!ExcelFieldValidator.IsRoundsValid(record.Rounds, out var _))
         {
-            errors.Add("Invalid Frequency");
-            MarkInvalid("frequency");
+            errors.Add("Invalid Rounds");
+            MarkInvalid("rounds");
         }
 
         // ----------------------------
