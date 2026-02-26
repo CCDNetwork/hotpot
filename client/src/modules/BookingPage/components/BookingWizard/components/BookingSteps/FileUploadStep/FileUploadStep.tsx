@@ -47,7 +47,7 @@ export const FileUploadStep: React.FC<Props> = ({
               agreed by the CWG. If you are unsure what that template is, you
               can download a copy{' '}
               <a
-                href="/booking-empty-upload-template.xlsx"
+                href="/booking-empty-upload-template-1.xlsx"
                 download
                 className="text-primary font-semibold"
               >

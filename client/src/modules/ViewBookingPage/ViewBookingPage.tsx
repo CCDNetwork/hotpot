@@ -1,6 +1,11 @@
 import { DataTable } from '@/components/DataTable';
 import { PageContainer } from '@/components/PageContainer';
-import { useBookings, useReleaseBookingMutation } from '@/services/deduplication';
+import {
+  useBookings,
+  useReleaseBookingMutation,
+  useBookings,
+  useReleaseBookingMutation,
+} from '@/services/deduplication';
 import { usePagination } from '@/helpers/pagination';
 import { APP_ROUTE } from '@/helpers/constants';
 
@@ -79,7 +84,7 @@ export const ViewBookingPage = () => {
           <DropdownMenuContent>
             <DropdownMenuItem className="p-0">
               <a
-                href="/booking-empty-upload-template.xlsx"
+                href="/booking-empty-upload-template-1.xlsx"
                 download
                 className="flex gap-1 items-center px-2 py-1"
               >
@@ -89,7 +94,7 @@ export const ViewBookingPage = () => {
             </DropdownMenuItem>
             <DropdownMenuItem className="p-0">
               <a
-                href="/booking-template-with-readme.xlsx"
+                href="/booking-template-with-readme-1.xlsx"
                 download
                 className="flex gap-1 items-center px-2 py-1"
               >

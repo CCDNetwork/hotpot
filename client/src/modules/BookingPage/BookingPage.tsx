@@ -40,7 +40,7 @@ export const BookingPage = () => {
           <DropdownMenuContent>
             <DropdownMenuItem className="p-0">
               <a
-                href="/booking-empty-upload-template.xlsx"
+                href="/booking-empty-upload-template-1.xlsx"
                 download
                 className="flex gap-1 items-center px-2 py-1"
               >
@@ -50,7 +50,7 @@ export const BookingPage = () => {
             </DropdownMenuItem>
             <DropdownMenuItem className="p-0">
               <a
-                href="/booking-template-with-readme.xlsx"
+                href="/booking-template-with-readme-1.xlsx"
                 download
                 className="flex gap-1 items-center px-2 py-1"
               >
