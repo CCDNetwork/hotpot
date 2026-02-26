@@ -1,5 +1,5 @@
-import { ReactNode, useMemo, useState } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { ReactNode, useCallback, useMemo, useState } from 'react';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { HamburgerMenuIcon } from '@radix-ui/react-icons';
 
 import { useAuth } from '@/providers/GlobalProvider';
@@ -7,15 +7,31 @@ import { APP_ROUTE, getNavigationItems } from '@/helpers/constants';
 import { UserRole } from '@/services/users';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useDirectus } from '@/providers/DirectusProvider';
+import { toast } from '@/components/ui/use-toast';
+import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { SidebarContent } from './SidebarContent';
 
 interface Props {
   children?: ReactNode;
 }
 
+const IDLE_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 export const PrivateLayout = ({ children = <Outlet /> }: Props) => {
-  const { isLoggedIn, user } = useAuth();
+  const { isLoggedIn, user, logoutUser } = useAuth();
+  const navigate = useNavigate();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
+
+  const handleIdle = useCallback(() => {
+    logoutUser();
+    navigate(APP_ROUTE.SignIn);
+    toast({
+      title: "You've been logged out due to inactivity.",
+      variant: 'destructive',
+    });
+  }, [logoutUser, navigate]);
+
+  useIdleTimeout(IDLE_TIMEOUT, handleIdle);
 
   const { useHomepageData } = useDirectus();
 
