@@ -3,8 +3,6 @@ import { PageContainer } from '@/components/PageContainer';
 import {
   useBookings,
   useReleaseBookingMutation,
-  useBookings,
-  useReleaseBookingMutation,
 } from '@/services/deduplication';
 import { usePagination } from '@/helpers/pagination';
 import { APP_ROUTE } from '@/helpers/constants';
