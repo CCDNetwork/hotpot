@@ -2,8 +2,12 @@ import { formatDate } from 'date-fns';
 
 import { TableColumn } from '@/components/DataTable/types';
 import { BookingResponse } from '@/services/deduplication';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
-export const columns: TableColumn<BookingResponse>[] = [
+export const getColumns = (
+  onRelease: (bookingId: string) => void
+): TableColumn<BookingResponse>[] => [
   {
     accessorKey: 'householdId',
     id: 'householdId',
@@ -43,7 +47,11 @@ export const columns: TableColumn<BookingResponse>[] = [
     id: 'startDate',
     header: 'Start Date',
     cell: ({ row }) => {
-      const startDate = row.original.startDate;
+      const { startDate, endDate } = row.original;
+
+      if (!startDate && !endDate) {
+        return <Badge variant="secondary">Released</Badge>;
+      }
 
       return (
         <div className="flex flex-col">
@@ -60,12 +68,36 @@ export const columns: TableColumn<BookingResponse>[] = [
     id: 'endDate',
     header: 'End Date',
     cell: ({ row }) => {
-      const endDate = row.original.endDate;
+      const { startDate, endDate } = row.original;
+
+      if (!startDate && !endDate) {
+        return <Badge variant="secondary">Released</Badge>;
+      }
 
       return (
         <div className="flex flex-col">
           <span>{endDate ? formatDate(endDate, 'dd/MM/yyyy HH:mm') : '-'}</span>
         </div>
+      );
+    },
+  },
+  {
+    id: 'actions',
+    header: '',
+    cell: ({ row }) => {
+      const { startDate, endDate, id } = row.original;
+      const isReleased = !startDate && !endDate;
+
+      if (isReleased) return null;
+
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onRelease(id)}
+        >
+          Release
+        </Button>
       );
     },
   },

@@ -96,4 +96,12 @@ public class DeduplicationController : ControllerBaseExtended
         var bookings = await _bookingService.GetAllBookingsApi(this.OrganizationId, requestParameters, activity);
         return Ok(bookings);
     }
+
+    [HttpPost("booking/{id}/release")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult> ReleaseBooking(Guid id)
+    {
+        await _bookingService.ReleaseBooking(id, this.OrganizationId);
+        return NoContent();
+    }
 }

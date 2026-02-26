@@ -1,10 +1,10 @@
 import { DataTable } from '@/components/DataTable';
 import { PageContainer } from '@/components/PageContainer';
-import { useBookings } from '@/services/deduplication';
+import { useBookings, useReleaseBookingMutation } from '@/services/deduplication';
 import { usePagination } from '@/helpers/pagination';
 import { APP_ROUTE } from '@/helpers/constants';
 
-import { columns } from './columns';
+import { getColumns } from './columns';
 import { useState } from 'react';
 import { DateRangePickerFilter } from '@/components/DataTable/DateRangePickerFilter';
 import { FilterDropdown } from '@/components/DataTable/FilterDropdown';
@@ -16,6 +16,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ConfirmationDialog } from '@/components/ConfirmationDialog';
+import { toast } from '@/components/ui/use-toast';
 
 export const ViewBookingPage = () => {
   const pagination = usePagination();
@@ -28,7 +30,9 @@ export const ViewBookingPage = () => {
   } = pagination;
 
   const [filters, setFilters] = useState<Record<string, string>>({});
-  console.log(filters);
+  const [releaseBookingId, setReleaseBookingId] = useState<string | null>(null);
+
+  const releaseMutation = useReleaseBookingMutation();
 
   const { data: bookings, isLoading: queryLoading } = useBookings({
     ...pagination,
@@ -37,6 +41,28 @@ export const ViewBookingPage = () => {
     ),
     activity: filters['activity'] || '',
   });
+
+  const columns = getColumns(setReleaseBookingId);
+
+  const handleRelease = async () => {
+    if (!releaseBookingId) return;
+
+    try {
+      await releaseMutation.mutateAsync(releaseBookingId);
+      setReleaseBookingId(null);
+      toast({
+        title: 'Booking released',
+        description:
+          'The booking has been released. The household is now available for re-booking.',
+      });
+    } catch {
+      toast({
+        title: 'Failed to release booking',
+        description: 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <PageContainer
@@ -102,6 +128,7 @@ export const ViewBookingPage = () => {
                 { label: 'Previous', value: 'previous' },
                 { label: 'Current', value: 'current' },
                 { label: 'Upcoming', value: 'upcoming' },
+                { label: 'Released', value: 'released' },
               ]}
             />
             <DateRangePickerFilter
@@ -116,6 +143,17 @@ export const ViewBookingPage = () => {
             />
           </div>
         }
+      />
+
+      <ConfirmationDialog
+        open={!!releaseBookingId}
+        title="Release Booking"
+        body="Are you sure you want to release this booking? This will nullify the start and end dates, freeing the household for re-booking. This action cannot be undone."
+        confirmButtonLabel="Release"
+        actionButtonVariant="destructive"
+        confirmButtonLoading={releaseMutation.isLoading}
+        onCancel={() => setReleaseBookingId(null)}
+        onAction={handleRelease}
       />
     </PageContainer>
   );

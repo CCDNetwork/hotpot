@@ -14,8 +14,8 @@ public class BookingResponse
     public decimal Amount { get; set; }
     public int Rounds { get; set; }
     public string Modality { get; set; }
-    public DateTime StartDate { get; set; }
-    public DateTime EndDate { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
     [JsonIgnore] public Guid OrganizationId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

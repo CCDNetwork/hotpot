@@ -36,13 +36,15 @@ public class BookingService
             WHERE
                 (@organizationId is null OR b.organization_id = @organizationId)
                 AND (
-                    @activities::text[] IS NULL
-                    OR (
-                        ('previous' = ANY(@activities::text[]) AND b.end_date < CURRENT_DATE)
+                    @activities::text[] IS NULL AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL
+                    OR @activities::text[] IS NOT NULL AND (
+                        ('previous' = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.end_date < CURRENT_DATE)
                         OR
-                        ('current'  = ANY(@activities::text[]) AND b.start_date <= CURRENT_DATE AND b.end_date >= CURRENT_DATE)
+                        ('current'  = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.start_date <= CURRENT_DATE AND b.end_date >= CURRENT_DATE)
                         OR
-                        ('upcoming' = ANY(@activities::text[]) AND b.start_date > CURRENT_DATE)
+                        ('upcoming' = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.start_date > CURRENT_DATE)
+                        OR
+                        ('released' = ANY(@activities::text[]) AND b.start_date IS NULL AND b.end_date IS NULL)
                     )
                 )";
 
@@ -286,10 +288,11 @@ public class BookingService
         var spouseIndex = GetHeaderIndex("spouseid", worksheet);
         var startDateIndex = GetHeaderIndex("startdate", worksheet);
 
-        // Get all overlapping DB records for the Excel IDs
+        // Get all overlapping DB records for the Excel IDs (skip released bookings)
         var existingBookings = _context.Bookings
-            .Where(b => allExcelIds.Contains(b.HouseholdId) ||
-                        allExcelIds.Contains(b.SpouseId))
+            .Where(b => (allExcelIds.Contains(b.HouseholdId) ||
+                        allExcelIds.Contains(b.SpouseId)) &&
+                        b.StartDate != null && b.EndDate != null)
             .Include(b => b.Organization)
             .ToList();
 
@@ -363,10 +366,11 @@ public class BookingService
         var roundsIndex = GetHeaderIndex("rounds", worksheet);
         var modalityIndex = GetHeaderIndex("modality", worksheet);
 
-        // NEW DB fetch: get all bookings that match any Excel ID in either column
+        // NEW DB fetch: get all bookings that match any Excel ID in either column (skip released bookings)
         var existingBookings = _context.Bookings
-            .Where(b => allValidExcelIds.Contains(b.HouseholdId) ||
-                        allValidExcelIds.Contains(b.SpouseId))
+            .Where(b => (allValidExcelIds.Contains(b.HouseholdId) ||
+                        allValidExcelIds.Contains(b.SpouseId)) &&
+                        b.StartDate != null && b.EndDate != null)
             .ToList();
 
         var bookingLogs = new List<BookingLog>();
@@ -467,6 +471,19 @@ public class BookingService
     }
 
 
+
+    public async Task ReleaseBooking(Guid bookingId, Guid organizationId)
+    {
+        var booking = await _context.Bookings
+            .FirstOrDefaultAsync(b => b.Id == bookingId && b.OrganizationId == organizationId)
+            ?? throw new NotFoundException("Booking not found");
+
+        booking.StartDate = null;
+        booking.EndDate = null;
+        booking.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+    }
 
     private int GetHeaderIndex(string headerName, IXLWorksheet worksheet)
     {

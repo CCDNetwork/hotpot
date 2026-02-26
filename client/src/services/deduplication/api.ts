@@ -57,6 +57,10 @@ export const fetchBookings = async (
   };
 };
 
+const postReleaseBooking = async (bookingId: string): Promise<void> => {
+  await api.post(`/deduplication/booking/${bookingId}/release`);
+};
+
 export const deleteDeduplicationData = async (): Promise<object> => {
   const resp = await api.delete('/deduplication');
   return resp.data;
@@ -182,6 +186,16 @@ export const useBookings = ({
         activity
       )
   );
+};
+
+export const useReleaseBookingMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation(postReleaseBooking, {
+    onSuccess: () => {
+      queryClient.invalidateQueries([QueryKeys.Bookings]);
+    },
+  });
 };
 
 export const useBookingMutation = () => {
