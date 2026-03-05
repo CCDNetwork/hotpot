@@ -66,6 +66,9 @@ public class Mappings : Profile
             e => e.OrganizationCreated,
             opt => opt.MapFrom(src => src.OrganizationCreated.Name));
 
+        // Booking export mappings
+        CreateMap<BookingResponse, BookingExportResponse>(MemberList.None);
+
         // Handbook
         CreateMap<Handbook, HandbookResponse>();
         CreateMap<HandbookAddRequest, Handbook>();

@@ -4,6 +4,7 @@ using Ccd.Server.Helpers;
 using Ccd.Server.Notifications;
 using Ccd.Server.Users;
 using Ccd.Server.Deduplication.Controllers.ControllerModels;
+using Ccd.Server.Referrals;
 using System;
 
 namespace Ccd.Server.Deduplication;
@@ -14,11 +15,13 @@ public class DeduplicationController : ControllerBaseExtended
 {
     private readonly DeduplicationService _deduplicationService;
     private readonly BookingService _bookingService;
+    private readonly ExportService _exportService;
 
-    public DeduplicationController(DeduplicationService deduplicationService, BookingService bookingService)
+    public DeduplicationController(DeduplicationService deduplicationService, BookingService bookingService, ExportService exportService)
     {
         _deduplicationService = deduplicationService;
         _bookingService = bookingService;
+        _exportService = exportService;
     }
 
     [HttpGet("listings")]
@@ -87,6 +90,30 @@ public class DeduplicationController : ControllerBaseExtended
     {
         var (isValid, savedFileUrl, savedFileId) = await _bookingService.BookingDeduplicationStep2(this.OrganizationId, this.UserId, model);
         return Ok(new { isValid, fileUrl = savedFileUrl, fileId = savedFileId });
+    }
+
+    [HttpGet("bookings/export")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult> ExportBookings(
+        [FromQuery] RequestParameters requestParameters,
+        string activity
+    )
+    {
+        var bookings = await _bookingService.GetAllBookingsApi(
+            OrganizationId,
+            requestParameters,
+            activity
+        );
+
+        var xlsx = _exportService.ExportXls<BookingResponse, BookingExportResponse>(
+            bookings.Data
+        );
+
+        return File(
+            xlsx,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "bookings-export.xlsx"
+        );
     }
 
     [HttpGet("bookings")]

@@ -57,6 +57,19 @@ export const fetchBookings = async (
   };
 };
 
+export const getBookingsExport = async (
+  pagination: PaginationRequest,
+  activity: string
+): Promise<any> => {
+  let url = paginationRequestToUrl('deduplication/bookings/export', pagination);
+  if (activity) {
+    url += `&activity=${activity}`;
+  }
+
+  const resp = await api.get(url, { responseType: 'blob' });
+  return resp.data;
+};
+
 const postReleaseBooking = async (bookingId: string): Promise<void> => {
   await api.post(`/deduplication/booking/${bookingId}/release`);
 };

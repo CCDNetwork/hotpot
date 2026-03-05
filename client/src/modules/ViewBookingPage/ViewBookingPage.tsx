@@ -3,8 +3,10 @@ import { PageContainer } from '@/components/PageContainer';
 import {
   useBookings,
   useReleaseBookingMutation,
+  getBookingsExport,
 } from '@/services/deduplication';
 import { usePagination } from '@/helpers/pagination';
+import { downloadFile } from '@/helpers/common';
 import { APP_ROUTE } from '@/helpers/constants';
 
 import { getColumns } from './columns';
@@ -34,6 +36,7 @@ export const ViewBookingPage = () => {
 
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [releaseBookingId, setReleaseBookingId] = useState<string | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
 
   const releaseMutation = useReleaseBookingMutation();
 
@@ -44,6 +47,35 @@ export const ViewBookingPage = () => {
     ),
     activity: filters['activity'] || '',
   });
+
+  const onExportBookingsClick = async () => {
+    setExportLoading(true);
+    try {
+      const exportedData = await getBookingsExport(
+        {
+          page: 1,
+          pageSize: 999,
+          sortBy: pagination.sortBy || 'createdAt',
+          sortDirection: pagination.sortDirection,
+          search: pagination.debouncedSearch,
+          filters: Object.fromEntries(
+            Object.entries(filters).filter(([key]) => key !== 'activity')
+          ),
+        },
+        filters['activity'] || ''
+      );
+      downloadFile(exportedData, 'bookings-export');
+    } catch (error: any) {
+      toast({
+        title: 'Something went wrong!',
+        variant: 'destructive',
+        description:
+          error.response?.data?.errorMessage ||
+          'An error has occurred. Please try again.',
+      });
+    }
+    setExportLoading(false);
+  };
 
   const columns = getColumns(setReleaseBookingId);
 
@@ -72,36 +104,48 @@ export const ViewBookingPage = () => {
       pageTitle="View Bookings"
       pageSubtitle="On this page you can view all your bookings."
       headerNode={
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Button type="button">
-              <DownloadIcon className="mr-2 w-4 h-4" />
-              Download template
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem className="p-0">
-              <a
-                href="/booking-empty-upload-template-1.xlsx"
-                download
-                className="flex gap-1 items-center px-2 py-1"
-              >
-                <FileDownIcon className="w-4 h-4" />
-                Empty template
-              </a>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="p-0">
-              <a
-                href="/booking-template-with-readme-1.xlsx"
-                download
-                className="flex gap-1 items-center px-2 py-1"
-              >
-                <FileTextIcon className="w-4 h-4" />
-                Template with readme
-              </a>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            isLoading={exportLoading}
+            disabled={exportLoading}
+            onClick={onExportBookingsClick}
+          >
+            <FileDownIcon className="mr-2 size-4" />
+            Export Bookings
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Button type="button">
+                <DownloadIcon className="mr-2 w-4 h-4" />
+                Download template
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem className="p-0">
+                <a
+                  href="/booking-empty-upload-template-1.xlsx"
+                  download
+                  className="flex gap-1 items-center px-2 py-1"
+                >
+                  <FileDownIcon className="w-4 h-4" />
+                  Empty template
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="p-0">
+                <a
+                  href="/booking-template-with-readme-1.xlsx"
+                  download
+                  className="flex gap-1 items-center px-2 py-1"
+                >
+                  <FileTextIcon className="w-4 h-4" />
+                  Template with readme
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       }
       breadcrumbs={[
         {
