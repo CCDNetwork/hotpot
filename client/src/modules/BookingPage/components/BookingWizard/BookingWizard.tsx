@@ -3,7 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
+
 import { BookingDataset, useBookingMutation } from '@/services/deduplication';
 
 import { cn } from '@/helpers/utils';
@@ -62,13 +62,7 @@ export const BookingWizard = ({ isOpen, setIsOpen }: Props) => {
       });
       setStep1BookingResponse(resp);
     } catch (error: any) {
-      toast({
-        title: 'An error has occured!',
-        variant: 'destructive',
-        description:
-          error.response?.data?.errorMessage ||
-          'Something went wrong, please try again.',
-      });
+      setBookingWizardError(error);
     }
   };
 
@@ -79,13 +73,7 @@ export const BookingWizard = ({ isOpen, setIsOpen }: Props) => {
       });
       setStep2BookingResponse(resp);
     } catch (error: any) {
-      toast({
-        title: 'An error has occured!',
-        variant: 'destructive',
-        description:
-          error.response?.data?.errorMessage ||
-          'Something went wrong, please try again.',
-      });
+      setBookingWizardError(error);
     }
   };
 
@@ -149,7 +137,10 @@ export const BookingWizard = ({ isOpen, setIsOpen }: Props) => {
         {bookingWizardError ? (
           <BookingError
             onOpenChange={onOpenChange}
-            errorMessage={bookingWizardError.message}
+            errorMessage={
+              bookingWizardError.response?.data?.errorMessage ||
+              bookingWizardError.message
+            }
           />
         ) : (
           <>
