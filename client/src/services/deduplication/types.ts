@@ -53,6 +53,12 @@ export interface BookingResponse {
   updatedAt: Date | null;
 }
 
+export interface BatchReleaseResponse {
+  total: number;
+  released: number;
+  skipped: number;
+}
+
 export interface SameOrgDedupeResponse {
   totalRecords: number;
   identicalRecords: number;

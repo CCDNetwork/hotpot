@@ -3,6 +3,7 @@ import { PageContainer } from '@/components/PageContainer';
 import {
   useBookings,
   useReleaseBookingMutation,
+  useBatchReleaseBookingsMutation,
   getBookingsExport,
 } from '@/services/deduplication';
 import { usePagination } from '@/helpers/pagination';
@@ -10,11 +11,16 @@ import { downloadFile } from '@/helpers/common';
 import { APP_ROUTE } from '@/helpers/constants';
 
 import { getColumns } from './columns';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { DateRangePickerFilter } from '@/components/DataTable/DateRangePickerFilter';
 import { FilterDropdown } from '@/components/DataTable/FilterDropdown';
 import { Button } from '@/components/ui/button';
-import { DownloadIcon, FileDownIcon, FileTextIcon } from 'lucide-react';
+import {
+  DownloadIcon,
+  FileDownIcon,
+  FileTextIcon,
+  UploadIcon,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,8 +43,11 @@ export const ViewBookingPage = () => {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [releaseBookingId, setReleaseBookingId] = useState<string | null>(null);
   const [exportLoading, setExportLoading] = useState(false);
+  const [batchReleaseFile, setBatchReleaseFile] = useState<File | null>(null);
+  const batchReleaseInputRef = useRef<HTMLInputElement>(null);
 
   const releaseMutation = useReleaseBookingMutation();
+  const batchReleaseMutation = useBatchReleaseBookingsMutation();
 
   const { data: bookings, isLoading: queryLoading } = useBookings({
     ...pagination,
@@ -77,6 +86,27 @@ export const ViewBookingPage = () => {
     setExportLoading(false);
   };
 
+  const handleBatchRelease = async () => {
+    if (!batchReleaseFile) return;
+
+    try {
+      const result = await batchReleaseMutation.mutateAsync({
+        file: batchReleaseFile,
+      });
+      setBatchReleaseFile(null);
+      toast({
+        title: 'Batch release complete',
+        description: `${result.released} released, ${result.skipped} skipped out of ${result.total}`,
+      });
+    } catch {
+      toast({
+        title: 'Batch release failed',
+        description: 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const columns = getColumns(setReleaseBookingId);
 
   const handleRelease = async () => {
@@ -105,6 +135,25 @@ export const ViewBookingPage = () => {
       pageSubtitle="On this page you can view all your bookings."
       headerNode={
         <div className="flex gap-2">
+          <input
+            ref={batchReleaseInputRef}
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) setBatchReleaseFile(file);
+              e.target.value = '';
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => batchReleaseInputRef.current?.click()}
+          >
+            <UploadIcon className="mr-2 size-4" />
+            Batch Release
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -190,6 +239,17 @@ export const ViewBookingPage = () => {
             />
           </div>
         }
+      />
+
+      <ConfirmationDialog
+        open={!!batchReleaseFile}
+        title="Batch Release Bookings"
+        body={`Are you sure you want to batch release bookings from "${batchReleaseFile?.name}"? Matching bookings will have their start and end dates cleared. This action cannot be undone.`}
+        confirmButtonLabel="Release"
+        actionButtonVariant="destructive"
+        confirmButtonLoading={batchReleaseMutation.isLoading}
+        onCancel={() => setBatchReleaseFile(null)}
+        onAction={handleBatchRelease}
       />
 
       <ConfirmationDialog

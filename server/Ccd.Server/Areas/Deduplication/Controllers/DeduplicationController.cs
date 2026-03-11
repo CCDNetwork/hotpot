@@ -131,4 +131,14 @@ public class DeduplicationController : ControllerBaseExtended
         await _bookingService.ReleaseBooking(id, this.OrganizationId);
         return NoContent();
     }
+
+    [HttpPost("booking/batch-release")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult<BatchReleaseBookingResponse>> BatchReleaseBookings(
+        [FromForm] BatchReleaseBookingRequest model
+    )
+    {
+        var result = await _bookingService.BatchReleaseBookings(this.OrganizationId, model.File);
+        return Ok(result);
+    }
 }

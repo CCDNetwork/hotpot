@@ -8,6 +8,7 @@ using Ccd.Server.Data;
 using Ccd.Server.Helpers;
 using Ccd.Server.Storage;
 using ClosedXML.Excel;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ccd.Server.Deduplication;
@@ -483,6 +484,78 @@ public class BookingService
         booking.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+    }
+
+    public async Task<BatchReleaseBookingResponse> BatchReleaseBookings(Guid organizationId, IFormFile file)
+    {
+        using var workbook = new XLWorkbook(file.OpenReadStream());
+        var worksheet = workbook.Worksheet(1);
+        var lastRowNumber = worksheet.LastRowUsed().RowNumber();
+
+        var householdIdIndex = GetHeaderIndex("headofhouseholdid", worksheet);
+        var dateStartedIndex = GetHeaderIndex("startdate", worksheet);
+
+        var rows = new List<(string HouseholdId, DateTime StartDate)>();
+
+        for (var i = 2; i <= lastRowNumber; i++)
+        {
+            var householdId = worksheet.Cell(i, householdIdIndex).GetString().Trim();
+            var dateStartedStr = worksheet.Cell(i, dateStartedIndex).GetString().Trim();
+
+            if (string.IsNullOrWhiteSpace(householdId) || string.IsNullOrWhiteSpace(dateStartedStr))
+                continue;
+
+            try
+            {
+                var startDate = ParseExcelDateUtc(dateStartedStr);
+                rows.Add((householdId, startDate));
+            }
+            catch
+            {
+                // Skip rows with unparseable dates
+            }
+        }
+
+        var total = rows.Count;
+
+        var householdIds = rows.Select(r => r.HouseholdId).Distinct().ToHashSet();
+
+        var bookings = await _context.Bookings
+            .Where(b =>
+                b.OrganizationId == organizationId
+                && householdIds.Contains(b.HouseholdId)
+                && b.StartDate != null
+                && b.EndDate != null
+            )
+            .ToListAsync();
+
+        var released = 0;
+
+        foreach (var row in rows)
+        {
+            var booking = bookings.FirstOrDefault(b =>
+                b.HouseholdId == row.HouseholdId
+                && b.StartDate.HasValue
+                && b.StartDate.Value.Date == row.StartDate.Date
+            );
+
+            if (booking == null)
+                continue;
+
+            booking.StartDate = null;
+            booking.EndDate = null;
+            booking.UpdatedAt = DateTime.UtcNow;
+            released++;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return new BatchReleaseBookingResponse
+        {
+            Total = total,
+            Released = released,
+            Skipped = total - released,
+        };
     }
 
     private int GetHeaderIndex(string headerName, IXLWorksheet worksheet)

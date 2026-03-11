@@ -16,6 +16,7 @@ import {
   resToSystemDedupeResponse,
 } from '@/services/deduplication/transformations';
 import {
+  BatchReleaseResponse,
   BookingDataset,
   DeduplicationDataset,
   DeduplicationListing,
@@ -72,6 +73,21 @@ export const getBookingsExport = async (
 
 const postReleaseBooking = async (bookingId: string): Promise<void> => {
   await api.post(`/deduplication/booking/${bookingId}/release`);
+};
+
+const postBatchReleaseBookings = async (data: {
+  file: File;
+}): Promise<BatchReleaseResponse> => {
+  const formData = new FormData();
+  formData.append('file', data.file);
+  const resp = await api.post(
+    '/deduplication/booking/batch-release',
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }
+  );
+  return resp.data;
 };
 
 export const deleteDeduplicationData = async (): Promise<object> => {
@@ -205,6 +221,16 @@ export const useReleaseBookingMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation(postReleaseBooking, {
+    onSuccess: () => {
+      queryClient.invalidateQueries([QueryKeys.Bookings]);
+    },
+  });
+};
+
+export const useBatchReleaseBookingsMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation(postBatchReleaseBookings, {
     onSuccess: () => {
       queryClient.invalidateQueries([QueryKeys.Bookings]);
     },
