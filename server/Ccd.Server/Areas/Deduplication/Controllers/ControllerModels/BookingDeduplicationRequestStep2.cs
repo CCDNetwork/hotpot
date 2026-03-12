@@ -7,4 +7,5 @@ namespace Ccd.Server.Deduplication;
 public class BookingDeduplicationRequestStep2
 {
     [Required] public Guid FileId { get; set; }
+    public bool IsPrebooking { get; set; }
 }

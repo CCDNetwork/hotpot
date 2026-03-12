@@ -1,0 +1,5 @@
+export enum WIZARD_STEP {
+  BOOKING_STEP_1 = 1,
+  BOOKING_STEP_2 = 2,
+  BOOKING_STEP_3 = 3,
+}

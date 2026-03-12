@@ -149,6 +149,7 @@ const postBookingStep1 = async (data: {
 
 const postBookingStep2 = async (data: {
   fileId: string;
+  isPrebooking?: boolean;
 }): Promise<BookingDataset> => {
   const resp = await api.post('/deduplication/booking/step-2', data);
 
@@ -247,6 +248,21 @@ export const useBookingMutation = () => {
     bookingStep2: useMutation(postBookingStep2, {
       onError: (error) => setBookingWizardError(error),
     }),
+  };
+};
+
+export const usePrebookingMutation = (setError: (error: any) => void) => {
+  return {
+    bookingStep1: useMutation(postBookingStep1, {
+      onError: (error) => setError(error),
+    }),
+    bookingStep2: useMutation(
+      (data: { fileId: string }) =>
+        postBookingStep2({ ...data, isPrebooking: true }),
+      {
+        onError: (error) => setError(error),
+      }
+    ),
   };
 };
 

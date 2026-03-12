@@ -110,7 +110,7 @@ public class BookingService
         return (isExcelValid, fileApi.Url, savedFile.Id);
     }
 
-    public async Task<(bool, string, Guid)> BookingDeduplicationStep2(Guid organizationId, Guid userId, BookingDeduplicationRequestStep2 model)
+    public async Task<(bool, string, Guid)> BookingDeduplicationStep2(Guid organizationId, Guid userId, BookingDeduplicationRequestStep2 model, bool isPrebooking = false)
     {
         var file = await _storageService.GetFileById(model.FileId) ?? throw new BadRequestException("File not found");
         using var workbook = new XLWorkbook(_storageService.GetFileStream(file));
@@ -132,7 +132,10 @@ public class BookingService
         // STEP 2 — Validate duplicates from DB
         ValidateDatabaseDuplicates(worksheet, lastRowNumber, lastColumnIndex, allValidNationalIds, ref isExcelValid);
 
-        await ProcessValidBookings(organizationId, userId, file.Id, worksheet, lastRowNumber, lastColumnIndex, allValidNationalIds);
+        if (!isPrebooking)
+        {
+            await ProcessValidBookings(organizationId, userId, file.Id, worksheet, lastRowNumber, lastColumnIndex, allValidNationalIds);
+        }
 
         using var memoryStream = new MemoryStream();
         workbook.SaveAs(memoryStream);

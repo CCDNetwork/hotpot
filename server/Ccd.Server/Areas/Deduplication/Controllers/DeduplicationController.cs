@@ -88,7 +88,7 @@ public class DeduplicationController : ControllerBaseExtended
     [PermissionLevel(UserRole.User)]
     public async Task<ActionResult> BookingDeduplicateStep2([FromBody] BookingDeduplicationRequestStep2 model)
     {
-        var (isValid, savedFileUrl, savedFileId) = await _bookingService.BookingDeduplicationStep2(this.OrganizationId, this.UserId, model);
+        var (isValid, savedFileUrl, savedFileId) = await _bookingService.BookingDeduplicationStep2(this.OrganizationId, this.UserId, model, model.IsPrebooking);
         return Ok(new { isValid, fileUrl = savedFileUrl, fileId = savedFileId });
     }
 
