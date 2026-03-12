@@ -192,6 +192,16 @@ export const ViewBookingPage = () => {
                   Template with readme
                 </a>
               </DropdownMenuItem>
+              <DropdownMenuItem className="p-0">
+                <a
+                  href="/batch-release-empty-upload-template.xlsx"
+                  download
+                  className="flex gap-1 items-center px-2 py-1"
+                >
+                  <FileTextIcon className="w-4 h-4" />
+                  Release template
+                </a>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
