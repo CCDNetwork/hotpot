@@ -89,18 +89,18 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         // ROUNDS
         // ----------------------------
-        if (!ExcelFieldValidator.IsRoundsValid(record.Rounds, out var _))
+        if (!ExcelFieldValidator.IsRoundsValid(record.Rounds, out var roundsValue))
         {
-            errors.Add("Invalid Rounds");
+            errors.Add("Rounds must be 1 or 3");
             MarkInvalid("rounds");
         }
 
         // ----------------------------
         // RANGE CHECK (only if both parsed)
         // ----------------------------
-        if (errors.Count == 0 && !ExcelFieldValidator.IsDateRangeValid(start, end))
+        if (errors.Count == 0 && !ExcelFieldValidator.IsDateRangeValid(start, end, roundsValue))
         {
-            errors.Add("End Date must be >= Start Date");
+            errors.Add($"Date range must not exceed {roundsValue} month(s)");
             MarkInvalid("startdate");
             MarkInvalid("enddate");
         }
