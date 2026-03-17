@@ -49,12 +49,9 @@ export const InternalFileStep: React.FC<Props> = ({
     <div className="flex flex-col items-center justify-center gap-2">
       <AlertTriangle className="w-16 h-16 text-yellow-500" />
       <p className="text-sm">
-        The platform has found duplicate records within this file. Please make
-        sure there are no duplicate records and start the wizard again.
-      </p>
-      <p className="text-sm">
-        To assist you, we created a version of your file with a
-        &quot;Duplicate&quot; column. You can download it below.
+        Some records in your file contain formatting issues or incorrect values.
+        Please download the file, review the highlighted errors, make the
+        necessary corrections, and upload the updated file again.
       </p>
 
       <div className="flex flex-col gap-4">
