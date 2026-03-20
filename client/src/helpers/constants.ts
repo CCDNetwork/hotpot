@@ -50,14 +50,14 @@ export const getNavigationItems = (cmsData?: HomepageData) => [
     userPermissions: [UserPermission.Booking],
     routes: [
       {
-        name: 'Make Bookings',
-        to: APP_ROUTE.Booking,
+        name: 'Pre-booking Check',
+        to: APP_ROUTE.Prebooking,
         userPermissions: [UserPermission.Booking],
         icon: BookCopyIcon,
       },
       {
-        name: 'Prebooking',
-        to: APP_ROUTE.Prebooking,
+        name: 'Make Bookings',
+        to: APP_ROUTE.Booking,
         userPermissions: [UserPermission.Booking],
         icon: BookCopyIcon,
       },
