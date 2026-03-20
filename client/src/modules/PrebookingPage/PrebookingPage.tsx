@@ -27,8 +27,8 @@ export const PrebookingPage = () => {
 
   return (
     <PageContainer
-      pageTitle="Prebooking Cases"
-      pageSubtitle="On this page you can run a CWG prebooking wizard. To run CWG prebooking, click on the Prebooking Wizard button below."
+      pageTitle="Pre-booking Check"
+      pageSubtitle="On this page you can make a Prebooking check by clicking on the Prebooking Wizard button below."
       headerNode={
         <DropdownMenu>
           <DropdownMenuTrigger>
@@ -64,14 +64,14 @@ export const PrebookingPage = () => {
       breadcrumbs={[
         {
           href: `${APP_ROUTE.Prebooking}`,
-          name: 'Prebooking Cases',
+          name: 'Pre-booking Check',
         },
       ]}
     >
       <div className="flex justify-center items-center h-[calc(100vh-168px)]">
         <Button type="button" onClick={handlePrebookingWizardOpen}>
           <Wand2Icon className="mr-2 w-4 h-4" />
-          Prebooking Wizard
+          Run Prebooking Wizard
         </Button>
 
         <PrebookingWizard
