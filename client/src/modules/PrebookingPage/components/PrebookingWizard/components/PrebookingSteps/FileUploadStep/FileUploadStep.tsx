@@ -42,13 +42,13 @@ export const FileUploadStep: React.FC<Props> = ({
               Welcome to the CWG pre-booking wizard.
             </h1>
             <p className="text-sm">
-              Let&apos;s cross-checking if the households on your list have
-              already been booked. To start, upload your data in an Excel File.
+              We&apos;re going to cross-check if any of the households on your
+              list have already been booked by another organisation.
             </p>
             <p className="text-sm text-muted-foreground">
-              Your spreadsheet should be in the format agreed by the CWG, a
-              single page with a maximum of 4000 rows. If you do not have the
-              template, you can download a copy{' '}
+              Upload your Excel spreadsheet in the format agreed by the CWG.
+              If you don&apos;t know what that format is, you can download a
+              template{' '}
               <a
                 href="/booking-empty-upload-template-1.xlsx"
                 download
