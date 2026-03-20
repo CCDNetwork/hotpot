@@ -37,12 +37,9 @@ export const InternalFileStep: React.FC<Props> = ({
     <div className="flex flex-col items-center justify-center gap-4 text-sm">
       <CheckCircleIcon className="w-16 h-16 text-green-600" />
       <p>
-        Your file and its contents are in the right format. Now let&apos;s check
-        if your households are available for booking.
-      </p>
-      <p>
-        We will compare your file to the registry and check if another
-        organisation has already booked them.
+        Your file and its contents are in the right format. Now we&apos;ll check
+        your file against the registry, and let you know if any of your
+        households have been booked by another organisation.
       </p>
     </div>
   ) : (

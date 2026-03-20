@@ -40,8 +40,8 @@ export const RegistryCheckStep: React.FC<Props> = ({
     <div className="flex flex-col items-center justify-center gap-4 text-sm">
       <CheckCircleIcon className="w-16 h-16 text-green-600" />
       <p>
-        All of your households are available for booking now. If you wish to
-        book them, please use the Booking Wizard.
+        All of your households are available for booking. If you want to book
+        them, please go to the Make Booking page.
       </p>
     </div>
   ) : (
@@ -49,23 +49,19 @@ export const RegistryCheckStep: React.FC<Props> = ({
       <AlertTriangle className="w-16 h-16 text-yellow-500" />
       <p className="text-sm self-start">
         The platform has found that some or all of the households in your file
-        have been booked by another organisation.
+        have been booked by another organisation. You can download a copy of
+        your list where we have added a column which shows which households
+        have already been booked.
       </p>
       <p className="text-sm self-start">
-        You should review your list, remove those households, and apply your
-        selection criteria to create a final list.
+        You can revise your own list, remove those households, and apply your
+        selection criteria to create a final list. Once you have your final
+        list, you can return to the platform and run the Booking Wizard to
+        book them. Download your checked list below.
       </p>
       <p className="text-sm self-start">
-        Once you have your final list, you can return to the platform and run
-        the Booking Wizard to book them.
-      </p>
-      <p className="text-sm self-start">
-        We have created a version of your list with a column which shows the
-        households which have already been booked.
-      </p>
-      <p className="text-sm self-start">
-        You can <strong>download</strong> the list below. As soon as you
-        download the file, this wizard will automatically close.
+        As soon as you download the file, this wizard will automatically
+        close.
       </p>
 
       <div className="flex flex-col gap-4">
