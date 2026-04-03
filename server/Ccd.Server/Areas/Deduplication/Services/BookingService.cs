@@ -56,6 +56,8 @@ public class BookingService
 
     private async Task resolveDependencies(BookingResponse listing)
     {
+        listing.HouseholdId = IdEncryptor.Decrypt(listing.HouseholdId);
+        listing.SpouseId = IdEncryptor.Decrypt(listing.SpouseId);
         await Task.CompletedTask;
     }
 
@@ -292,10 +294,15 @@ public class BookingService
         var spouseIndex = GetHeaderIndex("spouseid", worksheet);
         var startDateIndex = GetHeaderIndex("startdate", worksheet);
 
+        // Encrypt Excel IDs for DB comparison
+        var encryptedExcelIds = allExcelIds
+            .Select(IdEncryptor.Encrypt)
+            .ToHashSet();
+
         // Get all overlapping DB records for the Excel IDs (skip released bookings)
         var existingBookings = _context.Bookings
-            .Where(b => (allExcelIds.Contains(b.HouseholdId) ||
-                        allExcelIds.Contains(b.SpouseId)) &&
+            .Where(b => (encryptedExcelIds.Contains(b.HouseholdId) ||
+                        encryptedExcelIds.Contains(b.SpouseId)) &&
                         b.StartDate != null && b.EndDate != null)
             .Include(b => b.Organization)
             .ToList();
@@ -314,11 +321,12 @@ public class BookingService
             string matchedId = null;
             Booking dbRecord = null;
 
-            // Check HoH ID
+            // Check HoH ID (encrypt for comparison against encrypted DB values)
             if (!string.IsNullOrWhiteSpace(hohId))
             {
+                var encryptedHohId = IdEncryptor.Encrypt(hohId);
                 dbRecord = existingBookings.FirstOrDefault(b =>
-                    (b.HouseholdId == hohId || b.SpouseId == hohId) &&
+                    (b.HouseholdId == encryptedHohId || b.SpouseId == encryptedHohId) &&
                     b.EndDate >= startDate
                 );
 
@@ -329,8 +337,9 @@ public class BookingService
             // Check Spouse ID (only if HoH didn't match)
             if (dbRecord == null && !string.IsNullOrWhiteSpace(spouseId))
             {
+                var encryptedSpouseId = IdEncryptor.Encrypt(spouseId);
                 dbRecord = existingBookings.FirstOrDefault(b =>
-                    (b.HouseholdId == spouseId || b.SpouseId == spouseId) &&
+                    (b.HouseholdId == encryptedSpouseId || b.SpouseId == encryptedSpouseId) &&
                     b.EndDate >= startDate
                 );
 
@@ -370,20 +379,25 @@ public class BookingService
         var roundsIndex = GetHeaderIndex("rounds", worksheet);
         var modalityIndex = GetHeaderIndex("modality", worksheet);
 
+        // Encrypt Excel IDs for DB comparison
+        var encryptedExcelIds = allValidExcelIds
+            .Select(IdEncryptor.Encrypt)
+            .ToHashSet();
+
         // NEW DB fetch: get all bookings that match any Excel ID in either column (skip released bookings)
         var existingBookings = _context.Bookings
-            .Where(b => (allValidExcelIds.Contains(b.HouseholdId) ||
-                        allValidExcelIds.Contains(b.SpouseId)) &&
+            .Where(b => (encryptedExcelIds.Contains(b.HouseholdId) ||
+                        encryptedExcelIds.Contains(b.SpouseId)) &&
                         b.StartDate != null && b.EndDate != null)
             .ToList();
 
         var bookingLogs = new List<BookingLog>();
 
-        // For fast lookup
-        Booking FindExisting(string id)
+        // For fast lookup (compare encrypted values)
+        Booking FindExisting(string encryptedId)
         {
             return existingBookings.FirstOrDefault(b =>
-                b.HouseholdId == id || b.SpouseId == id
+                b.HouseholdId == encryptedId || b.SpouseId == encryptedId
             );
         }
 
@@ -415,11 +429,15 @@ public class BookingService
             var currency = worksheet.Cell(row, currencyIndex).GetString().Trim();
             var modality = worksheet.Cell(row, modalityIndex).GetString().Trim();
 
+            // Encrypt IDs before storing
+            var encryptedHohId = IdEncryptor.Encrypt(hohId);
+            var encryptedSpouseId = IdEncryptor.Encrypt(spouseId);
+
             var bookingLog = new BookingLog
             {
                 Id = IdProvider.NewId(),
-                HouseholdId = hohId,
-                SpouseId = spouseId,
+                HouseholdId = encryptedHohId,
+                SpouseId = encryptedSpouseId,
                 StartDate = startDate,
                 EndDate = endDate,
                 Amount = amount,
@@ -438,20 +456,20 @@ public class BookingService
             if (!isSuccess)
                 continue;
 
-            // Find existing using new unified ID-space logic
+            // Find existing using encrypted IDs
             Booking existing = null;
 
             if (!string.IsNullOrWhiteSpace(hohId))
-                existing = FindExisting(hohId);
+                existing = FindExisting(encryptedHohId);
 
             if (existing == null && !string.IsNullOrWhiteSpace(spouseId))
-                existing = FindExisting(spouseId);
+                existing = FindExisting(encryptedSpouseId);
 
             var booking = new Booking
             {
                 Id = IdProvider.NewId(),
-                HouseholdId = hohId,
-                SpouseId = spouseId,
+                HouseholdId = encryptedHohId,
+                SpouseId = encryptedSpouseId,
                 StartDate = startDate,
                 EndDate = endDate,
                 Amount = amount,
@@ -521,12 +539,16 @@ public class BookingService
 
         var total = rows.Count;
 
-        var householdIds = rows.Select(r => r.HouseholdId).Distinct().ToHashSet();
+        // Encrypt household IDs for DB comparison
+        var encryptedHouseholdIds = rows
+            .Select(r => IdEncryptor.Encrypt(r.HouseholdId))
+            .Distinct()
+            .ToHashSet();
 
         var bookings = await _context.Bookings
             .Where(b =>
                 b.OrganizationId == organizationId
-                && householdIds.Contains(b.HouseholdId)
+                && encryptedHouseholdIds.Contains(b.HouseholdId)
                 && b.StartDate != null
                 && b.EndDate != null
             )
@@ -536,8 +558,9 @@ public class BookingService
 
         foreach (var row in rows)
         {
+            var encryptedHouseholdId = IdEncryptor.Encrypt(row.HouseholdId);
             var booking = bookings.FirstOrDefault(b =>
-                b.HouseholdId == row.HouseholdId
+                b.HouseholdId == encryptedHouseholdId
                 && b.StartDate.HasValue
                 && b.StartDate.Value.Date == row.StartDate.Date
             );

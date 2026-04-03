@@ -73,6 +73,10 @@ public class StaticConfiguration
         Environment.GetEnvironmentVariable("SUPERADMIN_PASSWORD")
         ?? _configuration.GetValue<string>("SuperadminPassword");
 
+    public static string EncryptionKey =>
+        Environment.GetEnvironmentVariable("ENCRYPTION_KEY")
+        ?? _configuration.GetValue<string>("EncryptionKey");
+
     public static void Initialize(IConfiguration configuration)
     {
         _configuration = configuration;
