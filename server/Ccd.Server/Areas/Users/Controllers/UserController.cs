@@ -181,12 +181,4 @@ public class UserController : ControllerBaseExtended
 
         return await GetCurrentUser();
     }
-
-    [HttpGet("email")]
-    public async Task<ActionResult<UserEmailResponse>> CheckUserEmail([FromQuery] string email)
-    {
-        var user = await _userService.GetUserByEmail(email);
-
-        return Ok(new UserEmailResponse { Exists = user != null });
-    }
 }
