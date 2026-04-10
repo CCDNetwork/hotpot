@@ -54,7 +54,7 @@ public class SettingsTests
             HttpMethod.Put,
             headers,
             updateData,
-            HttpStatusCode.Unauthorized
+            HttpStatusCode.Forbidden
         );
 
         // log in as superadmin user

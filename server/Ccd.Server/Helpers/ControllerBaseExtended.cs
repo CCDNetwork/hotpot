@@ -71,7 +71,8 @@ public class ControllerBaseExtended : ControllerBase
 
     private bool getIsSuperAdmin()
     {
-        return (bool)HttpContext.Items["IsSuperAdmin"];
+        var userId = (Guid?)HttpContext.Items["UserId"];
+        return userId.HasValue && userId.Value == Users.User.SYSTEM_USER.Id;
     }
 
     private Guid getCurrentMemberId()

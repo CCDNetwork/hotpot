@@ -14,10 +14,12 @@ namespace Ccd.Server.Helpers;
 public class PermissionLevelAttribute : ActionFilterAttribute
 {
     private readonly string _requiredLevel;
+    private readonly bool _allowSuperAdmin;
 
-    public PermissionLevelAttribute(string requiredLevel)
+    public PermissionLevelAttribute(string requiredLevel, bool allowSuperAdmin = false)
     {
         _requiredLevel = requiredLevel;
+        _allowSuperAdmin = allowSuperAdmin;
     }
 
     private bool isAuthorizedRole(string userRole, string requiredRole)
@@ -61,13 +63,21 @@ public class PermissionLevelAttribute : ActionFilterAttribute
 
         if (!userId.HasValue) throw new UnauthorizedException("Unauthorized. Please provide valid JWT token.");
 
+        if (userId == User.SYSTEM_USER.Id)
+        {
+            if (_allowSuperAdmin)
+            {
+                await base.OnActionExecutionAsync(context, next);
+                return;
+            }
+            throw new ForbiddenException("Superadmin access is not allowed on this endpoint.");
+        }
+
         var role = getOrganizationRole(organizationRoles, organizationId);
-        if (userId.HasValue)
-            // no role check is done on superadmin
-            if (!isAuthorizedRole(role, _requiredLevel) && userId != User.SYSTEM_USER.Id)
-                throw new ForbiddenException(
-                    $"Unauthorized. Authorization of '{_requiredLevel}' level is required. You have '{role}' level."
-                );
+        if (!isAuthorizedRole(role, _requiredLevel))
+            throw new ForbiddenException(
+                $"Unauthorized. Authorization of '{_requiredLevel}' level is required. You have '{role}' level."
+            );
 
         await base.OnActionExecutionAsync(context, next);
     }

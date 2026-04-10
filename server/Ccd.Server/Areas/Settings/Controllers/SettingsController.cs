@@ -21,7 +21,7 @@ public class SettingsController : ControllerBaseExtended
     }
 
     [HttpGet]
-    [PermissionLevel(UserRole.User)]
+    [PermissionLevel(UserRole.User, allowSuperAdmin: true)]
     public async Task<ActionResult<SettingsResponse>> GetSettings()
     {
         var settings = await _settingsService.GetSettingsApi() ?? throw new NotFoundException();
@@ -29,16 +29,11 @@ public class SettingsController : ControllerBaseExtended
     }
 
     [HttpPut]
+    [PermissionLevel(UserRole.SuperAdmin, allowSuperAdmin: true)]
     public async Task<ActionResult<SettingsResponse>> Update(
         [FromBody] SettingsUpdateRequest model
     )
     {
-        // check that user is superadmin
-        if (this.UserId != Ccd.Server.Users.User.SYSTEM_USER.Id)
-        {
-            throw new UnauthorizedException("Only superadmin can change settings");
-        }
-        
         await _settingsService.UpdateSettingsApi(model);
 
         var result = await _settingsService.GetSettingsApi();
