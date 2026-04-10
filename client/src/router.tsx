@@ -54,7 +54,6 @@ import {
 } from './modules/BeneficiaryList';
 import { DashboardPage } from './modules/DashboardPage';
 import { SettingsPage } from './modules/SettingsPage';
-import { BeneficiaryDataViewPage } from './modules/Public/BeneficiaryDataView';
 import { RequestNewPasswordPage } from './modules/Public/RequestNewPasswordPage';
 import { SetNewPasswordPage } from './modules/Public/SetNewPasswordPage';
 import { BookingPage, BookingProvider } from './modules/BookingPage';
@@ -252,10 +251,6 @@ export const router = createBrowserRouter(
         element={<RequestNewPasswordPage />}
       />
       <Route path={APP_ROUTE.SetNewPassword} element={<SetNewPasswordPage />} />
-      <Route
-        path={APP_ROUTE.BeneficiaryDataView}
-        element={<BeneficiaryDataViewPage />}
-      />
       <Route
         path={APP_ROUTE.PermissionDenied}
         element={<PermissionDeniedPage />}

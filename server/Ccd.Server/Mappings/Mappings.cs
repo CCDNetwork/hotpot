@@ -4,7 +4,6 @@ using AutoMapper;
 using Ccd.Server.AdministrativeRegions;
 using Ccd.Server.Beneficiaries;
 using Ccd.Server.BeneficiaryAttributes;
-using Ccd.Server.BeneficiaryData;
 using Ccd.Server.Deduplication;
 using Ccd.Server.Handbooks;
 using Ccd.Server.Organizations;
@@ -81,7 +80,6 @@ public class Mappings : Profile
 
         // Beneficiary mappings
         CreateMap<Beneficary, BeneficaryResponse>();
-        CreateMap<ReferralResponse, BeneficaryDataResponse>();
 
         // Settings mappings
         CreateMap<SettingsUpdateRequest, Settings.Settings>();
