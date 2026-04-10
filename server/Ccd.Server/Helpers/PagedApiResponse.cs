@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Ccd.Server.Data;
 using Dapper;
@@ -42,12 +43,21 @@ public class PagedApiResponse<T>
 {
     private const int DEFAULT_PAGE_SIZE = 20;
 
+    private static readonly Regex ValidIdentifier =
+        new(@"^[a-zA-Z_][a-zA-Z0-9_]*$", RegexOptions.Compiled);
+
     public List<T> Data { get; set; }
     public PagedApiResponseMeta Meta { get; set; }
 
-    private static string generateSearchSql<TT>(RequestParameters parameters)
+    private static string SanitizeSortDirection(string direction) =>
+        direction == "desc" ? "desc" : "asc";
+
+    private static (string sql, DynamicParameters parameters) generateSearchSql<TT>(
+        RequestParameters parameters
+    )
     {
         var sqlSearch = "";
+        var dynParams = new DynamicParameters();
 
         if (!string.IsNullOrEmpty(parameters?.Search))
         {
@@ -57,25 +67,30 @@ public class PagedApiResponse<T>
                 select pi.Name
             ).ToList();
 
-            var searchValue = parameters.Search.Replace("'", "");
+            dynParams.Add("searchVal", parameters.Search);
 
             sqlSearch = " (";
 
-            sqlSearch += $"id::text ILIKE '%{searchValue}%'";
+            sqlSearch += "id::text ILIKE '%' || @searchVal || '%'";
 
             for (var i = 0; i < searchColumnList.Count; i++)
                 sqlSearch +=
-                    " OR " + searchColumnList[i].ToSnakeCase() + $" ILIKE '%{searchValue}%'";
+                    " OR "
+                    + searchColumnList[i].ToSnakeCase()
+                    + " ILIKE '%' || @searchVal || '%'";
 
             sqlSearch += ") ";
         }
 
-        return sqlSearch;
+        return (sqlSearch, dynParams);
     }
 
-    private static string generateFilterSql<TT>(RequestParameters parameters)
+    private static (string sql, DynamicParameters parameters) generateFilterSql<TT>(
+        RequestParameters parameters
+    )
     {
         var sqlFilter = "";
+        var dynParams = new DynamicParameters();
 
         if (parameters?.FilterList.Count > 0)
         {
@@ -93,45 +108,64 @@ public class PagedApiResponse<T>
 
                 foreach (var key in keys)
                 {
-                    var column = key.Replace("'", "")
-                        .Replace("[gt]", "")
+                    var columnRaw = key.Replace("[gt]", "")
                         .Replace("[lt]", "")
                         .Replace("[not]", "")
                         .Replace("[like]", "")
                         .Replace("[in]", "")
                         .Replace("[or]", "")
-                        .Replace("[contains]", "")
-                        .ToSnakeCase();
+                        .Replace("[contains]", "");
 
-                    var isCustomField = key.Contains('.');
+                    var isCustomField = columnRaw.Contains('.');
 
-                    if (!filterColumnList.Contains(column) && !isCustomField)
-                        throw new BadRequestException($"Invalid filter: {column}");
+                    string column;
 
-                    var filterType = typeof(TT)
-                        .GetProperties()
-                        .First(e => e.Name.ToSnakeCase() == column)
-                        ?.PropertyType;
+                    if (isCustomField)
+                    {
+                        var basePart = columnRaw.Split('.')[0];
+                        var jsonKey = columnRaw.Split('.')[1];
 
-                    var quote = "'";
+                        if (
+                            !ValidIdentifier.IsMatch(basePart)
+                            || !ValidIdentifier.IsMatch(jsonKey)
+                        )
+                            throw new BadRequestException(
+                                $"Invalid custom field filter: {key}"
+                            );
+
+                        var baseColumn = basePart.ToSnakeCase();
+                        if (!filterColumnList.Contains(baseColumn))
+                            throw new BadRequestException(
+                                $"Invalid filter column: {basePart}"
+                            );
+
+                        column = baseColumn + "->>'" + jsonKey + "'";
+                    }
+                    else
+                    {
+                        column = columnRaw.ToSnakeCase();
+
+                        if (!filterColumnList.Contains(column))
+                            throw new BadRequestException($"Invalid filter: {column}");
+                    }
+
+                    var filterType = isCustomField
+                        ? typeof(string)
+                        : typeof(TT)
+                            .GetProperties()
+                            .First(e => e.Name.ToSnakeCase() == column)
+                            ?.PropertyType;
+
                     var cast = "::varchar";
                     var isNumeric = false;
 
                     if (filterType == typeof(decimal) || filterType == typeof(int))
                     {
-                        quote = "";
                         cast = "";
                         isNumeric = true;
                     }
 
-                    var value = parameters.FilterList[key].Replace("'", "");
-
-                    if (filterType == typeof(List<string>))
-                    {
-                        value = "'[\"" + value.Replace("'", "") + "\"]'";
-                        cast = "";
-                        quote = "";
-                    }
+                    var value = parameters.FilterList[key];
 
                     if (key.Contains("[or]"))
                         sqlCondition = "OR";
@@ -141,41 +175,6 @@ public class PagedApiResponse<T>
                     if (i > 0)
                         sqlFilter += $" {sqlCondition} ";
 
-                    var sqlOperator = "=";
-                    var likeOperator = "";
-
-                    if (key.Contains("[lt]"))
-                        sqlOperator = "<";
-                    if (key.Contains("[gt]"))
-                        sqlOperator = ">=";
-                    if (key.Contains("[not]"))
-                        sqlOperator = "<>";
-                    if (key.Contains("[contains]")) sqlOperator = " @> ";
-                    if (key.Contains("[like]"))
-                    {
-                        if (isNumeric)
-                            throw new BadRequestException(
-                                $"Invalid [like] filter for numeric column: {column}"
-                            );
-
-                        sqlOperator = " ilike ";
-                        likeOperator = "%";
-                    }
-
-                    if (key.Contains("[in]")) sqlOperator = " in ";
-
-                    if (isCustomField)
-                    {
-                        sqlOperator = " = ";
-                        cast = "";
-                        column =
-                            key.Split('.')[0].Replace("'", "")
-                            + "->>"
-                            + "'"
-                            + key.Split('.')[1].Replace("'", "")
-                            + "'";
-                    }
-
                     if (value == "$null")
                     {
                         sqlFilter += column + " is null";
@@ -184,22 +183,67 @@ public class PagedApiResponse<T>
                     {
                         sqlFilter += column + " is not null";
                     }
+                    else if (filterType == typeof(List<string>))
+                    {
+                        var paramName = $"filterVal{i}";
+                        dynParams.Add(paramName, "[\"" + value + "\"]");
+                        sqlFilter += column + $" @> @{paramName}::jsonb";
+                    }
+                    else if (key.Contains("[in]"))
+                    {
+                        var inValues = value.Split("|");
+                        var paramNames = new List<string>();
+                        for (var j = 0; j < inValues.Length; j++)
+                        {
+                            var paramName = $"filterIn{i}_{j}";
+                            if (isNumeric)
+                                dynParams.Add(paramName, decimal.Parse(inValues[j]));
+                            else
+                                dynParams.Add(paramName, inValues[j]);
+                            paramNames.Add($"@{paramName}");
+                        }
+
+                        sqlFilter +=
+                            column + $"{cast} in ({string.Join(",", paramNames)})";
+                    }
+                    else if (key.Contains("[like]"))
+                    {
+                        if (isNumeric)
+                            throw new BadRequestException(
+                                $"Invalid [like] filter for numeric column: {column}"
+                            );
+
+                        var paramName = $"filterVal{i}";
+                        dynParams.Add(paramName, $"%{value}%");
+                        sqlFilter += column + $"{cast} ilike @{paramName}";
+                    }
+                    else if (key.Contains("[contains]"))
+                    {
+                        var paramName = $"filterVal{i}";
+                        dynParams.Add(paramName, value);
+                        sqlFilter += column + $" @> @{paramName}";
+                    }
                     else
                     {
-                        if (key.Contains("[in]"))
-                        {
-                            var stringValues = string.Join(
-                                ",",
-                                value.Split("|").Select(x => $"{quote}{x}{quote}")
-                            );
-                            sqlFilter += column + $"{cast} in ({stringValues})";
-                        }
+                        var sqlOperator = "=";
+                        if (key.Contains("[lt]"))
+                            sqlOperator = "<";
+                        if (key.Contains("[gt]"))
+                            sqlOperator = ">=";
+                        if (key.Contains("[not]"))
+                            sqlOperator = "<>";
+
+                        var paramName = $"filterVal{i}";
+                        if (isNumeric)
+                            dynParams.Add(paramName, decimal.Parse(value));
                         else
-                        {
+                            dynParams.Add(paramName, value);
+
+                        if (isCustomField)
+                            sqlFilter += column + $" {sqlOperator} @{paramName}";
+                        else
                             sqlFilter +=
-                                column
-                                + $"{cast} {sqlOperator} {quote}{likeOperator}{value}{likeOperator}{quote}";
-                        }
+                                column + $"{cast} {sqlOperator} @{paramName}";
                     }
 
                     i++;
@@ -209,7 +253,7 @@ public class PagedApiResponse<T>
             }
         }
 
-        return sqlFilter;
+        return (sqlFilter, dynParams);
     }
 
     public static async Task<PagedApiResponse<T>> GetFromSql(
@@ -230,20 +274,36 @@ public class PagedApiResponse<T>
         var limit = pageSize;
 
         var sqlOrder = "";
-        var sortDirection = parameters?.SortDirection == "desc" ? "desc" : "asc";
+        var sortDirection = SanitizeSortDirection(parameters?.SortDirection);
 
         if (!string.IsNullOrEmpty(parameters?.SortBy))
         {
+            var sortByInput = parameters.SortBy;
+            var needsQuoting =
+                sortByInput.StartsWith('"') && sortByInput.EndsWith('"');
+            var sortByClean = needsQuoting ? sortByInput.Trim('"') : sortByInput;
+
             var sortProperty = typeof(T)
                 .GetProperties()
-                .FirstOrDefault(e => e.Name.ToSnakeCase() == parameters.SortBy);
+                .FirstOrDefault(e =>
+                    e.Name.ToSnakeCase() == sortByClean.ToSnakeCase()
+                );
 
-            if (sortProperty?.IsDefined(typeof(SortAsNumberAttribute), false) == true)
+            if (sortProperty == null)
+                throw new BadRequestException(
+                    $"Invalid sort column: {parameters.SortBy}"
+                );
+
+            var sortColumn = sortProperty.Name.ToSnakeCase();
+            var sortColumnSql = needsQuoting ? $"\"{sortColumn}\"" : sortColumn;
+
+            if (
+                sortProperty.IsDefined(typeof(SortAsNumberAttribute), false)
+            )
                 sqlOrder =
-                    $@" ORDER BY right('00000000000000000000' || {parameters.SortBy.Replace("'", "''").ToSnakeCase()}, 20) {sortDirection}";
+                    $@" ORDER BY right('00000000000000000000' || {sortColumnSql}, 20) {sortDirection}";
             else
-                sqlOrder =
-                    $@" ORDER BY {parameters.SortBy.Replace("'", "''").ToSnakeCase()} {sortDirection}";
+                sqlOrder = $@" ORDER BY {sortColumnSql} {sortDirection}";
         }
         else
         {
@@ -253,8 +313,8 @@ public class PagedApiResponse<T>
         var sqlPaging = $@" OFFSET {offset.ToString()} LIMIT {limit.ToString()}";
 
         var sqlWhere = "";
-        var sqlSearch = generateSearchSql<T>(parameters);
-        var sqlFilter = generateFilterSql<T>(parameters);
+        var (sqlSearch, searchParams) = generateSearchSql<T>(parameters);
+        var (sqlFilter, filterParams) = generateFilterSql<T>(parameters);
 
         if (!string.IsNullOrEmpty(sqlSearch) || !string.IsNullOrEmpty(sqlFilter))
         {
@@ -271,12 +331,16 @@ public class PagedApiResponse<T>
             $@"SELECT * FROM ( {sql} ) as result " + sqlWhere + sqlOrder + sqlPaging;
         var sqlCount = $@"SELECT COUNT(*) as row_count FROM ( {sql} ) as result {sqlWhere}";
 
+        var allParams = new DynamicParameters(sqlParams);
+        allParams.AddDynamicParams(searchParams);
+        allParams.AddDynamicParams(filterParams);
+
         var items = await context.Database
             .GetDbConnection()
-            .QueryAsync<T>(sqlWithConditions, sqlParams);
+            .QueryAsync<T>(sqlWithConditions, allParams);
         var totalRows = await context.Database
             .GetDbConnection()
-            .QuerySingleAsync<int>(sqlCount, sqlParams);
+            .QuerySingleAsync<int>(sqlCount, allParams);
 
         var data = items.ToList();
 

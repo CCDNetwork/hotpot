@@ -37,3 +37,6 @@ appsettings.Development.json
 *.sln
 *.DotSettings.user
 C*.md
+
+azure_storage.md
+entra_id.md
