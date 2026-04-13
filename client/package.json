@@ -48,6 +48,7 @@
     "clsx": "^2.0.0",
     "cmdk": "^1.0.0",
     "date-fns": "^3.0.6",
+    "dompurify": "^3.3.3",
     "framer-motion": "^11.2.12",
     "lodash": "^4.17.21",
     "lucide-react": "^0.428.0",
@@ -67,6 +68,7 @@
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.13",
+    "@types/dompurify": "^3.2.0",
     "@types/node": "^20.10.4",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",

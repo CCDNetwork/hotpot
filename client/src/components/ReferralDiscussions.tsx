@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { Loader2, LucideSendHorizontal } from 'lucide-react';
 
 import {
@@ -125,7 +126,9 @@ export const ReferralDiscussions = ({ referralId }: Props) => {
                       className={cn('text-sm mt-1 break-words', {
                         'italic text-muted-foreground': isBot,
                       })}
-                      dangerouslySetInnerHTML={{ __html: text }}
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(text),
+                      }}
                     />
                   </div>
                 );
