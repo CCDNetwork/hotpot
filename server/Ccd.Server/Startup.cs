@@ -65,7 +65,15 @@ public class Startup
 
         services.AddCcdRateLimiting();
 
-        services.AddCors();
+        services.AddCors(options =>
+        {
+            options.AddDefaultPolicy(policy =>
+                policy
+                    .WithOrigins(StaticConfiguration.CorsAllowedOrigins)
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+            );
+        });
         services.AddControllers();
 
         // configure jwt authentication
@@ -215,7 +223,7 @@ public class Startup
         app.UseRouting();
 
         // global cors policy
-        app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+        app.UseCors();
 
         app.UseRateLimiter();
 

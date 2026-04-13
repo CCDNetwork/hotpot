@@ -77,6 +77,16 @@ public class StaticConfiguration
         Environment.GetEnvironmentVariable("ENCRYPTION_KEY")
         ?? _configuration.GetValue<string>("EncryptionKey");
 
+    public static string[] CorsAllowedOrigins =>
+        (
+            Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS")
+            ?? _configuration.GetValue<string>("CorsAllowedOrigins")
+            ?? ""
+        ).Split(
+            ',',
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+        );
+
     public static int RateLimitAuthPermitPerMinute =>
         int.Parse(
             Environment.GetEnvironmentVariable("RATE_LIMIT_AUTH_PER_MINUTE")
@@ -105,6 +115,9 @@ public class StaticConfiguration
 
         if (string.IsNullOrWhiteSpace(ApiKey))
             errors.Add("ApiKey");
+
+        if (CorsAllowedOrigins.Length == 0)
+            errors.Add("CorsAllowedOrigins");
 
         if (errors.Count > 0)
             throw new Exception(string.Join(", ", errors));
