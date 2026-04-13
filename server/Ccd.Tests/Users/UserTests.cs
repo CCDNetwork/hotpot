@@ -33,7 +33,6 @@ public class UserTests
             FirstName = "Test",
             LastName = $"Testsson {Guid.NewGuid().ToString()[..8]}",
             OrganizationId = organization.Id,
-            Password = _api.DEFAULT_PASSWORD,
             Role = UserRole.User,
             Permissions = [UserPermission.Referral, UserPermission.Deduplication]
         };
@@ -50,11 +49,13 @@ public class UserTests
         Assert.Equal(userAddData.FirstName, result.FirstName);
         Assert.Equal(userAddData.LastName, result.LastName);
 
+        await _api.SetPasswordAndActivate(result.Id, _api.DEFAULT_PASSWORD);
+
         // log in created user
         var loginData = new UserLoginRequest
         {
             Username = userAddData.Email,
-            Password = userAddData.Password
+            Password = _api.DEFAULT_PASSWORD
         };
 
         var loginResult = await _api.Request<UserAuthenticationResponse>(
@@ -156,7 +157,7 @@ public class UserTests
         {
             FirstName = "Other",
             LastName = "User",
-            Password = "something",
+            Password = "Something1!",
         };
 
         await _api.Request<UserAuthenticationResponse>(
@@ -226,16 +227,17 @@ public class UserTests
             Email = "user_" + Guid.NewGuid() + "@e2e.com",
             FirstName = "Test",
             LastName = $"Testsson {Guid.NewGuid().ToString()[..8]}",
-            Password = _api.DEFAULT_PASSWORD,
             Role = UserRole.User,
             Permissions = [],
             OrganizationId = organization.Id
         };
 
-        await _api.Request<UserResponse>("/api/v1/users", HttpMethod.Post,
+        var created = await _api.Request<UserResponse>("/api/v1/users", HttpMethod.Post,
             adminHeaders, userAddData, HttpStatusCode.Created);
 
-        var loginData = new UserLoginRequest { Username = userAddData.Email, Password = userAddData.Password };
+        await _api.SetPasswordAndActivate(created.Id, _api.DEFAULT_PASSWORD);
+
+        var loginData = new UserLoginRequest { Username = userAddData.Email, Password = _api.DEFAULT_PASSWORD };
         var loginResult = await _api.Request<UserAuthenticationResponse>("/api/v1/authentication/login",
             HttpMethod.Post,
             null, loginData, HttpStatusCode.OK);
@@ -270,17 +272,18 @@ public class UserTests
             Email = "user_" + Guid.NewGuid() + "@e2e.com",
             FirstName = "Test",
             LastName = $"Testsson {Guid.NewGuid().ToString()[..8]}",
-            Password = _api.DEFAULT_PASSWORD,
             Role = UserRole.User,
             Permissions = [],
             OrganizationId = organization.Id
         };
 
-        await _api.Request<UserResponse>("/api/v1/users", HttpMethod.Post,
+        var created = await _api.Request<UserResponse>("/api/v1/users", HttpMethod.Post,
             adminHeaders, userAddData, HttpStatusCode.Created);
 
+        await _api.SetPasswordAndActivate(created.Id, _api.DEFAULT_PASSWORD);
+
         // log in as regular user
-        var loginData = new UserLoginRequest { Username = userAddData.Email, Password = userAddData.Password };
+        var loginData = new UserLoginRequest { Username = userAddData.Email, Password = _api.DEFAULT_PASSWORD };
 
         var loginResult = await _api.Request<UserAuthenticationResponse>("/api/v1/authentication/login",
             HttpMethod.Post,

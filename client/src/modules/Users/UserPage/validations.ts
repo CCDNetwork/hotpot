@@ -1,6 +1,7 @@
 import * as z from 'zod';
 
 import { requiredSafeHtmlString, safeHtmlString } from '@/helpers/common';
+import { passwordPolicySchema } from '@/helpers/passwordPolicy';
 
 const OrganizationSchema = z.object(
   {
@@ -18,18 +19,7 @@ export const UserEditFormSchema = z
     firstName: requiredSafeHtmlString('First name is required'),
     lastName: requiredSafeHtmlString('Last name is required'),
     email: z.string().email(),
-    password: z
-      .string()
-      .optional()
-      .refine(
-        (data) => {
-          if (data && data.length < 8) {
-            return false;
-          }
-          return true;
-        },
-        { message: 'Password must contain at least 8 characters' }
-      ),
+    password: z.union([z.literal(''), passwordPolicySchema]).optional(),
     confirmPassword: safeHtmlString.optional(),
     organization: OrganizationSchema,
     permissions: z.array(z.string()).default([]),

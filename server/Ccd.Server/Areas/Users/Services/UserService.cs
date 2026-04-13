@@ -86,62 +86,17 @@ public class UserService
         return user;
     }
 
-    public async Task<User> AddUser(
-        User user,
-        string unhashedUserPassword,
-        Guid userOrganizationId,
-        Guid adminId
-    )
+    public async Task<User> AddUser(User user)
     {
         var existingUser = await GetUserByEmail(user.Email);
 
         if (existingUser != null)
             return existingUser;
 
-        user.ActivationCode = Guid.NewGuid().ToString();
+        var newUser = _context.Users.Add(user).Entity;
+        await _context.SaveChangesAsync();
 
-        using var transaction = await _context.Database.BeginTransactionAsync();
-        try
-        {
-            var newUser = _context.Users.Add(user).Entity;
-            await _context.SaveChangesAsync();
-
-            var userAdministrator = await GetUserById(adminId);
-            var createdUserOrganization = _context.Organizations.FirstOrDefault(o =>
-                o.Id == userOrganizationId
-            );
-
-            var templateData = new Dictionary<string, string>
-            {
-                { "firstName", user.FirstName },
-                { "lastName", user.LastName },
-                { "userEmail", user.Email },
-                { "userPassword", unhashedUserPassword },
-                { "userOrganisationName", createdUserOrganization.Name },
-                { "websiteUrl", StaticConfiguration.WebAppUrl },
-                { "administratorEmail", userAdministrator.Email }
-            };
-
-            await _sendGridService.SendEmail(
-                user.Email,
-                StaticConfiguration.SendgridInvitationEmailTemplateId,
-                templateData
-            );
-
-            // var activationLink =
-            //     StaticConfiguration.WebAppUrl
-            //     + $"/activation?email={WebUtility.UrlEncode(user.Email)}&code={user.ActivationCode}";
-
-            // await _emailManagerService.SendWelcomeMail(user.Email, user.FirstName, activationLink);
-
-            await transaction.CommitAsync();
-            return newUser;
-        }
-        catch (Exception)
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+        return newUser;
     }
 
     public async Task<User> UpdateUser(User user)

@@ -13,33 +13,13 @@ const OrganizationSchema = z.object(
   }
 );
 
-export const AddUserModalFormSchema = z
-  .object({
-    firstName: requiredSafeHtmlString('First name is required'),
-    lastName: requiredSafeHtmlString('Last name is required'),
-    email: z.string().email(),
-    password: z.string().refine(
-      (data) => {
-        if ((data && data.length < 8) || !data) {
-          return false;
-        }
-        return true;
-      },
-      { message: 'Password must contain at least 8 characters' }
-    ),
-    confirmPassword: z.string().optional(),
-    organization: OrganizationSchema,
-    role: z.string(),
-    permissions: z.array(z.string()).default([]),
-  })
-  .refine(
-    (data) => {
-      if (data.password && data.password !== data.confirmPassword) {
-        return false;
-      }
-      return true;
-    },
-    { message: 'Passwords must match', path: ['confirmPassword'] }
-  );
+export const AddUserModalFormSchema = z.object({
+  firstName: requiredSafeHtmlString('First name is required'),
+  lastName: requiredSafeHtmlString('Last name is required'),
+  email: z.string().email(),
+  organization: OrganizationSchema,
+  role: z.string(),
+  permissions: z.array(z.string()).default([]),
+});
 
 export type AddUserModalForm = z.infer<typeof AddUserModalFormSchema>;

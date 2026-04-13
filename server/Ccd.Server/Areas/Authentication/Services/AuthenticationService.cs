@@ -12,6 +12,8 @@ namespace Ccd.Server.Authentication;
 
 public class AuthenticationService
 {
+    private const int PasswordResetCodeExpiryMinutes = 15;
+
     private readonly DateTimeProvider _dateTimeProvider;
     private readonly EmailManagerService _emailManagerService;
     private readonly IMapper _mapper;
@@ -119,25 +121,23 @@ public class AuthenticationService
             await _userService.GetUserByEmail(email)
             ?? throw new BadRequestException("User with given email address not found");
 
-        user.PasswordResetCode = Guid.NewGuid().ToString();
+        IssuePasswordResetCode(user);
         await _userService.UpdateUser(user);
 
-        var resetLink =
-            StaticConfiguration.WebAppUrl
-            + $"/reset-password?email={WebUtility.UrlEncode(user.Email)}&code={user.PasswordResetCode}";
+        await SendPasswordResetEmail(
+            user,
+            StaticConfiguration.SendgridPasswordResetEmailTemplateId
+        );
+    }
 
-        var templateData = new Dictionary<string, string>
-        {
-            { "firstName", user.FirstName },
-            {
-                "buttonUrl",
-                resetLink
-            }
-        };
+    public async Task InviteUser(User user)
+    {
+        IssuePasswordResetCode(user);
+        await _userService.UpdateUser(user);
 
-        await _sendGridService.SendEmail(user.Email,
-            StaticConfiguration.SendgridPasswordResetEmailTemplateId,
-            templateData
+        await SendPasswordResetEmail(
+            user,
+            StaticConfiguration.SendgridInvitationEmailTemplateId
         );
     }
 
@@ -147,11 +147,50 @@ public class AuthenticationService
             await _userService.GetUserByEmail(email)
             ?? throw new BadRequestException("User with given email address not found");
 
-        if (user.PasswordResetCode != passwordResetCode)
+        if (
+            string.IsNullOrEmpty(user.PasswordResetCode)
+            || user.PasswordResetCode != passwordResetCode
+        )
             throw new BadRequestException("Invalid password reset code");
+
+        if (
+            !user.PasswordResetCodeExpiresAt.HasValue
+            || user.PasswordResetCodeExpiresAt.Value < _dateTimeProvider.UtcNow
+        )
+            throw new BadRequestException("Password reset code has expired");
+
+        PasswordPolicyValidator.Validate(password);
 
         user.Password = AuthenticationHelper.HashPassword(user, password);
         user.PasswordResetCode = null;
+        user.PasswordResetCodeExpiresAt = null;
+
+        if (!user.ActivatedAt.HasValue)
+            user.ActivatedAt = _dateTimeProvider.UtcNow;
+
         await _userService.UpdateUser(user);
+    }
+
+    private void IssuePasswordResetCode(User user)
+    {
+        user.PasswordResetCode = Guid.NewGuid().ToString();
+        user.PasswordResetCodeExpiresAt = _dateTimeProvider.UtcNow.AddMinutes(
+            PasswordResetCodeExpiryMinutes
+        );
+    }
+
+    private async Task SendPasswordResetEmail(User user, string templateId)
+    {
+        var resetLink =
+            StaticConfiguration.WebAppUrl
+            + $"/reset-password?email={WebUtility.UrlEncode(user.Email)}&code={user.PasswordResetCode}";
+
+        var templateData = new Dictionary<string, string>
+        {
+            { "firstName", user.FirstName },
+            { "buttonLink", resetLink }
+        };
+
+        await _sendGridService.SendEmail(user.Email, templateId, templateData);
     }
 }

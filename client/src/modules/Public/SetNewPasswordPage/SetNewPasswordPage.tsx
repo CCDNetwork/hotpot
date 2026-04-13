@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { PublicPage } from '@/layouts/PublicPage';
 import { toast } from '@/components/ui/use-toast';
 import { APP_ROUTE } from '@/helpers/constants';
+import { PASSWORD_POLICY_RULES } from '@/helpers/passwordPolicy';
 import { useAuthMutation } from '@/services/auth';
 
 import { SetNewPasswordForm, SetNewPasswordFormSchema } from './validations';
@@ -84,6 +85,11 @@ export const SetNewPasswordPage = () => {
                         {...field}
                       />
                     </FormControl>
+                    <ul className="text-muted-foreground text-xs list-disc pl-5">
+                      {PASSWORD_POLICY_RULES.map((rule) => (
+                        <li key={rule}>{rule}</li>
+                      ))}
+                    </ul>
                     <FormMessage />
                   </FormItem>
                 )}

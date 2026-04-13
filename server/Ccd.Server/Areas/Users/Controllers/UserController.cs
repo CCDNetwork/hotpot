@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using AutoMapper;
 using Ccd.Server.Areas.Users.Controllers.ControllerModels;
+using Ccd.Server.Authentication;
 using Ccd.Server.Data;
 using Ccd.Server.Helpers;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,7 @@ namespace Ccd.Server.Users;
 [Route("/api/v1/users")]
 public class UserController : ControllerBaseExtended
 {
+    private readonly AuthenticationService _authenticationService;
     private readonly CcdContext _context;
     private readonly DateTimeProvider _dateTimeProvider;
     private readonly IMapper _mapper;
@@ -22,13 +24,15 @@ public class UserController : ControllerBaseExtended
         UserService userService,
         IMapper mapper,
         CcdContext context,
-        DateTimeProvider dateTimeProvider
+        DateTimeProvider dateTimeProvider,
+        AuthenticationService authenticationService
     )
     {
         _userService = userService;
         _mapper = mapper;
         _context = context;
         _dateTimeProvider = dateTimeProvider;
+        _authenticationService = authenticationService;
     }
 
     [HttpGet]
@@ -67,12 +71,11 @@ public class UserController : ControllerBaseExtended
             throw new BadRequestException("Invalid role");
 
         var user = _mapper.Map<User>(model);
-        user.Password = AuthenticationHelper.HashPassword(user, model.Password);
-        user.ActivatedAt = _dateTimeProvider.UtcNow;
 
-        var adminId = UserId;
-        user = await _userService.AddUser(user, model.Password, model.OrganizationId, adminId);
+        user = await _userService.AddUser(user);
         await _userService.SetOrganizationRole(user.Id, model.OrganizationId, model.Role, model.Permissions);
+
+        await _authenticationService.InviteUser(user);
 
         var result = await _userService.GetUserApi(model.OrganizationId, user.Id);
 
@@ -98,7 +101,11 @@ public class UserController : ControllerBaseExtended
 
         _mapper.Map(model, user);
 
-        if (model.Password != null) user.Password = AuthenticationHelper.HashPassword(user, model.Password);
+        if (model.Password != null)
+        {
+            PasswordPolicyValidator.Validate(model.Password);
+            user.Password = AuthenticationHelper.HashPassword(user, model.Password);
+        }
 
         user = await _userService.UpdateUser(user);
 
@@ -133,7 +140,11 @@ public class UserController : ControllerBaseExtended
             _context.UserOrganizations.Update(userTenant);
         }
 
-        if (model.Password != null) user.Password = AuthenticationHelper.HashPassword(user, model.Password);
+        if (model.Password != null)
+        {
+            PasswordPolicyValidator.Validate(model.Password);
+            user.Password = AuthenticationHelper.HashPassword(user, model.Password);
+        }
         user.ActivatedAt = _dateTimeProvider.UtcNow;
 
         var newUser = await _userService.UpdateUser(user);
@@ -174,7 +185,11 @@ public class UserController : ControllerBaseExtended
             ?? throw new NotFoundException();
         model.Patch(user);
 
-        if (model.Password != null) user.Password = AuthenticationHelper.HashPassword(user, model.Password);
+        if (model.Password != null)
+        {
+            PasswordPolicyValidator.Validate(model.Password);
+            user.Password = AuthenticationHelper.HashPassword(user, model.Password);
+        }
 
         _context.Users.Update(user);
         await _context.SaveChangesAsync();

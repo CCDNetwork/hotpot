@@ -43,8 +43,6 @@ export const AddUserModal = () => {
       firstName: '',
       lastName: '',
       email: '',
-      password: '',
-      confirmPassword: '',
       organization: undefined,
       role: 'user',
       permissions: ['deduplication', 'referral', 'booking'],
@@ -229,47 +227,6 @@ export const AddUserModal = () => {
                   </SelectContent>
                 </Select>
               </FormItem>
-              <div className="grid sm:grid-cols-2 grid-cols-1 gap-4">
-                <FormField
-                  control={control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel requiredField>Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          id="password"
-                          autoComplete="new-password"
-                          placeholder="Password"
-                          type="password"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel requiredField>Confirm password</FormLabel>
-                      <FormControl>
-                        <Input
-                          id="confirmPassword"
-                          autoComplete="new-password"
-                          placeholder="Confirm password"
-                          type="password"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
               <DialogFooter>
                 <div className="w-full">
                   <Button

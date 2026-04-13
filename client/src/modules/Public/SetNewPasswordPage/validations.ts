@@ -1,13 +1,13 @@
 import * as z from 'zod';
 
+import { passwordPolicySchema } from '@/helpers/passwordPolicy';
+
 export const SetNewPasswordFormSchema = z
   .object({
     email: z.string().email(),
     passwordResetCode: z.string().min(1),
-    password: z.string().min(8, {
-      message: 'Password is required',
-    }),
-    passwordConfirmation: z.string().min(8, {
+    password: passwordPolicySchema,
+    passwordConfirmation: z.string().min(1, {
       message: 'Confirm password is required',
     }),
   })

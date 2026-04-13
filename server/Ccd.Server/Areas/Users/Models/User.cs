@@ -32,6 +32,7 @@ public class User : IHasPassword, IIsDeleted
     public string LastName { get; set; }
     public string ActivationCode { get; set; }
     public string PasswordResetCode { get; set; }
+    public DateTime? PasswordResetCodeExpiresAt { get; set; }
     public string Language { get; set; } = "en";
     public DateTime? ActivatedAt { get; set; }
     public DateTime CreatedAt { get; set; }

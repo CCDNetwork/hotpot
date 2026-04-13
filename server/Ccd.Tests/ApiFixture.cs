@@ -31,7 +31,7 @@ public class ApiFixture
     private readonly HttpClient _client;
 
     private readonly TestServer _server;
-    public readonly string DEFAULT_PASSWORD = "test1234";
+    public readonly string DEFAULT_PASSWORD = "Test1234!";
 
     public ApiFixture()
     {
@@ -148,7 +148,6 @@ public class ApiFixture
         var userAddData = new UserAddRequest
         {
             Email = $"user_{Guid.NewGuid()}@e2e.com",
-            Password = DEFAULT_PASSWORD,
             FirstName = $"User {Guid.NewGuid()}",
             LastName = "Lastname",
             Role = UserRole.User
@@ -161,6 +160,8 @@ public class ApiFixture
             userAddData,
             HttpStatusCode.Created
         );
+
+        await SetPasswordAndActivate(user.Id, DEFAULT_PASSWORD);
 
         return user;
     }
@@ -234,7 +235,6 @@ public class ApiFixture
         var userAddData = new UserAddRequest
         {
             Email = $"user_{Guid.NewGuid()}@e2e.com",
-            Password = DEFAULT_PASSWORD,
             FirstName = $"User {Guid.NewGuid()}",
             LastName = "Lastname",
             Role = UserRole.User
@@ -248,18 +248,12 @@ public class ApiFixture
             HttpStatusCode.Created
         );
 
-        var context = GetCcdContext();
-
-        var user = await context.Users.FirstOrDefaultAsync(e => e.Id == userResult.Id);
-
-        user.ActivatedAt = DateTime.UtcNow;
-        context.Users.Update(user);
-        await context.SaveChangesAsync();
+        var user = await SetPasswordAndActivate(userResult.Id, DEFAULT_PASSWORD);
 
         var loginData = new UserLoginRequest
         {
             Username = userAddData.Email,
-            Password = userAddData.Password
+            Password = DEFAULT_PASSWORD
         };
 
         var loginResult = await Request<UserAuthenticationResponse>(
@@ -277,6 +271,19 @@ public class ApiFixture
         };
 
         return (user, newHeaders);
+    }
+
+    public async Task<User> SetPasswordAndActivate(Guid userId, string password)
+    {
+        var context = GetCcdContext();
+        var user = await context.Users.FirstOrDefaultAsync(e => e.Id == userId);
+
+        user.Password = AuthenticationHelper.HashPassword(user, password);
+        user.ActivatedAt = DateTime.UtcNow;
+        context.Users.Update(user);
+        await context.SaveChangesAsync();
+
+        return user;
     }
 
     public void SetDate(DateTime date)

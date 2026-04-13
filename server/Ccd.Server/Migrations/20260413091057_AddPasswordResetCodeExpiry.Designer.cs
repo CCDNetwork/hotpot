@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Ccd.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ccd.Server.Migrations
 {
     [DbContext(typeof(CcdContext))]
-    partial class CcdContextModelSnapshot : ModelSnapshot
+    [Migration("20260413091057_AddPasswordResetCodeExpiry")]
+    partial class AddPasswordResetCodeExpiry
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
