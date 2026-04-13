@@ -20,9 +20,9 @@ public class StaticConfiguration
         Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
         ?? _configuration.GetValue<string>("AppSettings:Secret");
 
-    public static string AppSettingsExpirationDays =>
-        Environment.GetEnvironmentVariable("JWT_EXPIRATION_DAYS")
-        ?? _configuration.GetValue<string>("AppSettings:ExpirationDays");
+    public static string AppSettingsExpirationMinutes =>
+        Environment.GetEnvironmentVariable("JWT_EXPIRATION_MINUTES")
+        ?? _configuration.GetValue<string>("AppSettings:ExpirationMinutes");
 
     public static string SentryDsn =>
         Environment.GetEnvironmentVariable("SENTRY_DSN")

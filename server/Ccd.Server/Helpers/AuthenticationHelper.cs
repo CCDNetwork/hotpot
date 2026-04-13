@@ -25,8 +25,8 @@ public class AuthenticationHelper
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddDays(
-                Convert.ToInt32(StaticConfiguration.AppSettingsExpirationDays)
+            Expires = DateTime.UtcNow.AddMinutes(
+                Convert.ToInt32(StaticConfiguration.AppSettingsExpirationMinutes)
             ),
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(key),
