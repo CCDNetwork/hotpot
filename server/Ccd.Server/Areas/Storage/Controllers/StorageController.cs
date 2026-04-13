@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Ccd.Server.Data;
 using Ccd.Server.Helpers;
+using Ccd.Server.Users;
 using Microsoft.AspNetCore.Mvc;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Processing;
@@ -25,6 +26,7 @@ public class StorageController : ControllerBaseExtended
     }
 
     [HttpGet("storage/{fileName}")]
+    [PermissionLevel(UserRole.User)]
     public async Task<IActionResult> Get(string fileName, [FromQuery] string size)
     {
         // check if fileName is actually the file ID
@@ -84,6 +86,7 @@ public class StorageController : ControllerBaseExtended
     }
 
     [HttpPost("/api/v1/storage/files")]
+    [PermissionLevel(UserRole.User)]
     public async Task<ActionResult<FileResponse>> Post([FromForm] FileRequest model)
     {
         var storedFile = await _storageService.SaveFileApi(StorageType.GetById(model.StorageTypeId), model.File,
