@@ -77,6 +77,20 @@ public class StaticConfiguration
         Environment.GetEnvironmentVariable("ENCRYPTION_KEY")
         ?? _configuration.GetValue<string>("EncryptionKey");
 
+    public static int RateLimitAuthPermitPerMinute =>
+        int.Parse(
+            Environment.GetEnvironmentVariable("RATE_LIMIT_AUTH_PER_MINUTE")
+                ?? _configuration.GetValue<string>("RateLimiting:AuthPerMinute")
+                ?? "10"
+        );
+
+    public static int RateLimitGlobalPermitPerMinute =>
+        int.Parse(
+            Environment.GetEnvironmentVariable("RATE_LIMIT_GLOBAL_PER_MINUTE")
+                ?? _configuration.GetValue<string>("RateLimiting:GlobalPerMinute")
+                ?? "300"
+        );
+
     public static void Initialize(IConfiguration configuration)
     {
         _configuration = configuration;

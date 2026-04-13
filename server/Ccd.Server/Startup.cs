@@ -21,6 +21,7 @@ using Ccd.Server.Users;
 using Dapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -51,6 +52,18 @@ public class Startup
 
         StaticConfiguration.Initialize(Configuration);
         var dbConnectionString = StaticConfiguration.DbConnectionString;
+
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            // Traefik runs on the Docker bridge network; clear the default loopback-only
+            // trust list so X-Forwarded-For from Traefik is accepted.
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
+
+        services.AddCcdRateLimiting();
 
         services.AddCors();
         services.AddControllers();
@@ -193,6 +206,8 @@ public class Startup
         CcdContext ccdContext
     )
     {
+        app.UseForwardedHeaders();
+
         if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
 
         app.UseExceptionHandler("/error");
@@ -201,6 +216,8 @@ public class Startup
 
         // global cors policy
         app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+
+        app.UseRateLimiter();
 
         app.UseAuthentication();
         app.UseAuthorization();

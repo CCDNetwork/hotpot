@@ -2,11 +2,13 @@
 using AutoMapper;
 using Ccd.Server.Helpers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Ccd.Server.Authentication;
 
 [ApiController]
 [Route("/api/v1/authentication")]
+[EnableRateLimiting(RateLimitingSetup.AuthPolicyName)]
 public class OrganizationController : ControllerBaseExtended
 {
     private readonly AuthenticationService _authenticationService;
