@@ -45,6 +45,11 @@ public class StaticConfiguration
         Environment.GetEnvironmentVariable("STORAGE_PATH")
         ?? _configuration.GetValue<string>("StoragePath");
 
+    public static string FileCleanupCron =>
+        Environment.GetEnvironmentVariable("FILE_CLEANUP_CRON")
+        ?? _configuration.GetValue<string>("FileCleanupCron")
+        ?? "0 * * * *"; // hourly at minute 0
+
     public static string NotificationServiceUrl =>
         Environment.GetEnvironmentVariable("NOTIFICATION_SERVICE_URL")
         ?? _configuration.GetValue<string>("NotificationServiceUrl");

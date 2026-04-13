@@ -156,6 +156,18 @@ const postBookingStep2 = async (data: {
   return resp.data;
 };
 
+const postWizardFinish = async (data: { fileId: string }): Promise<void> => {
+  await api.post('/deduplication/wizard-finish', data);
+};
+
+export const useWizardFinishMutation = () => {
+  return useMutation(postWizardFinish, {
+    onError: (error) => {
+      console.error('wizard-finish cleanup failed', error);
+    },
+  });
+};
+
 export const useDeduplicationListings = ({
   currentPage,
   pageSize,

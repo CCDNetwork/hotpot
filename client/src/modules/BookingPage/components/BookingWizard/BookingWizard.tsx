@@ -4,7 +4,11 @@ import { AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
-import { BookingDataset, useBookingMutation } from '@/services/deduplication';
+import {
+  BookingDataset,
+  useBookingMutation,
+  useWizardFinishMutation,
+} from '@/services/deduplication';
 
 import { cn } from '@/helpers/utils';
 
@@ -41,13 +45,21 @@ export const BookingWizard = ({ isOpen, setIsOpen }: Props) => {
   //   useState<SystemOrgDedupeResponse | null>(null);
 
   const { bookingStep1, bookingStep2 } = useBookingMutation();
+  const wizardFinish = useWizardFinishMutation();
 
   const onOpenChange = () => {
+    const latestFileId =
+      step2BookingResponse?.fileId || step1BookingResponse?.fileId;
+    if (latestFileId) {
+      wizardFinish.mutate({ fileId: latestFileId });
+    }
+
     setIsOpen((old) => !old);
 
     setTimeout(() => {
       setFileToUpload(undefined);
       setStep1BookingResponse(null);
+      setStep2BookingResponse(null);
       setCurrentStep(WIZARD_STEP.BOOKING_STEP_1);
       setBookingWizardError(undefined);
     }, 300);

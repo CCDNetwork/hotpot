@@ -21,15 +21,15 @@ public class MockStorageService : IStorageService
         _context = context;
     }
 
-    public async Task<File> SaveFile(StorageType storageType, IFormFile file, Guid ownerId, string name)
+    public async Task<File> SaveFile(StorageType storageType, IFormFile file, Guid ownerId, string name, bool isTemporary = false)
     {
         await using var ms = new MemoryStream();
         await file.CopyToAsync(ms);
 
-        return await SaveFile(storageType, ms, ownerId, name);
+        return await SaveFile(storageType, ms, ownerId, name, isTemporary);
     }
 
-    public async Task<File> SaveFile(StorageType storageType, MemoryStream ms, Guid ownerId, string name)
+    public async Task<File> SaveFile(StorageType storageType, MemoryStream ms, Guid ownerId, string name, bool isTemporary = false)
     {
         var newFile = new File
         {
@@ -37,7 +37,8 @@ public class MockStorageService : IStorageService
             StorageTypeId = storageType.Id,
             Name = name,
             FileName = Guid.NewGuid().ToString() + '-' + name.Replace(" ", "_"),
-            Size = 1000
+            Size = 1000,
+            IsTemporary = isTemporary
         };
 
         newFile = _context.Files.Add(newFile).Entity;
@@ -48,9 +49,9 @@ public class MockStorageService : IStorageService
         return newFile;
     }
 
-    public async Task<FileResponse> SaveFileApi(StorageType storageType, IFormFile file, Guid ownerId, string name)
+    public async Task<FileResponse> SaveFileApi(StorageType storageType, IFormFile file, Guid ownerId, string name, bool isTemporary = false)
     {
-        var storedFile = await SaveFile(storageType, file, ownerId, name);
+        var storedFile = await SaveFile(storageType, file, ownerId, name, isTemporary);
 
         if (storedFile == null)
             throw new BadRequestException();
@@ -64,8 +65,11 @@ public class MockStorageService : IStorageService
         };
     }
 
-    public void DeleteFile(File file)
+    public Task DeleteFile(File file)
     {
+        FileBytes.Remove(file.Id);
+        _context.Files.Remove(file);
+        return _context.SaveChangesAsync();
     }
 
     public Task<byte[]> GetFileBytes(File file)

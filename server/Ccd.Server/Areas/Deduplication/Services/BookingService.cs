@@ -83,6 +83,37 @@ public class BookingService
     }
 
 
+    public async Task WizardFinish(Guid userId, Guid fileId)
+    {
+        var file = await _context.Files.FirstOrDefaultAsync(f => f.Id == fileId)
+            ?? throw new NotFoundException("File not found");
+
+        // Owner-match enforces organization scoping: a user only clears their own wizard uploads.
+        if (file.OwnerId != userId)
+            throw new NotFoundException("File not found");
+
+        // Null out the file_id FK on any rows that reference this file. Rows are
+        // preserved; only the reference is cleared so the file row can be deleted.
+        var bookings = await _context.Bookings.Where(b => b.FileId == fileId).ToListAsync();
+        foreach (var b in bookings)
+            b.FileId = null;
+
+        var bookingLogs = await _context.BookingLogs.Where(bl => bl.FileId == fileId).ToListAsync();
+        foreach (var bl in bookingLogs)
+            bl.FileId = null;
+
+        var dedupRows = await _context
+            .BeneficaryDeduplications.Where(d => d.FileId == fileId)
+            .ToListAsync();
+        foreach (var d in dedupRows)
+            d.FileId = null;
+
+        if (bookings.Count + bookingLogs.Count + dedupRows.Count > 0)
+            await _context.SaveChangesAsync();
+
+        await _storageService.DeleteFile(file);
+    }
+
     public async Task<(bool, string, Guid)> BookingDeduplicationStep1(Guid organizationId, Guid userId, BookingDeduplicationRequestStep1 model)
     {
         var file = model.File ?? throw new BadRequestException("File is required");
@@ -106,7 +137,7 @@ public class BookingService
         using var memoryStream = new MemoryStream();
         workbook.SaveAs(memoryStream);
 
-        var savedFile = await _storageService.SaveFile(StorageType.GetById(StorageType.Assets.Id), memoryStream, userId, model.File.FileName);
+        var savedFile = await _storageService.SaveFile(StorageType.GetById(StorageType.Assets.Id), memoryStream, userId, model.File.FileName, isTemporary: true);
         var fileApi = await _storageService.GetFileApiById(savedFile.Id);
 
         return (isExcelValid, fileApi.Url, savedFile.Id);
@@ -142,7 +173,7 @@ public class BookingService
         using var memoryStream = new MemoryStream();
         workbook.SaveAs(memoryStream);
 
-        var savedFile = await _storageService.SaveFile(StorageType.GetById(StorageType.Assets.Id), memoryStream, userId, file.FileName);
+        var savedFile = await _storageService.SaveFile(StorageType.GetById(StorageType.Assets.Id), memoryStream, userId, file.FileName, isTemporary: true);
         var fileApi = await _storageService.GetFileApiById(savedFile.Id);
 
         return (isExcelValid, fileApi.Url, savedFile.Id);

@@ -21,17 +21,17 @@ public class StorageService : IStorageService
     }
 
 
-    public async Task<File> SaveFile(StorageType storageType, IFormFile file, Guid ownerId, string name)
+    public async Task<File> SaveFile(StorageType storageType, IFormFile file, Guid ownerId, string name, bool isTemporary = false)
     {
         await using var ms = new MemoryStream();
         await file.CopyToAsync(ms);
 
-        return await SaveFile(storageType, ms, ownerId, name);
+        return await SaveFile(storageType, ms, ownerId, name, isTemporary);
     }
 
-    public async Task<FileResponse> SaveFileApi(StorageType storageType, IFormFile file, Guid ownerId, string name)
+    public async Task<FileResponse> SaveFileApi(StorageType storageType, IFormFile file, Guid ownerId, string name, bool isTemporary = false)
     {
-        var storedFile = await SaveFile(storageType, file, ownerId, name);
+        var storedFile = await SaveFile(storageType, file, ownerId, name, isTemporary);
 
         if (storedFile == null)
             throw new BadRequestException();
@@ -45,9 +45,10 @@ public class StorageService : IStorageService
         };
     }
 
-    public async Task<File> SaveFile(StorageType storageType, MemoryStream ms, Guid ownerId, string name)
+    public async Task<File> SaveFile(StorageType storageType, MemoryStream ms, Guid ownerId, string name, bool isTemporary = false)
     {
         var savedFile = await _storageEngine.SaveFileAsync(ownerId, storageType, ms, name);
+        savedFile.IsTemporary = isTemporary;
 
         savedFile = _context.Files.Add(savedFile).Entity;
         await _context.SaveChangesAsync();
@@ -55,14 +56,24 @@ public class StorageService : IStorageService
         return savedFile;
     }
 
-    public void DeleteFile(File file)
+    public async Task DeleteFile(File file)
     {
         if (file is null)
         {
             throw new ArgumentNullException(nameof(file));
         }
 
-        _storageEngine.DeleteFile(file);
+        _context.Files.Remove(file);
+        await _context.SaveChangesAsync();
+
+        try
+        {
+            _storageEngine.DeleteFile(file);
+        }
+        catch (FileNotFoundException)
+        {
+            // Disk file already gone — DB cleanup already succeeded, treat as success.
+        }
     }
 
     public async Task<byte[]> GetFileBytes(File file)

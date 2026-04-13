@@ -20,7 +20,7 @@ public class Booking
     public DateTime? EndDate { get; set; }
     [ForeignKey("User")] public Guid UploadedById { get; set; }
     public User UploadedBy { get; set; }
-    public Guid FileId { get; set; }
+    public Guid? FileId { get; set; }
     public File File { get; set; }
     public Guid OrganizationId { get; set; }
     public Organization Organization { get; set; }

@@ -11,6 +11,7 @@ import {
   // SameOrgDedupeResponse,
   SystemOrgDedupeResponse,
   useDeduplicationMutation,
+  useWizardFinishMutation,
 } from '@/services/deduplication';
 
 import { cn } from '@/helpers/utils';
@@ -57,6 +58,7 @@ export const DeduplicationWizard = ({ isOpen, setIsOpen }: Props) => {
     deduplicateSystemOrganizations,
     deduplicateFinish,
   } = useDeduplicationMutation();
+  const wizardFinish = useWizardFinishMutation();
 
   const form = useForm<DeduplicationUploadForm>({
     defaultValues: {
@@ -70,12 +72,18 @@ export const DeduplicationWizard = ({ isOpen, setIsOpen }: Props) => {
   const currentTemplate = watch('template');
 
   const onOpenChange = () => {
+    const latestFileId = internalFileDedupResponse?.file?.id;
+    if (latestFileId) {
+      wizardFinish.mutate({ fileId: latestFileId });
+    }
+
     setIsOpen((old) => !old);
 
     setTimeout(() => {
       reset();
       setFileToUpload(undefined);
       setInternalFileDedupResponse(null);
+      setSystemOrgDedupResponse(null);
       setCurrentStep(WIZARD_STEP.FILE_UPLOAD);
       setDeduplicationWizardError(undefined);
     }, 300);

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Ccd.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Ccd.Server.Migrations
 {
     [DbContext(typeof(CcdContext))]
-    partial class CcdContextModelSnapshot : ModelSnapshot
+    [Migration("20260413120805_AddFileIsTemporary")]
+    partial class AddFileIsTemporary
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -554,7 +557,7 @@ namespace Ccd.Server.Migrations
                         .HasColumnType("text")
                         .HasColumnName("family_name");
 
-                    b.Property<Guid?>("FileId")
+                    b.Property<Guid>("FileId")
                         .HasColumnType("uuid")
                         .HasColumnName("file_id");
 
@@ -668,7 +671,7 @@ namespace Ccd.Server.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("end_date");
 
-                    b.Property<Guid?>("FileId")
+                    b.Property<Guid>("FileId")
                         .HasColumnType("uuid")
                         .HasColumnName("file_id");
 
@@ -746,7 +749,7 @@ namespace Ccd.Server.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("end_date");
 
-                    b.Property<Guid?>("FileId")
+                    b.Property<Guid>("FileId")
                         .HasColumnType("uuid")
                         .HasColumnName("file_id");
 
@@ -1735,6 +1738,8 @@ namespace Ccd.Server.Migrations
                     b.HasOne("Ccd.Server.Storage.File", "File")
                         .WithMany()
                         .HasForeignKey("FileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
                         .HasConstraintName("fk_beneficary_deduplication_file_file_id");
 
                     b.HasOne("Ccd.Server.Organizations.Organization", "Organization")
@@ -1763,6 +1768,8 @@ namespace Ccd.Server.Migrations
                     b.HasOne("Ccd.Server.Storage.File", "File")
                         .WithMany()
                         .HasForeignKey("FileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
                         .HasConstraintName("fk_booking_file_file_id");
 
                     b.HasOne("Ccd.Server.Organizations.Organization", "Organization")
@@ -1791,6 +1798,8 @@ namespace Ccd.Server.Migrations
                     b.HasOne("Ccd.Server.Storage.File", "File")
                         .WithMany()
                         .HasForeignKey("FileId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
                         .HasConstraintName("fk_booking_log_file_file_id");
 
                     b.HasOne("Ccd.Server.Organizations.Organization", "Organization")

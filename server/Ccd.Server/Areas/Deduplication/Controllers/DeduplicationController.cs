@@ -92,6 +92,14 @@ public class DeduplicationController : ControllerBaseExtended
         return Ok(new { isValid, fileUrl = savedFileUrl, fileId = savedFileId });
     }
 
+    [HttpPost("wizard-finish")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult> WizardFinish([FromBody] WizardFinishRequest model)
+    {
+        await _bookingService.WizardFinish(this.UserId, model.FileId);
+        return NoContent();
+    }
+
     [HttpGet("bookings/export")]
     [PermissionLevel(UserRole.User)]
     public async Task<ActionResult> ExportBookings(

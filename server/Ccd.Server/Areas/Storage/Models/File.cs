@@ -17,4 +17,5 @@ public class File : UserChangeTracked
     public string Name { get; set; }
     public string FileName { get; set; }
     public long Size { get; set; }
+    public bool IsTemporary { get; set; }
 }

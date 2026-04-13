@@ -8,10 +8,10 @@ namespace Ccd.Server.Storage;
 
 public interface IStorageService
 {
-    Task<File> SaveFile(StorageType storageType, IFormFile file, Guid ownerId, string name);
-    Task<File> SaveFile(StorageType storageType, MemoryStream ms, Guid ownerId, string name);
-    Task<FileResponse> SaveFileApi(StorageType storageType, IFormFile file, Guid ownerId, string name);
-    void DeleteFile(File file);
+    Task<File> SaveFile(StorageType storageType, IFormFile file, Guid ownerId, string name, bool isTemporary = false);
+    Task<File> SaveFile(StorageType storageType, MemoryStream ms, Guid ownerId, string name, bool isTemporary = false);
+    Task<FileResponse> SaveFileApi(StorageType storageType, IFormFile file, Guid ownerId, string name, bool isTemporary = false);
+    Task DeleteFile(File file);
     Task<File> GetFileById(Guid id);
     Task<File> GetFileByFileName(string fileName);
     Task<byte[]> GetFileBytes(File file);

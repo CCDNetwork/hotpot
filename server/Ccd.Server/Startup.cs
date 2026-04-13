@@ -19,6 +19,8 @@ using Ccd.Server.Storage;
 using Ccd.Server.Templates;
 using Ccd.Server.Users;
 using Dapper;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -194,6 +196,25 @@ public class Startup
         services.AddScoped<AdministrativeRegionService>();
         services.AddScoped<IStorageService, StorageService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<TemporaryFileCleanupJob>();
+
+        services.AddHangfire(config =>
+            config
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UsePostgreSqlStorage(
+                    opt => opt.UseNpgsqlConnection(dbConnectionString),
+                    new PostgreSqlStorageOptions
+                    {
+                        // Routes Dequeue away from Dequeue_Transaction (which has a parameter
+                        // binding bug under Npgsql 8: "op ANY/ALL (array) requires array on
+                        // right side") and onto Dequeue_UpdateCount, which uses different SQL.
+                        UseNativeDatabaseTransactions = false,
+                    }
+                )
+        );
+        services.AddHangfireServer();
 
         // configure DI for application services
         services.AddDbContext<CcdContext>(options => options.UseNpgsql(dbConnectionString));
@@ -211,7 +232,8 @@ public class Startup
     public void Configure(
         IApplicationBuilder app,
         IWebHostEnvironment env,
-        CcdContext ccdContext
+        CcdContext ccdContext,
+        IRecurringJobManager recurringJobs
     )
     {
         app.UseForwardedHeaders();
@@ -247,6 +269,12 @@ public class Startup
         });
 
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+
+        recurringJobs.AddOrUpdate<TemporaryFileCleanupJob>(
+            TemporaryFileCleanupJob.JobId,
+            job => job.Run(),
+            StaticConfiguration.FileCleanupCron
+        );
 
         app.UseSwagger();
         app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "CcdServerTests Server"); });

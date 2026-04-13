@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
   BookingDataset,
   usePrebookingMutation,
+  useWizardFinishMutation,
 } from '@/services/deduplication';
 
 import { cn } from '@/helpers/utils';
@@ -43,13 +44,21 @@ export const PrebookingWizard = ({ isOpen, setIsOpen }: Props) => {
   const { bookingStep1, bookingStep2 } = usePrebookingMutation(
     setPrebookingWizardError
   );
+  const wizardFinish = useWizardFinishMutation();
 
   const onOpenChange = () => {
+    const latestFileId =
+      step2BookingResponse?.fileId || step1BookingResponse?.fileId;
+    if (latestFileId) {
+      wizardFinish.mutate({ fileId: latestFileId });
+    }
+
     setIsOpen((old) => !old);
 
     setTimeout(() => {
       setFileToUpload(undefined);
       setStep1BookingResponse(null);
+      setStep2BookingResponse(null);
       setCurrentStep(WIZARD_STEP.BOOKING_STEP_1);
       setPrebookingWizardError(undefined);
     }, 300);
