@@ -114,7 +114,8 @@ public class StorageService : IStorageService
 
         foreach (var id in ids)
         {
-            list.Add(await GetFileApiById(id));
+            var file = await GetFileApiById(id);
+            if (file != null) list.Add(file);
         }
 
         return list;

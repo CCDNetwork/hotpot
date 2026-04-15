@@ -161,6 +161,22 @@ public class ReferralService
 
     public async Task DeleteReferral(Referral referral)
     {
+        if (referral.FileIds != null)
+        {
+            foreach (var fileId in referral.FileIds)
+            {
+                try
+                {
+                    var file = await _storageService.GetFileById(fileId);
+                    await _storageService.DeleteFile(file);
+                }
+                catch (NotFoundException)
+                {
+                    // File already gone — continue cleanup of remaining files.
+                }
+            }
+        }
+
         _context.Discussions.RemoveRange(
             _context.Discussions.Where(e => e.ReferralId == referral.Id)
         );
