@@ -12,7 +12,6 @@ public class UserResponse
     [QuickSearchable] public string Email { get; set; }
     [QuickSearchable] public string FirstName { get; set; }
     [QuickSearchable] public string LastName { get; set; }
-    public string Status { get; set; }
     public DateTime? ActivatedAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public string Role { get; set; }

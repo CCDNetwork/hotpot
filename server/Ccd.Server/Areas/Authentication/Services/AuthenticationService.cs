@@ -78,9 +78,6 @@ public class AuthenticationService
         if (!AuthenticationHelper.VerifyPassword(user, password))
             throw new UnauthorizedException("Invalid username or password");
 
-        if (user.Status == UserStatus.Disabled)
-            throw new UnauthorizedException("User is disabled");
-
         if (!user.ActivatedAt.HasValue)
             throw new UnauthorizedException("User is not active");
 
@@ -137,7 +134,7 @@ public class AuthenticationService
     {
         if (StaticConfiguration.IsB2C)
         {
-            user.Status = UserStatus.Pending;
+            user.ActivatedAt = _dateTimeProvider.UtcNow;
             await _userService.UpdateUser(user);
 
             await SendB2cInviteEmail(user);
