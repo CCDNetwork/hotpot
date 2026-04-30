@@ -13,6 +13,8 @@
     "lint:fix": "eslint --quiet --fix src --ext .ts,.tsx && stylelint --fix src/**/*"
   },
   "dependencies": {
+    "@azure/msal-browser": "^3.30.0",
+    "@azure/msal-react": "^2.2.0",
     "@directus/sdk": "^18.0.3",
     "@headlessui-float/react": "^0.13.0",
     "@headlessui/react": "^1.7.18",

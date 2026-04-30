@@ -56,6 +56,7 @@ import { DashboardPage } from './modules/DashboardPage';
 import { SettingsPage } from './modules/SettingsPage';
 import { RequestNewPasswordPage } from './modules/Public/RequestNewPasswordPage';
 import { SetNewPasswordPage } from './modules/Public/SetNewPasswordPage';
+import { AuthCallbackPage } from './modules/Public/AuthCallbackPage';
 import { BookingPage, BookingProvider } from './modules/BookingPage';
 import { PrebookingPage, PrebookingProvider } from './modules/PrebookingPage';
 import { ViewBookingPage } from './modules/ViewBookingPage';
@@ -255,6 +256,7 @@ export const router = createBrowserRouter(
         path={APP_ROUTE.PermissionDenied}
         element={<PermissionDeniedPage />}
       />
+      <Route path={APP_ROUTE.AuthCallback} element={<AuthCallbackPage />} />
       <Route path={APP_ROUTE.SignIn} element={<SignInPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Route>

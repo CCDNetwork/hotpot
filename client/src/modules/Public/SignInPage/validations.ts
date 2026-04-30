@@ -16,3 +16,11 @@ export const SignInFormSchema = z.object({
 });
 
 export type SignInFormData = z.infer<typeof SignInFormSchema>;
+
+export const B2cSignInFormSchema = z.object({
+  email: z.string().email({
+    message: 'Please enter a valid email address',
+  }),
+});
+
+export type B2cSignInFormData = z.infer<typeof B2cSignInFormSchema>;

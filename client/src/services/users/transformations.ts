@@ -7,6 +7,7 @@ export const resToUser = (res: any): User => {
     email: res.email ?? '',
     firstName: res.firstName ?? '',
     lastName: res.lastName ?? '',
+    status: res.status ?? 'Active',
     activatedAt: res.activatedAt ? new Date(res.activatedAt) : null,
     createdAt: res.createdAt ? new Date(res.createdAt) : null,
     role: res.role ?? '',

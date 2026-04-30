@@ -16,6 +16,7 @@ export const initialUser: User = {
   email: '',
   firstName: '',
   lastName: '',
+  status: 'Active',
   activatedAt: null,
   createdAt: null,
   role: '',

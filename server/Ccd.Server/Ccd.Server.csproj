@@ -36,6 +36,7 @@
         <EmbeddedResource Include="Emails\ForgotPassword.html" />
         <EmbeddedResource Include="Emails\ResetPasswordConfirm.html" />
         <EmbeddedResource Include="Emails\AccountReady.html" />
+        <EmbeddedResource Include="Emails\B2cInvitation.html" />
     </ItemGroup>
 
     <ItemGroup>

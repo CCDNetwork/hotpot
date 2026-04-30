@@ -78,6 +78,9 @@ public class AuthenticationService
         if (!AuthenticationHelper.VerifyPassword(user, password))
             throw new UnauthorizedException("Invalid username or password");
 
+        if (user.Status == UserStatus.Disabled)
+            throw new UnauthorizedException("User is disabled");
+
         if (!user.ActivatedAt.HasValue)
             throw new UnauthorizedException("User is not active");
 
@@ -132,13 +135,23 @@ public class AuthenticationService
 
     public async Task InviteUser(User user)
     {
-        IssuePasswordResetCode(user);
-        await _userService.UpdateUser(user);
+        if (StaticConfiguration.IsB2C)
+        {
+            user.Status = UserStatus.Pending;
+            await _userService.UpdateUser(user);
 
-        await SendPasswordResetEmail(
-            user,
-            StaticConfiguration.SendgridInvitationEmailTemplateId
-        );
+            await SendB2cInviteEmail(user);
+        }
+        else
+        {
+            IssuePasswordResetCode(user);
+            await _userService.UpdateUser(user);
+
+            await SendPasswordResetEmail(
+                user,
+                StaticConfiguration.SendgridInvitationEmailTemplateId
+            );
+        }
     }
 
     public async Task ResetPassword(string email, string passwordResetCode, string password)
@@ -177,6 +190,40 @@ public class AuthenticationService
         user.PasswordResetCodeExpiresAt = _dateTimeProvider.UtcNow.AddMinutes(
             PasswordResetCodeExpiryMinutes
         );
+    }
+
+    private string BuildB2cSignupUrl(string email)
+    {
+        return StaticConfiguration.B2cSignupUrl
+               + $"&login_hint={Uri.EscapeDataString(email)}"
+               + $"&nonce={Guid.NewGuid()}";
+    }
+
+    private async Task SendB2cInviteEmail(User user)
+    {
+        var signupUrl = BuildB2cSignupUrl(user.Email);
+
+        var templateId = StaticConfiguration.SendgridB2cInvitationEmailTemplateId;
+        if (!string.IsNullOrEmpty(templateId))
+        {
+            var templateData = new Dictionary<string, string>
+            {
+                { "firstName", user.FirstName },
+                { "email", user.Email },
+                { "buttonLink", signupUrl }
+            };
+
+            await _sendGridService.SendEmail(user.Email, templateId, templateData);
+        }
+        else
+        {
+            await _emailManagerService.SendB2cInviteMail(
+                user.Email,
+                user.FirstName,
+                user.Email,
+                signupUrl
+            );
+        }
     }
 
     private async Task SendPasswordResetEmail(User user, string templateId)

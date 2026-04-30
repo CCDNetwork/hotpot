@@ -5,6 +5,8 @@ import { resToAuthData } from './transformations';
 import {
   AuthData,
   ForgotPasswordRequest,
+  LoginInitRequest,
+  LoginInitResponse,
   LoginRequest,
   ResetPasswordRequest,
 } from './types';
@@ -28,6 +30,24 @@ export const resetPassword = async (
   return resp.data;
 };
 
+export const loginInit = async (
+  data: LoginInitRequest
+): Promise<LoginInitResponse> => {
+  const resp = await api.post('/authentication/login-init', data);
+  return resp.data;
+};
+
+export const b2cTokenExchange = async (
+  accessToken: string
+): Promise<AuthData> => {
+  const resp = await api.post(
+    '/authentication/b2c/token-exchange',
+    {},
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  return resToAuthData(resp.data);
+};
+
 //
 // Mutation hooks
 //
@@ -36,5 +56,7 @@ export const useAuthMutation = () => {
     login: useMutation(login),
     forgotPassword: useMutation(forgotPassword),
     resetPassword: useMutation(resetPassword),
+    loginInit: useMutation(loginInit),
+    b2cTokenExchange: useMutation(b2cTokenExchange),
   };
 };

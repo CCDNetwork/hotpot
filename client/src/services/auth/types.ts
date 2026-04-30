@@ -22,3 +22,16 @@ export interface ResetPasswordRequest {
 export interface ForgotPasswordRequest {
   email: string;
 }
+
+export interface LoginInitRequest {
+  email: string;
+}
+
+export interface LoginInitResponse {
+  action: string;
+  loginHint: string;
+}
+
+export interface B2cTokenExchangeRequest {
+  accessToken: string;
+}

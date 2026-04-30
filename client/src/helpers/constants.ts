@@ -36,6 +36,7 @@ export enum APP_ROUTE {
   Dashboard = '/dashboard',
   Settings = '/settings',
   // PUBLIC
+  AuthCallback = '/auth/callback',
   SignIn = '/sign-in',
   PermissionDenied = '/permission-denied',
   ReferralData = '/referral-data',

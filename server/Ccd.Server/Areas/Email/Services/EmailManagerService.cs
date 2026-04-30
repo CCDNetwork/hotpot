@@ -66,6 +66,22 @@ public class EmailManagerService
         await _notificationService.SendEmail(to, "Reset Password Request for Ccd Account", html);
     }
 
+    public async Task SendB2cInviteMail(string to, string firstName, string email, string signupLink)
+    {
+        var resourceStream = typeof(EmailManagerService).Assembly.GetManifestResourceStream(
+            "Ccd.Server.Emails.B2cInvitation.html"
+        );
+        using var reader = new StreamReader(resourceStream, Encoding.UTF8);
+
+        var html = reader.ReadToEnd();
+
+        html = html.Replace("{{ FirstName }}", firstName);
+        html = html.Replace("{{ Email }}", email);
+        html = html.Replace("{{ SignupLink }}", signupLink);
+
+        await _notificationService.SendEmail(to, "You've been invited to HotPot", html);
+    }
+
     public async Task SendResetPasswordMail(string to, string firstName, string searchPageLink)
     {
         var resourceStream = typeof(EmailManagerService).Assembly.GetManifestResourceStream(

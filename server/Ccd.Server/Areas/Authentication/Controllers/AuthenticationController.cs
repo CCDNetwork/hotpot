@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using AutoMapper;
 using Ccd.Server.Helpers;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -54,5 +55,20 @@ public class OrganizationController : ControllerBaseExtended
     {
         await _authenticationService.ResetPassword(model.Email, model.PasswordResetCode, model.Password);
         return Ok();
+    }
+
+    [HttpPost("login-init")]
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingSetup.LoginInitPolicyName)]
+    public ActionResult<LoginInitResponse> LoginInit([FromBody] LoginInitRequest model)
+    {
+        return Ok(new LoginInitResponse { LoginHint = model.Email });
+    }
+
+    [HttpGet("config")]
+    [AllowAnonymous]
+    public ActionResult<AuthConfigResponse> GetAuthConfig()
+    {
+        return Ok(new AuthConfigResponse { AuthProvider = StaticConfiguration.AuthProvider });
     }
 }

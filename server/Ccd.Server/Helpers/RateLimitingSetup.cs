@@ -12,6 +12,7 @@ namespace Ccd.Server.Helpers;
 public static class RateLimitingSetup
 {
     public const string AuthPolicyName = "auth-strict";
+    public const string LoginInitPolicyName = "login-init";
 
     public static IServiceCollection AddCcdRateLimiting(this IServiceCollection services)
     {
@@ -45,6 +46,24 @@ public static class RateLimitingSetup
                             {
                                 PermitLimit = StaticConfiguration.RateLimitAuthPermitPerMinute,
                                 Window = TimeSpan.FromMinutes(1),
+                                QueueLimit = 0,
+                                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                                AutoReplenishment = true
+                            }
+                    )
+            );
+
+            options.AddPolicy(
+                LoginInitPolicyName,
+                context =>
+                    RateLimitPartition.GetSlidingWindowLimiter(
+                        GetClientIp(context),
+                        _ =>
+                            new SlidingWindowRateLimiterOptions
+                            {
+                                PermitLimit = StaticConfiguration.RateLimitLoginInitPermitPerMinute,
+                                Window = TimeSpan.FromMinutes(1),
+                                SegmentsPerWindow = 6,
                                 QueueLimit = 0,
                                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                                 AutoReplenishment = true

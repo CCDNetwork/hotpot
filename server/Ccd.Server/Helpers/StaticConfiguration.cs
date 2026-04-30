@@ -92,6 +92,62 @@ public class StaticConfiguration
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
         );
 
+    public static string AuthProvider =>
+        Environment.GetEnvironmentVariable("AUTH_PROVIDER")
+        ?? _configuration.GetValue<string>("AuthProvider")
+        ?? "local";
+
+    public static bool IsB2C => string.Equals(AuthProvider, "b2c", StringComparison.OrdinalIgnoreCase);
+
+    public static string B2cTenant =>
+        Environment.GetEnvironmentVariable("B2C_TENANT")
+        ?? _configuration.GetValue<string>("B2C:Tenant")
+        ?? "";
+
+    public static string B2cUserFlow =>
+        Environment.GetEnvironmentVariable("B2C_USER_FLOW")
+        ?? _configuration.GetValue<string>("B2C:UserFlow")
+        ?? "";
+
+    public static string B2cClientId =>
+        Environment.GetEnvironmentVariable("B2C_CLIENT_ID")
+        ?? _configuration.GetValue<string>("B2C:ClientId")
+        ?? "";
+
+    public static string B2cApiScope =>
+        Environment.GetEnvironmentVariable("B2C_API_SCOPE")
+        ?? _configuration.GetValue<string>("B2C:ApiScope")
+        ?? "";
+
+    public static string B2cRedirectUri =>
+        Environment.GetEnvironmentVariable("B2C_REDIRECT_URI")
+        ?? _configuration.GetValue<string>("B2C:RedirectUri")
+        ?? "";
+
+    public static string B2cAuthority =>
+        $"https://{B2cTenant}.b2clogin.com/{B2cTenant}.onmicrosoft.com/{B2cUserFlow}";
+
+    public static string B2cSignupUrl =>
+        $"https://{B2cTenant}.b2clogin.com/{B2cTenant}.onmicrosoft.com/oauth2/v2.0/authorize"
+        + $"?p={B2cUserFlow}"
+        + $"&client_id={B2cClientId}"
+        + $"&redirect_uri={Uri.EscapeDataString(B2cRedirectUri)}"
+        + $"&scope=openid%20offline_access%20{Uri.EscapeDataString(B2cApiScope)}"
+        + "&response_type=code"
+        + "&prompt=login";
+
+    public static string SendgridB2cInvitationEmailTemplateId =>
+        Environment.GetEnvironmentVariable("SENDGRID_B2C_INVITATION_EMAIL_TEMPLATE_ID")
+        ?? _configuration.GetValue<string>("SendgridB2cInvitationEmailTemplateId")
+        ?? "";
+
+    public static int RateLimitLoginInitPermitPerMinute =>
+        int.Parse(
+            Environment.GetEnvironmentVariable("RATE_LIMIT_LOGIN_INIT_PER_MINUTE")
+                ?? _configuration.GetValue<string>("RateLimiting:LoginInitPerMinute")
+                ?? "10"
+        );
+
     public static int RateLimitAuthPermitPerMinute =>
         int.Parse(
             Environment.GetEnvironmentVariable("RATE_LIMIT_AUTH_PER_MINUTE")

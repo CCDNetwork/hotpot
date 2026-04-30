@@ -81,7 +81,7 @@ public class Startup
         // configure jwt authentication
         var key = Encoding.ASCII.GetBytes(StaticConfiguration.AppSettingsSecret);
 
-        services
+        var authBuilder = services
             .AddAuthentication(x =>
             {
                 x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -99,6 +99,23 @@ public class Startup
                     ValidateAudience = false
                 };
             });
+
+        if (StaticConfiguration.IsB2C)
+        {
+            authBuilder.AddJwtBearer("B2C", options =>
+            {
+                options.Authority = StaticConfiguration.B2cAuthority;
+                options.Audience = StaticConfiguration.B2cClientId;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = $"https://{StaticConfiguration.B2cTenant}.b2clogin.com/{StaticConfiguration.B2cTenant}.onmicrosoft.com/v2.0/",
+                    ValidateAudience = true,
+                    ValidAudience = StaticConfiguration.B2cClientId,
+                    ValidateLifetime = true
+                };
+            });
+        }
 
         services.AddAuthorization(options =>
         {
@@ -183,6 +200,7 @@ public class Startup
         services.AddScoped<OrganizationService>();
         services.AddScoped<UserService>();
         services.AddScoped<AuthenticationService>();
+        services.AddScoped<B2cClaimMappingService>();
         services.AddScoped<DeduplicationService>();
         services.AddScoped<BookingService>();
         services.AddScoped<BeneficiaryAttributeService>();

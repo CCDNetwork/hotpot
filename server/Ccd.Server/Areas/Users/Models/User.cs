@@ -5,6 +5,16 @@ using Ccd.Server.Helpers;
 
 namespace Ccd.Server.Users;
 
+public static class UserStatus
+{
+    public const string Pending = "Pending";
+    public const string Active = "Active";
+    public const string Disabled = "Disabled";
+
+    public static bool IsValid(string status) =>
+        status is Pending or Active or Disabled;
+}
+
 public class User : IHasPassword, IIsDeleted
 {
     public static readonly User SYSTEM_USER = new User
@@ -14,6 +24,7 @@ public class User : IHasPassword, IIsDeleted
         Password = "",
         FirstName = "System",
         LastName = "",
+        Status = UserStatus.Active,
         ActivatedAt = new DateTime(2022, 01, 01, 0, 0, 0, DateTimeKind.Utc),
         CreatedAt = new DateTime(2022, 01, 01, 0, 0, 0, DateTimeKind.Utc),
         UpdatedAt = new DateTime(2022, 01, 01, 0, 0, 0, DateTimeKind.Utc)
@@ -33,6 +44,10 @@ public class User : IHasPassword, IIsDeleted
     public string ActivationCode { get; set; }
     public string PasswordResetCode { get; set; }
     public DateTime? PasswordResetCodeExpiresAt { get; set; }
+
+    [Required, MaxLength(16)]
+    public string Status { get; set; } = UserStatus.Active;
+
     public string Language { get; set; } = "en";
     public DateTime? ActivatedAt { get; set; }
     public DateTime CreatedAt { get; set; }
