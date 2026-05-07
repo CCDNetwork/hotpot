@@ -109,7 +109,6 @@ public class Startup
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = $"https://{StaticConfiguration.B2cTenant}.b2clogin.com/{StaticConfiguration.B2cTenant}.onmicrosoft.com/v2.0/",
                     ValidateAudience = true,
                     ValidAudience = StaticConfiguration.B2cClientId,
                     ValidateLifetime = true
