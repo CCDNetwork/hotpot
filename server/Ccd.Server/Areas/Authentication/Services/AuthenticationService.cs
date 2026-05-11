@@ -198,7 +198,7 @@ public class AuthenticationService
 
     private async Task SendB2cInviteEmail(User user)
     {
-        var signupUrl = BuildB2cSignupUrl(user.Email);
+        var signupUrl = StaticConfiguration.WebAppUrl + "/sign-in";
 
         var templateId = StaticConfiguration.SendgridB2cInvitationEmailTemplateId;
         if (!string.IsNullOrEmpty(templateId))
