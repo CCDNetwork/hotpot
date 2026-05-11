@@ -20,13 +20,12 @@ workflow:
         API_URL: $API_URL_DEVELOP
         DIRECTUS_URL: $DIRECTUS_URL_DEVELOP
         DIRECTUS_TOKEN: $DIRECTUS_TOKEN_DEVELOP
-    - if: '$CI_COMMIT_BRANCH == "poc"'
-      variables:
-        IMAGE_TAG: "poc"
-        REMOTE_URL: $REMOTE_URL_POC
-        API_URL: $API_URL_POC
-        DIRECTUS_URL: $DIRECTUS_URL_POC
-        DIRECTUS_TOKEN: $DIRECTUS_TOKEN_POC
+        AUTH_PROVIDER: $AUTH_PROVIDER_DEVELOP
+        B2C_TENANT: $B2C_TENANT_DEVELOP
+        B2C_CLIENT_ID: $B2C_CLIENT_ID_DEVELOP
+        B2C_USER_FLOW: $B2C_USER_FLOW_DEVELOP
+        B2C_API_SCOPE: $B2C_API_SCOPE_DEVELOP
+        B2C_REDIRECT_URI: $B2C_REDIRECT_URI_DEVELOP
     - if: '$CI_COMMIT_TAG == "gaza-dev"'
       variables:
         IMAGE_TAG: "gaza-dev"
@@ -34,27 +33,12 @@ workflow:
         API_URL: $API_URL_GAZA_DEV
         DIRECTUS_URL: $DIRECTUS_URL_GAZA_DEV
         DIRECTUS_TOKEN: $DIRECTUS_TOKEN_GAZA_DEV
-    - if: '$CI_COMMIT_TAG == "ukraine"'
-      variables:
-        IMAGE_TAG: "ukraine"
-        REMOTE_URL: $REMOTE_URL_UKRAINE
-        API_URL: $API_URL_UKRAINE
-        DIRECTUS_URL: $DIRECTUS_URL_UKRAINE
-        DIRECTUS_TOKEN: $DIRECTUS_TOKEN_UKRAINE
-    - if: '$CI_COMMIT_TAG == "south-sudan"'
-      variables:
-        IMAGE_TAG: "south-sudan"
-        REMOTE_URL: $REMOTE_URL_SOUTH_SUDAN
-        API_URL: $API_URL_SOUTH_SUDAN
-        DIRECTUS_URL: $DIRECTUS_URL_SOUTH_SUDAN
-        DIRECTUS_TOKEN: $DIRECTUS_TOKEN_SOUTH_SUDAN
-    - if: '$CI_COMMIT_TAG == "pentest"'
-      variables:
-        IMAGE_TAG: "pentest"
-        REMOTE_URL: $REMOTE_URL_PENTEST
-        API_URL: $API_URL_PENTEST
-        DIRECTUS_URL: $DIRECTUS_URL_PENTEST
-        DIRECTUS_TOKEN: $DIRECTUS_TOKEN_PENTEST
+        AUTH_PROVIDER: $AUTH_PROVIDER_GAZA_DEV
+        B2C_TENANT: $B2C_TENANT_GAZA_DEV
+        B2C_CLIENT_ID: $B2C_CLIENT_ID_GAZA_DEV
+        B2C_USER_FLOW: $B2C_USER_FLOW_GAZA_DEV
+        B2C_API_SCOPE: $B2C_API_SCOPE_GAZA_DEV
+        B2C_REDIRECT_URI: $B2C_REDIRECT_URI_GAZA_DEV
     - if: '$CI_COMMIT_TAG == "urc"'
       variables:
         IMAGE_TAG: "urc"
@@ -62,6 +46,12 @@ workflow:
         API_URL: $API_URL_URC
         DIRECTUS_URL: $DIRECTUS_URL_URC
         DIRECTUS_TOKEN: $DIRECTUS_TOKEN_URC
+        AUTH_PROVIDER: $AUTH_PROVIDER_URC
+        B2C_TENANT: $B2C_TENANT_URC
+        B2C_CLIENT_ID: $B2C_CLIENT_ID_URC
+        B2C_USER_FLOW: $B2C_USER_FLOW_URC
+        B2C_API_SCOPE: $B2C_API_SCOPE_URC
+        B2C_REDIRECT_URI: $B2C_REDIRECT_URI_URC
     - when: always
 
 build-client:
@@ -76,6 +66,12 @@ build-client:
     - echo VITE_API_URL=$API_URL > .env
     - echo VITE_DIRECTUS_URL=$DIRECTUS_URL >> .env
     - echo VITE_DIRECTUS_TOKEN=$DIRECTUS_TOKEN >> .env
+    - echo VITE_AUTH_PROVIDER=$AUTH_PROVIDER >> .env
+    - echo VITE_B2C_TENANT=$B2C_TENANT >> .env
+    - echo VITE_B2C_CLIENT_ID=$B2C_CLIENT_ID >> .env
+    - echo VITE_B2C_USER_FLOW=$B2C_USER_FLOW >> .env
+    - echo VITE_B2C_API_SCOPE=$B2C_API_SCOPE >> .env
+    - echo VITE_B2C_REDIRECT_URI=$B2C_REDIRECT_URI >> .env
     - yarn build
     - mv dist ../client-build
     - echo "Build successful"
