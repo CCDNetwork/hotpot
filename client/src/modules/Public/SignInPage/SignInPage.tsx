@@ -141,6 +141,10 @@ const B2cSignInPage = () => {
 
       const msalInstance = new PublicClientApplication(msalConfig);
       await msalInstance.initialize();
+      // Consumes any pending redirect response and clears stale
+      // `interaction.status` from a previous incomplete flow that would
+      // otherwise throw `interaction_in_progress` here.
+      await msalInstance.handleRedirectPromise();
 
       await msalInstance.loginRedirect({
         ...loginRequest,

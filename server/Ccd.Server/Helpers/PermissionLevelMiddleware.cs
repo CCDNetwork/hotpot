@@ -59,16 +59,18 @@ public class PermissionLevelMiddleware
         )
         {
             isUserAuthenticated = true;
-            role = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role).Value;
+            role = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? "";
         }
 
         if (isUserAuthenticated)
         {
             var key = "UserId";
 
-            context.Items[key] = Guid.Parse(
-                context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value
-            );
+            var userIdClaim = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var userIdGuid))
+            {
+                context.Items[key] = userIdGuid;
+            }
 
             context.Items["OrganizationRoles"] = role;
         }

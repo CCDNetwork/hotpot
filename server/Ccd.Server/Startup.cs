@@ -105,13 +105,25 @@ public class Startup
             authBuilder.AddJwtBearer("B2C", options =>
             {
                 options.Authority = StaticConfiguration.B2cAuthority;
+                options.MetadataAddress = $"{StaticConfiguration.B2cAuthority}/v2.0/.well-known/openid-configuration";
                 options.Audience = StaticConfiguration.B2cClientId;
+                var b2cIssuerHostPrefix = $"https://{StaticConfiguration.B2cTenant}.b2clogin.com/";
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidAudience = StaticConfiguration.B2cClientId,
-                    ValidateLifetime = true
+                    ValidateLifetime = true,
+                    // B2C metadata returns the issuer without "/v2.0/", but
+                    // user-flow tokens carry "/v2.0/" in the iss claim. Accept
+                    // any iss issued by our tenant; audience + signature still
+                    // validate normally.
+                    IssuerValidator = (issuer, _, _) =>
+                    {
+                        if (!string.IsNullOrEmpty(issuer) && issuer.StartsWith(b2cIssuerHostPrefix))
+                            return issuer;
+                        throw new SecurityTokenInvalidIssuerException($"Invalid issuer: {issuer}");
+                    },
                 };
             });
         }

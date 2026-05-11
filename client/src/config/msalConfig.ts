@@ -9,6 +9,7 @@ export const msalConfig: Configuration = {
     ],
     redirectUri: import.meta.env.VITE_B2C_REDIRECT_URI || window.location.origin + '/auth/callback',
     postLogoutRedirectUri: window.location.origin + '/sign-in',
+    navigateToLoginRequestUrl: false,
   },
   cache: {
     cacheLocation: 'localStorage',

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { msalConfig } from '@/config/msalConfig';
@@ -11,8 +11,15 @@ export const AuthCallbackPage = () => {
   const { loginUser } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const hasHandledRef = useRef(false);
 
   useEffect(() => {
+    // StrictMode runs effects twice in dev; the second run would race
+    // handleRedirectPromise against the first and resolve to null after
+    // the hash was already consumed, then redirect to /sign-in.
+    if (hasHandledRef.current) return;
+    hasHandledRef.current = true;
+
     const handleCallback = async () => {
       try {
         const msalInstance = new PublicClientApplication(msalConfig);
@@ -25,7 +32,11 @@ export const AuthCallbackPage = () => {
           return;
         }
 
-        const authData = await b2cTokenExchange(response.accessToken);
+        // TODO: revert to response.accessToken once the B2C admin exposes
+        // the `access_as_user` scope on the app and grants admin consent.
+        // Until then, send the ID token: SPA and API are the same app
+        // registration, so its `aud` already matches B2C_CLIENT_ID.
+        const authData = await b2cTokenExchange(response.idToken);
         loginUser(authData);
 
         toast({

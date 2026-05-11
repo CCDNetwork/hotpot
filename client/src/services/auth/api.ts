@@ -37,13 +37,11 @@ export const loginInit = async (
   return resp.data;
 };
 
-export const b2cTokenExchange = async (
-  accessToken: string
-): Promise<AuthData> => {
+export const b2cTokenExchange = async (token: string): Promise<AuthData> => {
   const resp = await api.post(
     '/authentication/b2c/token-exchange',
     {},
-    { headers: { Authorization: `Bearer ${accessToken}` } }
+    { headers: { Authorization: `Bearer ${token}` } }
   );
   return resToAuthData(resp.data);
 };

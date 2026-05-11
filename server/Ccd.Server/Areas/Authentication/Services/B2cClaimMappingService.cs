@@ -23,7 +23,9 @@ public class B2cClaimMappingService
         var user = await _userService.GetUserByEmail(email);
 
         if (user == null)
-            throw new ForbiddenException("USER_NOT_INVITED");
+            throw new ForbiddenException(
+                "Your account hasn't been invited to this platform yet. Please contact your administrator to request access."
+            );
 
         return user;
     }
