@@ -7,6 +7,7 @@ import {
 import { useBookingProvider } from '@/modules/BookingPage';
 import { useDeduplicationProvider } from '@/modules/DeduplicationPage';
 import { api } from '@/services';
+import { activeStorageTypeId } from '@/services/storage/config';
 import {
   dataToDatasetRequest,
   resToBooking,
@@ -140,7 +141,11 @@ const postDeduplicationFinish = async (data: {
 const postBookingStep1 = async (data: {
   file: File;
 }): Promise<BookingDataset> => {
-  const resp = await api.post('/deduplication/booking/step-1', data, {
+  const formData = new FormData();
+  formData.append('file', data.file);
+  formData.append('storageTypeId', activeStorageTypeId.toString());
+
+  const resp = await api.post('/deduplication/booking/step-1', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 

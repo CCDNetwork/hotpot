@@ -11,7 +11,7 @@ import {
 import { useDropzone, FileRejection } from 'react-dropzone';
 
 import { Button } from '@/components/ui/button';
-import { StorageTypeId } from '@/services/storage/types';
+import { activeStorageTypeId } from '@/services/storage/config';
 import { useStorageFileMutation } from '@/services/storage/api';
 import { cn } from '@/helpers/utils';
 
@@ -67,7 +67,7 @@ export const FilesDropzone = ({ name, control, maxFiles, disabled }: Props) => {
           files.map(async (file) => {
             const res = await addStorageFile.mutateAsync({
               file,
-              type: StorageTypeId.Assets,
+              type: activeStorageTypeId,
             });
 
             filesToUpload.push(res);

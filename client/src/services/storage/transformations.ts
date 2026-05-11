@@ -1,3 +1,4 @@
+import { activeStorageTypeId } from './config';
 import { StorageFile, StorageTypeId, Image, StorageFileData } from './types';
 
 export const resToStorageFile = (res: any): StorageFile => {
@@ -25,7 +26,7 @@ export const imageToFormData = (image: Image): FormData => {
     'file',
     new File([image.buffer], image.name, { type: 'image/*' })
   );
-  formData.append('storageTypeId', StorageTypeId.Assets.toString());
+  formData.append('storageTypeId', activeStorageTypeId.toString());
   return formData;
 };
 

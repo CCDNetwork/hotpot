@@ -616,7 +616,7 @@ public class ReferralService
         workbook.SaveAs(memoryStream);
 
         var savedFile = await _storageService.SaveFile(
-            StorageType.GetById(StorageType.Assets.Id),
+            StorageType.GetById(model.StorageTypeId),
             memoryStream,
             userId,
             model.File.FileName

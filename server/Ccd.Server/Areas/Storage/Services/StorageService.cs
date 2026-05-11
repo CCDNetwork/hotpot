@@ -6,19 +6,23 @@ using Ccd.Server.Data;
 using Ccd.Server.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Ccd.Server.Storage;
 
 public class StorageService : IStorageService
 {
     private readonly CcdContext _context;
-    private readonly IStorageEngine _storageEngine;
+    private readonly IServiceProvider _serviceProvider;
 
-    public StorageService(CcdContext context)
+    public StorageService(CcdContext context, IServiceProvider serviceProvider)
     {
         _context = context;
-        _storageEngine = new FilesystemStorageEngine();
+        _serviceProvider = serviceProvider;
     }
+
+    private IStorageEngine GetEngine(int storageTypeId) =>
+        _serviceProvider.GetRequiredKeyedService<IStorageEngine>(storageTypeId);
 
 
     public async Task<File> SaveFile(StorageType storageType, IFormFile file, Guid ownerId, string name, bool isTemporary = false)
@@ -47,7 +51,7 @@ public class StorageService : IStorageService
 
     public async Task<File> SaveFile(StorageType storageType, MemoryStream ms, Guid ownerId, string name, bool isTemporary = false)
     {
-        var savedFile = await _storageEngine.SaveFileAsync(ownerId, storageType, ms, name);
+        var savedFile = await GetEngine(storageType.Id).SaveFileAsync(ownerId, storageType, ms, name);
         savedFile.IsTemporary = isTemporary;
 
         savedFile = _context.Files.Add(savedFile).Entity;
@@ -68,7 +72,7 @@ public class StorageService : IStorageService
 
         try
         {
-            _storageEngine.DeleteFile(file);
+            GetEngine(file.StorageTypeId).DeleteFile(file);
         }
         catch (FileNotFoundException)
         {
@@ -78,12 +82,12 @@ public class StorageService : IStorageService
 
     public async Task<byte[]> GetFileBytes(File file)
     {
-        return await _storageEngine.GetFileAsync(file);
+        return await GetEngine(file.StorageTypeId).GetFileAsync(file);
     }
 
     public Stream GetFileStream(File file)
     {
-        return _storageEngine.GetFileStream(file);
+        return GetEngine(file.StorageTypeId).GetFileStream(file);
     }
 
     public async Task<File> GetFileByFileName(string fileName)

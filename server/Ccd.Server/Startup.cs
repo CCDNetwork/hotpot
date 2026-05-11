@@ -223,6 +223,8 @@ public class Startup
         services.AddScoped<HandbookService>();
         services.AddScoped<SettingsService>();
         services.AddScoped<AdministrativeRegionService>();
+        services.AddKeyedScoped<IStorageEngine, FilesystemStorageEngine>(StorageType.Assets.Id);
+        services.AddKeyedScoped<IStorageEngine, AzureBlobStorageEngine>(StorageType.AzureBlob.Id);
         services.AddScoped<IStorageService, StorageService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<TemporaryFileCleanupJob>();

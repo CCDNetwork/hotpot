@@ -1,4 +1,5 @@
 import { resToOrganization } from '@/services/organizations';
+import { activeStorageTypeId } from '@/services/storage/config';
 
 import {
   BookingResponse,
@@ -61,6 +62,7 @@ export const dataToDatasetRequest = (data: {
   const formData = new FormData();
   formData.append('file', data.file);
   formData.append('templateId', data.templateId);
+  formData.append('storageTypeId', activeStorageTypeId.toString());
   return formData;
 };
 

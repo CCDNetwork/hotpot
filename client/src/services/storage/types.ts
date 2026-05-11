@@ -1,6 +1,6 @@
 export enum StorageTypeId {
   Assets = 1,
-  Images = 2,
+  AzureBlob = 2,
   Files = 4,
 }
 

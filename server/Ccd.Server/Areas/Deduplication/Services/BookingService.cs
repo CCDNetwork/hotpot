@@ -137,7 +137,7 @@ public class BookingService
         using var memoryStream = new MemoryStream();
         workbook.SaveAs(memoryStream);
 
-        var savedFile = await _storageService.SaveFile(StorageType.GetById(StorageType.Assets.Id), memoryStream, userId, model.File.FileName, isTemporary: true);
+        var savedFile = await _storageService.SaveFile(StorageType.GetById(model.StorageTypeId), memoryStream, userId, model.File.FileName, isTemporary: true);
         var fileApi = await _storageService.GetFileApiById(savedFile.Id);
 
         return (isExcelValid, fileApi.Url, savedFile.Id);
@@ -173,7 +173,7 @@ public class BookingService
         using var memoryStream = new MemoryStream();
         workbook.SaveAs(memoryStream);
 
-        var savedFile = await _storageService.SaveFile(StorageType.GetById(StorageType.Assets.Id), memoryStream, userId, file.FileName, isTemporary: true);
+        var savedFile = await _storageService.SaveFile(StorageType.GetById(file.StorageTypeId), memoryStream, userId, file.FileName, isTemporary: true);
         var fileApi = await _storageService.GetFileApiById(savedFile.Id);
 
         return (isExcelValid, fileApi.Url, savedFile.Id);

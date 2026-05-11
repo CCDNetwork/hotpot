@@ -45,6 +45,16 @@ public class StaticConfiguration
         Environment.GetEnvironmentVariable("STORAGE_PATH")
         ?? _configuration.GetValue<string>("StoragePath");
 
+    public static string AzureStorageConnectionString =>
+        Environment.GetEnvironmentVariable("AZURE_STORAGE_CONNECTION_STRING")
+        ?? _configuration.GetValue<string>("AzureStorageConnectionString")
+        ?? "";
+
+    public static string AzureBlobContainerName =>
+        Environment.GetEnvironmentVariable("AZURE_BLOB_CONTAINER_NAME")
+        ?? _configuration.GetValue<string>("AzureBlobContainerName")
+        ?? "";
+
     public static string FileCleanupCron =>
         Environment.GetEnvironmentVariable("FILE_CLEANUP_CRON")
         ?? _configuration.GetValue<string>("FileCleanupCron")

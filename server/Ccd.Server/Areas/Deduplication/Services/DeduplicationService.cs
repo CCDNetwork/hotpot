@@ -201,7 +201,7 @@ public class DeduplicationService
         using var memoryStream = new MemoryStream();
         workbook.SaveAs(memoryStream);
 
-        var savedFile = await _storageService.SaveFile(StorageType.GetById(StorageType.Assets.Id), memoryStream, userId,
+        var savedFile = await _storageService.SaveFile(StorageType.GetById(model.StorageTypeId), memoryStream, userId,
             model.File.FileName, isTemporary: true);
         var fileResponse = await _storageService.GetFileApiById(savedFile.Id);
 

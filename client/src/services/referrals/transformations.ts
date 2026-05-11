@@ -9,6 +9,7 @@ import { BatchCreateModalForm } from '@/modules/SentReferrals/SentReferralsPage/
 import { BatchCreateResponse, Referral, ReferralUser } from './types';
 import { resToUser } from '../users';
 import { resToStorageFile } from '../storage';
+import { activeStorageTypeId } from '../storage/config';
 import { resToAdministrativeRegion } from '../administrativeRegions/transformations';
 
 export const resToReferral = (res: any): Referral => {
@@ -272,6 +273,7 @@ export const dataToBatchCreateRequest = (
   formData.append('organizationReferredToId', data.organizationReferredTo?.id);
   formData.append('serviceCategory', data.serviceCategory);
   formData.append('batchType', data.batchType);
+  formData.append('storageTypeId', activeStorageTypeId.toString());
 
   if (Array.isArray(subactivitiesIds) && subactivitiesIds.length > 0) {
     subactivitiesIds.forEach((value) => {
