@@ -32,11 +32,7 @@ export const AuthCallbackPage = () => {
           return;
         }
 
-        // TODO: revert to response.accessToken once the B2C admin exposes
-        // the `access_as_user` scope on the app and grants admin consent.
-        // Until then, send the ID token: SPA and API are the same app
-        // registration, so its `aud` already matches B2C_CLIENT_ID.
-        const authData = await b2cTokenExchange(response.idToken);
+        const authData = await b2cTokenExchange(response.accessToken);
         loginUser(authData);
 
         toast({
@@ -48,7 +44,9 @@ export const AuthCallbackPage = () => {
         navigate('/');
       } catch (err: any) {
         const message =
-          err.response?.data?.errorMessage || err.message || 'Authentication failed';
+          err.response?.data?.errorMessage ||
+          err.message ||
+          'Authentication failed';
         setError(message);
         toast({
           title: 'Authentication failed',

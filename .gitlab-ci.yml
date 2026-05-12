@@ -24,7 +24,6 @@ workflow:
         B2C_TENANT: $B2C_TENANT_DEVELOP
         B2C_CLIENT_ID: $B2C_CLIENT_ID_DEVELOP
         B2C_USER_FLOW: $B2C_USER_FLOW_DEVELOP
-        B2C_API_SCOPE: $B2C_API_SCOPE_DEVELOP
         B2C_REDIRECT_URI: $B2C_REDIRECT_URI_DEVELOP
     - if: '$CI_COMMIT_TAG == "gaza-dev"'
       variables:
@@ -37,7 +36,6 @@ workflow:
         B2C_TENANT: $B2C_TENANT_GAZA_DEV
         B2C_CLIENT_ID: $B2C_CLIENT_ID_GAZA_DEV
         B2C_USER_FLOW: $B2C_USER_FLOW_GAZA_DEV
-        B2C_API_SCOPE: $B2C_API_SCOPE_GAZA_DEV
         B2C_REDIRECT_URI: $B2C_REDIRECT_URI_GAZA_DEV
     - if: '$CI_COMMIT_TAG == "urc"'
       variables:
@@ -50,7 +48,6 @@ workflow:
         B2C_TENANT: $B2C_TENANT_URC
         B2C_CLIENT_ID: $B2C_CLIENT_ID_URC
         B2C_USER_FLOW: $B2C_USER_FLOW_URC
-        B2C_API_SCOPE: $B2C_API_SCOPE_URC
         B2C_REDIRECT_URI: $B2C_REDIRECT_URI_URC
     - when: always
 
@@ -70,7 +67,6 @@ build-client:
     - echo VITE_B2C_TENANT=$B2C_TENANT >> .env
     - echo VITE_B2C_CLIENT_ID=$B2C_CLIENT_ID >> .env
     - echo VITE_B2C_USER_FLOW=$B2C_USER_FLOW >> .env
-    - echo VITE_B2C_API_SCOPE=$B2C_API_SCOPE >> .env
     - echo VITE_B2C_REDIRECT_URI=$B2C_REDIRECT_URI >> .env
     - yarn build
     - mv dist ../client-build

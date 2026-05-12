@@ -26,7 +26,10 @@ export const loginRequest = {
   scopes: [
     'openid',
     'offline_access',
-    import.meta.env.VITE_B2C_API_SCOPE || '',
+    // B2C accepts the bare client-ID GUID as a scope to request an access
+    // token usable against the same app's own API.
+    // https://learn.microsoft.com/en-us/azure/active-directory-b2c/access-tokens#openid-connect-scopes
+    import.meta.env.VITE_B2C_CLIENT_ID || '',
   ].filter(Boolean),
 };
 

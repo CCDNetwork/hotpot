@@ -189,13 +189,6 @@ public class AuthenticationService
         );
     }
 
-    private string BuildB2cSignupUrl(string email)
-    {
-        return StaticConfiguration.B2cSignupUrl
-               + $"&login_hint={Uri.EscapeDataString(email)}"
-               + $"&nonce={Guid.NewGuid()}";
-    }
-
     private async Task SendB2cInviteEmail(User user)
     {
         var signupUrl = StaticConfiguration.WebAppUrl + "/sign-in";
