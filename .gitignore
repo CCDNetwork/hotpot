@@ -36,7 +36,8 @@ pull-dev-db.sh
 appsettings.Development.json
 *.sln
 *.DotSettings.user
-C*.md
+CL*.md
+*.lscache
 
 azure_storage.md
 entra_id.md
