@@ -1,0 +1,108 @@
+# Builds the CCD client and server Docker images and pushes them to Azure
+# Container Registry. Triggered by the `save-the-children` git tag.
+#
+# Required Azure DevOps configuration:
+#   * Docker Registry service connection — referenced by `dockerRegistryServiceConnection`.
+#     Create one under Project Settings > Service connections > Docker Registry,
+#     pointing at the target ACR.
+#   * Variable group `ccd-save-the-children` (or rename below) holding the
+#     client build-time variables: API_URL, DIRECTUS_URL, DIRECTUS_TOKEN,
+#     AUTH_PROVIDER, B2C_TENANT, B2C_CLIENT_ID, B2C_USER_FLOW, B2C_REDIRECT_URI.
+#     Mark DIRECTUS_TOKEN as a secret.
+
+trigger:
+  branches:
+    exclude:
+      - '*'
+  tags:
+    include:
+      - save-the-children
+
+pr: none
+
+pool: 'MENA-HotPot Pipelines'
+
+variables:
+  - group: ccd-save-the-children
+  - name: imageTag
+    value: save-the-children
+  - name: dockerRegistryServiceConnection
+    value: ccd-acr
+  - name: imageRepository
+    value: init/ccd-data-portal/image
+
+stages:
+  - stage: Publish
+    displayName: Build and push images
+    jobs:
+      - job: Client
+        displayName: Build & push client image
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '18.x'
+            displayName: Use Node 18
+
+          - script: |
+              set -euo pipefail
+              cd client
+              yarn install --frozen-lockfile
+              cat > .env <<EOF
+              VITE_API_URL=$(API_URL)
+              VITE_DIRECTUS_URL=$(DIRECTUS_URL)
+              VITE_DIRECTUS_TOKEN=$(DIRECTUS_TOKEN)
+              VITE_AUTH_PROVIDER=$(AUTH_PROVIDER)
+              VITE_B2C_TENANT=$(B2C_TENANT)
+              VITE_B2C_CLIENT_ID=$(B2C_CLIENT_ID)
+              VITE_B2C_USER_FLOW=$(B2C_USER_FLOW)
+              VITE_B2C_REDIRECT_URI=$(B2C_REDIRECT_URI)
+              EOF
+              yarn build
+              mv dist ../client-build
+              cp deployment/Dockerfile ../client-build/
+              cp deployment/nginx.conf ../client-build/
+            displayName: Build client bundle
+            env:
+              DIRECTUS_TOKEN: $(DIRECTUS_TOKEN)
+
+          - task: Docker@2
+            displayName: Build & push client image to ACR
+            inputs:
+              command: buildAndPush
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(imageRepository)
+              Dockerfile: client-build/Dockerfile
+              buildContext: client-build
+              tags: client-$(imageTag)
+
+      - job: Server
+        displayName: Build & push server image
+        steps:
+          - task: UseDotNet@2
+            inputs:
+              version: '8.0.x'
+            displayName: Use .NET 8 SDK
+
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '18.x'
+            displayName: Use Node 18
+
+          - script: |
+              set -euo pipefail
+              cd server
+              npm install
+              npm run build
+              mv Ccd.Server/build ../server-build
+              cp deployment/Dockerfile ../server-build/
+            displayName: Build server bundle
+
+          - task: Docker@2
+            displayName: Build & push server image to ACR
+            inputs:
+              command: buildAndPush
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(imageRepository)
+              Dockerfile: server-build/Dockerfile
+              buildContext: server-build
+              tags: server-$(imageTag)
