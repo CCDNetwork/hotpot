@@ -2,13 +2,13 @@
 # Container Registry. Triggered by the `save-the-children` git tag.
 #
 # Required Azure DevOps configuration:
-#   * Docker Registry service connection — referenced by `dockerRegistryServiceConnection`.
-#     Create one under Project Settings > Service connections > Docker Registry,
-#     pointing at the target ACR.
+#   * Azure Resource Manager service connection — `azureSubscription` below.
+#     Reuses the existing ARM connection your team already has for AKS.
 #   * Variable group `ccd-save-the-children` (or rename below) holding the
 #     client build-time variables: API_URL, DIRECTUS_URL, DIRECTUS_TOKEN,
 #     AUTH_PROVIDER, B2C_TENANT, B2C_CLIENT_ID, B2C_USER_FLOW, B2C_REDIRECT_URI.
 #     Mark DIRECTUS_TOKEN as a secret.
+#   * Set `acrName` below to the target ACR (the name only, no `.azurecr.io`).
 
 trigger:
   branches:
@@ -26,8 +26,10 @@ variables:
   - group: ccd-save-the-children
   - name: imageTag
     value: save-the-children
-  - name: dockerRegistryServiceConnection
-    value: ccd-acr
+  - name: azureSubscription
+    value: 'UNI_MENA_RO RG-MENA-RO-HotPot-PRD'
+  - name: acrName
+    value: 'unicrmenarohotpotcommon'
   - name: imageRepository
     value: init/ccd-data-portal/image
 
@@ -65,15 +67,18 @@ stages:
             env:
               DIRECTUS_TOKEN: $(DIRECTUS_TOKEN)
 
-          - task: Docker@2
+          - task: AzureCLI@2
             displayName: Build & push client image to ACR
             inputs:
-              command: buildAndPush
-              containerRegistry: $(dockerRegistryServiceConnection)
-              repository: $(imageRepository)
-              Dockerfile: client-build/Dockerfile
-              buildContext: client-build
-              tags: client-$(imageTag)
+              azureSubscription: $(azureSubscription)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                az acr login --name $(acrName)
+                IMAGE=$(acrName).azurecr.io/$(imageRepository):client-$(imageTag)
+                docker build -t "$IMAGE" -f client-build/Dockerfile client-build
+                docker push "$IMAGE"
 
       - job: Server
         displayName: Build & push server image
@@ -97,12 +102,15 @@ stages:
               cp deployment/Dockerfile ../server-build/
             displayName: Build server bundle
 
-          - task: Docker@2
+          - task: AzureCLI@2
             displayName: Build & push server image to ACR
             inputs:
-              command: buildAndPush
-              containerRegistry: $(dockerRegistryServiceConnection)
-              repository: $(imageRepository)
-              Dockerfile: server-build/Dockerfile
-              buildContext: server-build
-              tags: server-$(imageTag)
+              azureSubscription: $(azureSubscription)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                az acr login --name $(acrName)
+                IMAGE=$(acrName).azurecr.io/$(imageRepository):server-$(imageTag)
+                docker build -t "$IMAGE" -f server-build/Dockerfile server-build
+                docker push "$IMAGE"
