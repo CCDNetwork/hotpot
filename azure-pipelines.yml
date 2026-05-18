@@ -1,14 +1,18 @@
-# Builds the CCD client and server Docker images and pushes them to Azure
-# Container Registry. Triggered by the `save-the-children` git tag.
+# Builds the CCD client and server Docker images and pushes them to ACR.
+# Triggered by the `save-the-children` git tag.
+#
+# Targets the Windows self-hosted `MENA-HotPot Pipelines` agent pool —
+# script blocks use PowerShell.
 #
 # Required Azure DevOps configuration:
-#   * Azure Resource Manager service connection — `azureSubscription` below.
-#     Reuses the existing ARM connection your team already has for AKS.
 #   * Variable group `ccd-save-the-children` (or rename below) holding the
 #     client build-time variables: API_URL, DIRECTUS_URL, DIRECTUS_TOKEN,
 #     AUTH_PROVIDER, B2C_TENANT, B2C_CLIENT_ID, B2C_USER_FLOW, B2C_REDIRECT_URI.
 #     Mark DIRECTUS_TOKEN as a secret.
-#   * Set `acrName` below to the target ACR (the name only, no `.azurecr.io`).
+#   * Docker Registry service connection — `azureSubscription` below.
+#     Set its value to the name of the connection that points at ACR.
+#   * Agent must have Docker installed and the agent user must be in the
+#     docker-users group.
 
 trigger:
   branches:
@@ -27,61 +31,69 @@ variables:
   - name: imageTag
     value: save-the-children
   - name: azureSubscription
-    value: 'UNI_MENA_RO RG-MENA-RO-HotPot-PRD'
-  - name: acrName
-    value: 'unicrmenarohotpotcommon'
+    value: '<docker-registry-service-connection-name>'
   - name: imageRepository
     value: init/ccd-data-portal/image
 
 stages:
-  - stage: Publish
-    displayName: Build and push images
+  - stage: Build
+    displayName: Build images
     jobs:
       - job: Client
-        displayName: Build & push client image
+        displayName: Build client image
         steps:
           - task: NodeTool@0
             inputs:
               versionSpec: '18.x'
             displayName: Use Node 18
 
-          - script: |
-              set -euo pipefail
-              cd client
-              yarn install --frozen-lockfile
-              cat > .env <<EOF
-              VITE_API_URL=$(API_URL)
-              VITE_DIRECTUS_URL=$(DIRECTUS_URL)
-              VITE_DIRECTUS_TOKEN=$(DIRECTUS_TOKEN)
-              VITE_AUTH_PROVIDER=$(AUTH_PROVIDER)
-              VITE_B2C_TENANT=$(B2C_TENANT)
-              VITE_B2C_CLIENT_ID=$(B2C_CLIENT_ID)
-              VITE_B2C_USER_FLOW=$(B2C_USER_FLOW)
-              VITE_B2C_REDIRECT_URI=$(B2C_REDIRECT_URI)
-              EOF
-              yarn build
-              mv dist ../client-build
-              cp deployment/Dockerfile ../client-build/
-              cp deployment/nginx.conf ../client-build/
+          - task: PowerShell@2
             displayName: Build client bundle
-            env:
-              DIRECTUS_TOKEN: $(DIRECTUS_TOKEN)
-
-          - task: AzureCLI@2
-            displayName: Build & push client image to ACR
             inputs:
-              azureSubscription: $(azureSubscription)
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                set -euo pipefail
-                az acr login --name $(acrName)
-                IMAGE=$(acrName).azurecr.io/$(imageRepository):client-$(imageTag)
-                docker build -t "$IMAGE" -f client-build/Dockerfile client-build
-                docker push "$IMAGE"
+              targetType: inline
+              pwsh: true
+              script: |
+                $ErrorActionPreference = 'Stop'
+                npm install -g yarn
+                Set-Location client
+                yarn install --frozen-lockfile
+                @"
+                VITE_API_URL=$env:API_URL
+                VITE_DIRECTUS_URL=$env:DIRECTUS_URL
+                VITE_DIRECTUS_TOKEN=$env:DIRECTUS_TOKEN
+                VITE_AUTH_PROVIDER=$env:AUTH_PROVIDER
+                VITE_B2C_TENANT=$env:B2C_TENANT
+                VITE_B2C_CLIENT_ID=$env:B2C_CLIENT_ID
+                VITE_B2C_USER_FLOW=$env:B2C_USER_FLOW
+                VITE_B2C_REDIRECT_URI=$env:B2C_REDIRECT_URI
+                "@ | Out-File -FilePath .env -Encoding ascii
+                yarn build
+                Move-Item dist ../client-build
+                Copy-Item deployment/Dockerfile ../client-build/
+                Copy-Item deployment/nginx.conf ../client-build/
+            env:
+              API_URL: $(API_URL)
+              DIRECTUS_URL: $(DIRECTUS_URL)
+              DIRECTUS_TOKEN: $(DIRECTUS_TOKEN)
+              AUTH_PROVIDER: $(AUTH_PROVIDER)
+              B2C_TENANT: $(B2C_TENANT)
+              B2C_CLIENT_ID: $(B2C_CLIENT_ID)
+              B2C_USER_FLOW: $(B2C_USER_FLOW)
+              B2C_REDIRECT_URI: $(B2C_REDIRECT_URI)
+
+          - task: Docker@2
+            displayName: Build & push client image
+            inputs:
+              containerRegistry: $(azureSubscription)
+              repository: $(imageRepository)
+              command: buildAndPush
+              Dockerfile: client-build/Dockerfile
+              buildContext: client-build
+              tags: |
+                client-$(imageTag)
 
       - job: Server
-        displayName: Build & push server image
+        displayName: Build server image
         steps:
           - task: UseDotNet@2
             inputs:
@@ -93,24 +105,26 @@ stages:
               versionSpec: '18.x'
             displayName: Use Node 18
 
-          - script: |
-              set -euo pipefail
-              cd server
-              npm install
-              npm run build
-              mv Ccd.Server/build ../server-build
-              cp deployment/Dockerfile ../server-build/
+          - task: PowerShell@2
             displayName: Build server bundle
-
-          - task: AzureCLI@2
-            displayName: Build & push server image to ACR
             inputs:
-              azureSubscription: $(azureSubscription)
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                set -euo pipefail
-                az acr login --name $(acrName)
-                IMAGE=$(acrName).azurecr.io/$(imageRepository):server-$(imageTag)
-                docker build -t "$IMAGE" -f server-build/Dockerfile server-build
-                docker push "$IMAGE"
+              targetType: inline
+              pwsh: true
+              script: |
+                $ErrorActionPreference = 'Stop'
+                Set-Location server
+                npm install
+                npm run build
+                Move-Item Ccd.Server/build ../server-build
+                Copy-Item deployment/Dockerfile ../server-build/
+
+          - task: Docker@2
+            displayName: Build & push server image
+            inputs:
+              containerRegistry: $(azureSubscription)
+              repository: $(imageRepository)
+              command: buildAndPush
+              Dockerfile: server-build/Dockerfile
+              buildContext: server-build
+              tags: |
+                server-$(imageTag)
