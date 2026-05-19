@@ -51,7 +51,7 @@ stages:
             displayName: Build client bundle
             inputs:
               targetType: inline
-              pwsh: true
+              pwsh: false
               script: |
                 $ErrorActionPreference = 'Stop'
                 npm install -g yarn
@@ -109,7 +109,7 @@ stages:
             displayName: Build server bundle
             inputs:
               targetType: inline
-              pwsh: true
+              pwsh: false
               script: |
                 $ErrorActionPreference = 'Stop'
                 Set-Location server
