@@ -67,7 +67,8 @@ stages:
                 VITE_B2C_USER_FLOW=$env:B2C_USER_FLOW
                 VITE_B2C_REDIRECT_URI=$env:B2C_REDIRECT_URI
                 "@ | Out-File -FilePath .env -Encoding ascii
-                yarn build
+                npx tsc
+                npx vite build
                 Move-Item dist ../client-build
                 Copy-Item deployment/Dockerfile ../client-build/
                 Copy-Item deployment/nginx.conf ../client-build/
