@@ -26,7 +26,7 @@ public class StorageController : ControllerBaseExtended
     }
 
     [HttpGet("storage/{fileName}")]
-    [PermissionLevel(UserRole.User)]
+    // [PermissionLevel(UserRole.User)]
     public async Task<IActionResult> Get(string fileName, [FromQuery] string size)
     {
         // check if fileName is actually the file ID
