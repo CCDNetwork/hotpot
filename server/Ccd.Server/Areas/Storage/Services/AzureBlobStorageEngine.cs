@@ -17,7 +17,9 @@ public class AzureBlobStorageEngine : IStorageEngine
         if (string.IsNullOrWhiteSpace(connectionString) || string.IsNullOrWhiteSpace(containerName))
             throw new InvalidOperationException("Azure Blob storage is not configured");
 
-        return new BlobContainerClient(connectionString, containerName);
+        var client = new BlobContainerClient(connectionString, containerName);
+        client.CreateIfNotExists();
+        return client;
     });
 
     public async Task<byte[]> GetFileAsync(File file)
