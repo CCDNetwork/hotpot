@@ -166,6 +166,9 @@ deploy:
     - develop
     - poc
     - tags
+  except:
+    variables:
+      - $CI_COMMIT_TAG == "save-the-children"
   before_script:
     - apk update
     - apk add openssh rsync bash
