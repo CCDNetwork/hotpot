@@ -61,6 +61,7 @@ stages:
                 VITE_API_URL=$env:API_URL
                 VITE_DIRECTUS_URL=$env:DIRECTUS_URL
                 VITE_DIRECTUS_TOKEN=$env:DIRECTUS_TOKEN
+                VITE_STORAGE_TYPE_ID=$env:STORAGE_TYPE_ID
                 VITE_AUTH_PROVIDER=$env:AUTH_PROVIDER
                 VITE_B2C_TENANT=$env:B2C_TENANT
                 VITE_B2C_CLIENT_ID=$env:B2C_CLIENT_ID
@@ -76,6 +77,7 @@ stages:
               API_URL: $(API_URL)
               DIRECTUS_URL: $(DIRECTUS_URL)
               DIRECTUS_TOKEN: $(DIRECTUS_TOKEN)
+              STORAGE_TYPE_ID: $(STORAGE_TYPE_ID)
               AUTH_PROVIDER: $(AUTH_PROVIDER)
               B2C_TENANT: $(B2C_TENANT)
               B2C_CLIENT_ID: $(B2C_CLIENT_ID)
