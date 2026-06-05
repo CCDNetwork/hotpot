@@ -60,8 +60,7 @@ export const RegistryCheckStep: React.FC<Props> = ({
         book them. Download your checked list below.
       </p>
       <p className="text-sm self-start">
-        As soon as you download the file, this wizard will automatically
-        close.
+        Once you have downloaded the file, you can close this wizard.
       </p>
 
       <div className="flex flex-col gap-4">
@@ -74,13 +73,12 @@ export const RegistryCheckStep: React.FC<Props> = ({
           </span>
           <Button
             variant="destructive"
-            onClick={() => {
+            onClick={() =>
               handleDownloadDuplicatesFile(
                 stepBookingResponse?.fileUrl ?? '',
                 duplicateFileName
-              );
-              onClose();
-            }}
+              )
+            }
           >
             <Download className="size-5 mr-2" />
             Download
