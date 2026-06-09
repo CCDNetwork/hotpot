@@ -17,10 +17,10 @@ namespace Ccd.Server.Setup;
 public class SetupController : ControllerBaseExtended
 {
     // Values to bootstrap. The email MUST match the address used to authenticate at B2C.
-    private const string OrganizationName = "INIT";
-    private const string UserEmail = "admin@init.hr";
-    private const string UserFirstName = "Admin";
-    private const string UserLastName = "Admin";
+    private const string OrganizationName = "Save the Children";
+    private const string UserEmail = "nil.eyuboglu@savethechildren.org";
+    private const string UserFirstName = "Nil";
+    private const string UserLastName = "Eyuboglu";
 
     private readonly OrganizationService _organizationService;
     private readonly UserService _userService;
