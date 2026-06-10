@@ -7,18 +7,10 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { useUserMe } from '@/services/users/api';
-import {
-  MyProfileForm,
-  WipeDataDialog,
-} from '@/modules/MyProfilePage/components';
-import { useAuth } from '@/providers/GlobalProvider';
-import { UserRole } from '@/services/users';
+import { MyProfileForm } from '@/modules/MyProfilePage/components';
 import { APP_ROUTE } from '@/helpers/constants';
 
 export const MyProfilePage = () => {
-  const {
-    user: { role },
-  } = useAuth();
   const { data: userProfileData, isLoading: userProfileQueryLoading } =
     useUserMe({ queryEnabled: true });
 
@@ -27,7 +19,6 @@ export const MyProfilePage = () => {
       pageTitle="My Profile"
       pageSubtitle="Manage your profile"
       isLoading={userProfileQueryLoading}
-      headerNode={role === UserRole.Admin && <WipeDataDialog />}
       breadcrumbs={[{ href: `${APP_ROUTE.MyProfile}`, name: 'My Profile' }]}
     >
       <div className="space-y-8 max-w-xl">
