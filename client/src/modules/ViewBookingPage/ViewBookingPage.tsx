@@ -63,7 +63,7 @@ export const ViewBookingPage = () => {
       const exportedData = await getBookingsExport(
         {
           page: 1,
-          pageSize: 999,
+          pageSize: 99999,
           sortBy: pagination.sortBy || 'createdAt',
           sortDirection: pagination.sortDirection,
           search: pagination.debouncedSearch,
