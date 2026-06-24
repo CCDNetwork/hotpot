@@ -61,7 +61,6 @@ public class BookingService
         await Task.CompletedTask;
     }
 
-
     public async Task<PagedApiResponse<BookingResponse>> GetAllBookingsApi(Guid organizationId, RequestParameters requestParameters, string activity)
     {
         var activityFilter = activity?
@@ -78,7 +77,8 @@ public class BookingService
             _selectSql,
             getSelectSqlParams(organizationId, activityFilter),
             requestParameters,
-            resolveDependencies
+            resolveDependencies,
+            searchAfterResolve: true
         );
     }
 
@@ -178,7 +178,6 @@ public class BookingService
 
         return (isExcelValid, fileApi.Url, savedFile.Id);
     }
-
 
     private bool ValidateRowFields(IXLWorksheet worksheet, int lastRowNumber)
     {
@@ -390,7 +389,6 @@ public class BookingService
         }
     }
 
-
     private async Task ProcessValidBookings(
         Guid organizationId,
         Guid userId,
@@ -522,8 +520,6 @@ public class BookingService
 
         await _context.SaveChangesAsync();
     }
-
-
 
     public async Task ReleaseBooking(Guid bookingId, Guid organizationId)
     {

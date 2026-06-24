@@ -11,9 +11,7 @@ namespace Ccd.Server.Helpers;
 
 public class PagedApiResponseMeta
 {
-    public PagedApiResponseMeta()
-    {
-    }
+    public PagedApiResponseMeta() { }
 
     public PagedApiResponseMeta(
         int page,
@@ -75,9 +73,7 @@ public class PagedApiResponse<T>
 
             for (var i = 0; i < searchColumnList.Count; i++)
                 sqlSearch +=
-                    " OR "
-                    + searchColumnList[i].ToSnakeCase()
-                    + " ILIKE '%' || @searchVal || '%'";
+                    " OR " + searchColumnList[i].ToSnakeCase() + " ILIKE '%' || @searchVal || '%'";
 
             sqlSearch += ") ";
         }
@@ -125,19 +121,12 @@ public class PagedApiResponse<T>
                         var basePart = columnRaw.Split('.')[0];
                         var jsonKey = columnRaw.Split('.')[1];
 
-                        if (
-                            !ValidIdentifier.IsMatch(basePart)
-                            || !ValidIdentifier.IsMatch(jsonKey)
-                        )
-                            throw new BadRequestException(
-                                $"Invalid custom field filter: {key}"
-                            );
+                        if (!ValidIdentifier.IsMatch(basePart) || !ValidIdentifier.IsMatch(jsonKey))
+                            throw new BadRequestException($"Invalid custom field filter: {key}");
 
                         var baseColumn = basePart.ToSnakeCase();
                         if (!filterColumnList.Contains(baseColumn))
-                            throw new BadRequestException(
-                                $"Invalid filter column: {basePart}"
-                            );
+                            throw new BadRequestException($"Invalid filter column: {basePart}");
 
                         column = baseColumn + "->>'" + jsonKey + "'";
                     }
@@ -203,8 +192,7 @@ public class PagedApiResponse<T>
                             paramNames.Add($"@{paramName}");
                         }
 
-                        sqlFilter +=
-                            column + $"{cast} in ({string.Join(",", paramNames)})";
+                        sqlFilter += column + $"{cast} in ({string.Join(",", paramNames)})";
                     }
                     else if (key.Contains("[like]"))
                     {
@@ -242,8 +230,7 @@ public class PagedApiResponse<T>
                         if (isCustomField)
                             sqlFilter += column + $" {sqlOperator} @{paramName}";
                         else
-                            sqlFilter +=
-                                column + $"{cast} {sqlOperator} @{paramName}";
+                            sqlFilter += column + $"{cast} {sqlOperator} @{paramName}";
                     }
 
                     i++;
@@ -256,6 +243,28 @@ public class PagedApiResponse<T>
         return (sqlFilter, dynParams);
     }
 
+    private static bool matchesQuickSearchableFields<TT>(TT item, string search)
+    {
+        if (string.IsNullOrEmpty(search))
+            return true;
+
+        var searchableProperties = typeof(TT)
+            .GetProperties()
+            .Where(
+                pi =>
+                    Attribute.IsDefined(pi, typeof(QuickSearchable))
+                    || string.Equals(pi.Name, "Id", StringComparison.OrdinalIgnoreCase)
+            );
+
+        return searchableProperties.Any(
+            property =>
+                property
+                    .GetValue(item)
+                    ?.ToString()
+                    ?.Contains(search, StringComparison.OrdinalIgnoreCase) == true
+        );
+    }
+
     public static async Task<PagedApiResponse<T>> GetFromSql(
         DbContext context,
         string sql,
@@ -264,7 +273,8 @@ public class PagedApiResponse<T>
         Func<T, Task> resolveDependencies = null,
         Func<T, string, Task> resolveDependenciesWithLanguage = null,
         string language = null,
-        Func<T, string> resolveDependenciesSearch = null
+        Func<T, string> resolveDependenciesSearch = null,
+        bool searchAfterResolve = false
     )
     {
         var page = parameters?.Page ?? 1;
@@ -279,27 +289,20 @@ public class PagedApiResponse<T>
         if (!string.IsNullOrEmpty(parameters?.SortBy))
         {
             var sortByInput = parameters.SortBy;
-            var needsQuoting =
-                sortByInput.StartsWith('"') && sortByInput.EndsWith('"');
+            var needsQuoting = sortByInput.StartsWith('"') && sortByInput.EndsWith('"');
             var sortByClean = needsQuoting ? sortByInput.Trim('"') : sortByInput;
 
             var sortProperty = typeof(T)
                 .GetProperties()
-                .FirstOrDefault(e =>
-                    e.Name.ToSnakeCase() == sortByClean.ToSnakeCase()
-                );
+                .FirstOrDefault(e => e.Name.ToSnakeCase() == sortByClean.ToSnakeCase());
 
             if (sortProperty == null)
-                throw new BadRequestException(
-                    $"Invalid sort column: {parameters.SortBy}"
-                );
+                throw new BadRequestException($"Invalid sort column: {parameters.SortBy}");
 
             var sortColumn = sortProperty.Name.ToSnakeCase();
             var sortColumnSql = needsQuoting ? $"\"{sortColumn}\"" : sortColumn;
 
-            if (
-                sortProperty.IsDefined(typeof(SortAsNumberAttribute), false)
-            )
+            if (sortProperty.IsDefined(typeof(SortAsNumberAttribute), false))
                 sqlOrder =
                     $@" ORDER BY right('00000000000000000000' || {sortColumnSql}, 20) {sortDirection}";
             else
@@ -313,7 +316,9 @@ public class PagedApiResponse<T>
         var sqlPaging = $@" OFFSET {offset.ToString()} LIMIT {limit.ToString()}";
 
         var sqlWhere = "";
-        var (sqlSearch, searchParams) = generateSearchSql<T>(parameters);
+        var (sqlSearch, searchParams) = searchAfterResolve
+            ? ("", new DynamicParameters())
+            : generateSearchSql<T>(parameters);
         var (sqlFilter, filterParams) = generateFilterSql<T>(parameters);
 
         if (!string.IsNullOrEmpty(sqlSearch) || !string.IsNullOrEmpty(sqlFilter))
@@ -327,8 +332,13 @@ public class PagedApiResponse<T>
                 sqlWhere += sqlFilter;
         }
 
+        var shouldSearchAfterResolve =
+            searchAfterResolve && !string.IsNullOrEmpty(parameters?.Search);
         var sqlWithConditions =
-            $@"SELECT * FROM ( {sql} ) as result " + sqlWhere + sqlOrder + sqlPaging;
+            $@"SELECT * FROM ( {sql} ) as result "
+            + sqlWhere
+            + sqlOrder
+            + (shouldSearchAfterResolve ? "" : sqlPaging);
         var sqlCount = $@"SELECT COUNT(*) as row_count FROM ( {sql} ) as result {sqlWhere}";
 
         var allParams = new DynamicParameters(sqlParams);
@@ -338,23 +348,29 @@ public class PagedApiResponse<T>
         var items = await context.Database
             .GetDbConnection()
             .QueryAsync<T>(sqlWithConditions, allParams);
-        var totalRows = await context.Database
-            .GetDbConnection()
-            .QuerySingleAsync<int>(sqlCount, allParams);
+        var totalRows = shouldSearchAfterResolve
+            ? 0
+            : await context.Database.GetDbConnection().QuerySingleAsync<int>(sqlCount, allParams);
 
         var data = items.ToList();
 
         if (resolveDependenciesWithLanguage != null)
-            foreach (var item in items)
+            foreach (var item in data)
                 await resolveDependenciesWithLanguage(item, language);
-
         else if (resolveDependencies != null)
-            foreach (var item in items)
+            foreach (var item in data)
                 await resolveDependencies(item);
-
         else if (resolveDependenciesSearch != null)
-            foreach (var item in items)
+            foreach (var item in data)
                 resolveDependenciesSearch(item);
+
+        if (shouldSearchAfterResolve)
+        {
+            data = data.Where(item => matchesQuickSearchableFields(item, parameters.Search))
+                .ToList();
+            totalRows = data.Count;
+            data = data.Skip(offset).Take(limit).ToList();
+        }
 
         var response = new PagedApiResponse<T>
         {
