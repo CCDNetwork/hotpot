@@ -100,7 +100,9 @@ public static class ExcelFieldValidator
         if (string.IsNullOrWhiteSpace(rounds))
             return false;
 
-        return int.TryParse(rounds, out value) && (value == 1 || value == 3);
+        // Previous rule, to restore when rounds are restricted again:
+        // return int.TryParse(rounds, out value) && (value == 1 || value == 3);
+        return int.TryParse(rounds, out value) && value > 0;
     }
 
     // ----------------------------
@@ -145,6 +147,8 @@ public static class ExcelFieldValidator
     // ----------------------------
     public static bool IsDateRangeValid(DateTime start, DateTime end, int rounds)
     {
-        return end >= start && end == start.AddMonths(rounds);
+        // Previous rule, to restore when rounds represent calendar months again:
+        // return end >= start && end == start.AddMonths(rounds);
+        return end >= start;
     }
 }
