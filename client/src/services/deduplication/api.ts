@@ -18,6 +18,7 @@ import {
 } from '@/services/deduplication/transformations';
 import {
   BatchReleaseResponse,
+  BookingResponse,
   BookingDataset,
   DeduplicationDataset,
   DeduplicationListing,
@@ -46,7 +47,7 @@ export const fetchDeduplicationListings = async (
 export const fetchBookings = async (
   pagination: PaginationRequest,
   activity: string
-): Promise<DataWithMeta<DeduplicationListing>> => {
+): Promise<DataWithMeta<BookingResponse>> => {
   let url = paginationRequestToUrl('deduplication/bookings', pagination);
   if (activity) {
     url += `&activity=${activity}`;

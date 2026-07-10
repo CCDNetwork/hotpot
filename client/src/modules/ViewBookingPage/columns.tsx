@@ -42,6 +42,12 @@ export const getColumns = (
     },
   },
   {
+    accessorKey: 'rounds',
+    isSortable: true,
+    id: 'rounds',
+    header: 'Rounds',
+  },
+  {
     accessorKey: 'startDate',
     isSortable: true,
     id: 'startDate',
