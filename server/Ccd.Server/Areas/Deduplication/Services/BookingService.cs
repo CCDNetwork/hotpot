@@ -323,7 +323,6 @@ public class BookingService
         var hohIndex = GetHeaderIndex("headofhouseholdid", worksheet);
         var spouseIndex = GetHeaderIndex("spouseid", worksheet);
         var startDateIndex = GetHeaderIndex("startdate", worksheet);
-        var endDateIndex = GetHeaderIndex("enddate", worksheet);
 
         // Encrypt Excel IDs for DB comparison
         var encryptedExcelIds = allExcelIds
@@ -343,13 +342,11 @@ public class BookingService
             var hohId = worksheet.Cell(row, hohIndex).GetString().Trim();
             var spouseId = worksheet.Cell(row, spouseIndex).GetString().Trim();
             var startDateStr = worksheet.Cell(row, startDateIndex).GetString().Trim();
-            var endDateStr = worksheet.Cell(row, endDateIndex).GetString().Trim();
 
-            if (string.IsNullOrWhiteSpace(startDateStr) || string.IsNullOrWhiteSpace(endDateStr))
+            if (string.IsNullOrWhiteSpace(startDateStr))
                 continue;
 
             var startDate = ParseExcelDateUtc(startDateStr);
-            var endDate = ParseExcelDateUtc(endDateStr);
 
             string matchedId = null;
             Booking dbRecord = null;
@@ -360,9 +357,7 @@ public class BookingService
                 var encryptedHohId = IdEncryptor.Encrypt(hohId);
                 dbRecord = existingBookings.FirstOrDefault(b =>
                     (b.HouseholdId == encryptedHohId || b.SpouseId == encryptedHohId) &&
-                    // Previous rule rejected any later active booking for this ID:
-                    // b.EndDate >= startDate
-                    b.StartDate < endDate && b.EndDate > startDate
+                    b.EndDate >= startDate
                 );
 
                 if (dbRecord != null)
@@ -375,9 +370,7 @@ public class BookingService
                 var encryptedSpouseId = IdEncryptor.Encrypt(spouseId);
                 dbRecord = existingBookings.FirstOrDefault(b =>
                     (b.HouseholdId == encryptedSpouseId || b.SpouseId == encryptedSpouseId) &&
-                    // Previous rule rejected any later active booking for this ID:
-                    // b.EndDate >= startDate
-                    b.StartDate < endDate && b.EndDate > startDate
+                    b.EndDate >= startDate
                 );
 
                 if (dbRecord != null)
