@@ -1,10 +1,10 @@
 # Builds the CCD client and server Docker images and pushes them to ACR.
 # Triggered by the `save-the-children` git tag.
 #
-# Targets the UNICEF-managed `mdp-hotpot-common` agent pool (Windows).
-# Docker on the agent must be running in Linux-containers mode so the
-# nginx-based client image and Debian-based .NET server image can build.
-# Script blocks use Windows PowerShell (pwsh: false).
+# Targets the UNICEF-managed `mdp-hotpot-common` agent pool (Ubuntu).
+# Script blocks use PowerShell Core (pwsh: true) since Windows PowerShell
+# is not installed on Ubuntu; the commands used (Set-Location, Move-Item,
+# Copy-Item, Out-File) are all cross-platform under pwsh.
 #
 # Required Azure DevOps configuration:
 #   * Variable group `ccd-save-the-children` (or rename below) holding the
@@ -13,8 +13,7 @@
 #     Mark DIRECTUS_TOKEN as a secret.
 #   * Docker Registry service connection — `azureSubscription` below.
 #     Set its value to the name of the connection that points at ACR.
-#   * Agent must have Docker installed (Linux-containers mode) and the agent
-#     user must be in the docker-users group.
+#   * Agent must have Docker installed and reachable from the pipeline user.
 
 trigger:
   branches:
@@ -53,7 +52,7 @@ stages:
             displayName: Build client bundle
             inputs:
               targetType: inline
-              pwsh: false
+              pwsh: true
               script: |
                 $ErrorActionPreference = 'Stop'
                 npm install -g yarn
@@ -114,7 +113,7 @@ stages:
             displayName: Build server bundle
             inputs:
               targetType: inline
-              pwsh: false
+              pwsh: true
               script: |
                 $ErrorActionPreference = 'Stop'
                 Set-Location server
