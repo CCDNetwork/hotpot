@@ -1,4 +1,5 @@
-# Builds the CCD client and server Docker images and pushes them to ACR.
+# Builds the CCD client and server Docker images, pushes them to ACR, and
+# restarts the production deployments so they pull the newly published images.
 # Triggered by the `save-the-children` git tag.
 #
 # Targets the UNICEF-managed `mdp-hotpot-common` agent pool (Ubuntu).
@@ -14,6 +15,7 @@
 #   * Docker Registry service connection — `azureSubscription` below.
 #     Set its value to the name of the connection that points at ACR.
 #   * Agent must have Docker installed and reachable from the pipeline user.
+#   * The AKS service connection below must be authorized for this pipeline.
 
 trigger:
   branches:
@@ -35,6 +37,14 @@ variables:
     value: 'unicrmenarohotpotcommon'
   - name: imageRepository
     value: init/ccd-data-portal/image
+  - name: aksServiceConnection
+    value: 'UNI_MENA_RO RG-MENA-RO-HotPot-PRD'
+  - name: aksResourceGroup
+    value: RG-MENA-RO-HotPot-PRD
+  - name: aksCluster
+    value: aks-mena-ro-hotpot-prd
+  - name: kubernetesNamespace
+    value: ictd-hotpot-prd
 
 stages:
   - stage: Build
@@ -132,3 +142,50 @@ stages:
               buildContext: server-build
               tags: |
                 server-$(imageTag)
+
+  - stage: Deploy
+    displayName: Restart production deployments
+    dependsOn: Build
+    condition: succeeded()
+    pool: 'MENA-HotPot Pipelines'
+    jobs:
+      - job: RestartDeployments
+        displayName: Restart client and server
+        steps:
+          - checkout: none
+
+          - task: Kubernetes@1
+            displayName: Restart client and server deployments
+            inputs:
+              connectionType: Azure Resource Manager
+              azureSubscriptionEndpoint: $(aksServiceConnection)
+              azureResourceGroup: $(aksResourceGroup)
+              kubernetesCluster: $(aksCluster)
+              useClusterAdmin: true
+              namespace: $(kubernetesNamespace)
+              command: rollout
+              arguments: restart deployment/hotpot-client deployment/hotpot-server
+
+          - task: Kubernetes@1
+            displayName: Wait for client rollout
+            inputs:
+              connectionType: Azure Resource Manager
+              azureSubscriptionEndpoint: $(aksServiceConnection)
+              azureResourceGroup: $(aksResourceGroup)
+              kubernetesCluster: $(aksCluster)
+              useClusterAdmin: true
+              namespace: $(kubernetesNamespace)
+              command: rollout
+              arguments: status deployment/hotpot-client --timeout=5m
+
+          - task: Kubernetes@1
+            displayName: Wait for server rollout
+            inputs:
+              connectionType: Azure Resource Manager
+              azureSubscriptionEndpoint: $(aksServiceConnection)
+              azureResourceGroup: $(aksResourceGroup)
+              kubernetesCluster: $(aksCluster)
+              useClusterAdmin: true
+              namespace: $(kubernetesNamespace)
+              command: rollout
+              arguments: status deployment/hotpot-server --timeout=5m
