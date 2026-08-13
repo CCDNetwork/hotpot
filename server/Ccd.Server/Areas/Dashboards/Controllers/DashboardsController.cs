@@ -189,4 +189,79 @@ public class DashboardsController : ControllerBaseExtended
         );
         return Ok(result);
     }
+
+    /// <summary>
+    /// Value-FX drill: per-(currency, year, month) rows with the InforEuro
+    /// rate that was applied to each. `source=bookings` powers the Overview
+    /// value tiles; `source=conflicts` powers the Deduplication value tile.
+    /// </summary>
+    [HttpGet("drills/value")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult<ValueFxDrillResponse>> GetValueFxDrill(
+        string source,
+        string period,
+        Guid? organizationId,
+        string displayCurrency
+    )
+    {
+        var result = await _dashboardService.GetValueFxDrill(
+            source,
+            period,
+            ResolveOrganizationFilter(organizationId),
+            displayCurrency
+        );
+        return Ok(result);
+    }
+
+    [HttpGet("overview/drills/organizations")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult<List<OrganizationDrillRowResponse>>> GetOrganizationsDrill(
+        string period,
+        Guid? organizationId,
+        string displayCurrency
+    )
+    {
+        var result = await _dashboardService.GetOrganizationsDrill(
+            period,
+            ResolveOrganizationFilter(organizationId),
+            displayCurrency
+        );
+        return Ok(result);
+    }
+
+    [HttpGet("duplicates/drills/prebooking-runs")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult<PrebookingRunDrillResponse>> GetPrebookingRunsDrill(
+        string period,
+        Guid? organizationId,
+        int page = 1,
+        int pageSize = 25
+    )
+    {
+        var result = await _dashboardService.GetPrebookingRunsDrill(
+            period,
+            ResolveOrganizationFilter(organizationId),
+            page,
+            pageSize
+        );
+        return Ok(result);
+    }
+
+    [HttpGet("duplicates/drills/records-checked")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult<RecordsCheckedDrillResponse>> GetRecordsCheckedDrill(
+        string period,
+        Guid? organizationId,
+        int page = 1,
+        int pageSize = 25
+    )
+    {
+        var result = await _dashboardService.GetRecordsCheckedDrill(
+            period,
+            ResolveOrganizationFilter(organizationId),
+            page,
+            pageSize
+        );
+        return Ok(result);
+    }
 }

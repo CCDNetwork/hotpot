@@ -17,7 +17,7 @@ import {
   formatPercent,
   spansMultipleYears,
 } from './helpers';
-import { DashboardApiParams } from './types';
+import { DashboardApiParams, DrillTarget } from './types';
 import {
   ChartSkeleton,
   DonutChart,
@@ -38,7 +38,7 @@ export const DeduplicationTab = ({
 }: {
   params: DashboardApiParams;
 }) => {
-  const [isDrilldownOpen, setIsDrilldownOpen] = useState(false);
+  const [drillTarget, setDrillTarget] = useState<DrillTarget | null>(null);
 
   const summaryQuery = useDuplicatesSummary(params);
   const trendQuery = useDuplicatesTrend(params);
@@ -108,18 +108,33 @@ export const DeduplicationTab = ({
           isLoading={summaryLoading}
           value={formatCount(summary?.uniqueOverlaps ?? 0)}
           secondary="click to drill down"
-          onClick={() => setIsDrilldownOpen(true)}
+          onClick={() =>
+            setDrillTarget({
+              type: 'unique-overlaps',
+              label: 'Unique overlaps detected',
+            })
+          }
         />
         <KpiTile
           title="Pre-booking runs"
           isLoading={summaryLoading}
           value={formatCount(summary?.prebookingRuns ?? 0)}
+          secondary="click to drill down"
+          onClick={() =>
+            setDrillTarget({ type: 'prebooking-runs', label: 'Pre-booking runs' })
+          }
         />
         <KpiTile
           title="Household records checked"
           isLoading={summaryLoading}
           value={formatCount(summary?.householdRecordsChecked ?? 0)}
           secondary="via pre-booking"
+          onClick={() =>
+            setDrillTarget({
+              type: 'records-checked',
+              label: 'Household records checked',
+            })
+          }
         />
         <KpiTile
           title="Overlap rate"
@@ -130,6 +145,12 @@ export const DeduplicationTab = ({
               : '—'
           }
           secondary="unique overlaps ÷ pre-booking records checked"
+          onClick={() =>
+            setDrillTarget({
+              type: 'unique-overlaps',
+              label: 'Overlaps behind the rate',
+            })
+          }
         />
         <KpiTile
           title="Value of overlaps"
@@ -138,6 +159,13 @@ export const DeduplicationTab = ({
             summary ? formatDisplayAmount(summary.valueOfOverlaps.display) : '—'
           }
           secondary="payments avoided"
+          onClick={() =>
+            setDrillTarget({
+              type: 'value-fx',
+              source: 'conflicts',
+              label: 'Value of overlaps',
+            })
+          }
         >
           {summary && (
             <FxMiniBreakdown
@@ -190,7 +218,7 @@ export const DeduplicationTab = ({
       {/* Blocking + recent row */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard
-          title="Blocking partners"
+          title="Blocking organizations"
           description="Whose existing bookings caused the blocks · share of all overlaps"
         >
           {blockingQuery.isLoading ? (
@@ -225,7 +253,17 @@ export const DeduplicationTab = ({
                 </thead>
                 <tbody>
                   {(recentEvents?.data ?? []).slice(0, 8).map((event) => (
-                    <tr key={event.id} className="border-b last:border-0">
+                    <tr
+                      key={event.id}
+                      onClick={() =>
+                        setDrillTarget({
+                          type: 'unique-overlaps',
+                          label: 'Overlap detail',
+                          focusEventId: event.id,
+                        })
+                      }
+                      className="cursor-pointer border-b last:border-0 transition-colors hover:bg-muted/50"
+                    >
                       <td className="max-w-[14rem] truncate py-1.5">
                         {event.requestingOrganizationName} ·{' '}
                         <span className="text-muted-foreground">
@@ -270,8 +308,8 @@ export const DeduplicationTab = ({
       </div>
 
       <DrilldownSheet
-        open={isDrilldownOpen}
-        onOpenChange={setIsDrilldownOpen}
+        target={drillTarget}
+        onClose={() => setDrillTarget(null)}
         params={params}
       />
     </div>

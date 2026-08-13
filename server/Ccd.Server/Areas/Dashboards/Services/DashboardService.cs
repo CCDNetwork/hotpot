@@ -47,13 +47,17 @@ public class DashboardService
         };
     }
 
-    public async Task<string> ResolveDisplayCurrencyAsync(string displayCurrency)
-    {
-        if (!string.IsNullOrWhiteSpace(displayCurrency))
-            return displayCurrency.Trim().ToUpperInvariant();
+    // USD is the deployment-wide default. Not configurable per tenant:
+    // SSO-only deployments (UNICEF) have no superadmin who could edit a
+    // Settings row. Users flip the view via the dashboard's currency toggle,
+    // which sends the choice on the query string.
+    public const string DefaultDisplayCurrency = "USD";
 
-        var settings = await _context.Settings.AsNoTracking().FirstOrDefaultAsync();
-        return settings?.DashboardDisplayCurrency ?? "EUR";
+    public static string ResolveDisplayCurrency(string displayCurrency)
+    {
+        return string.IsNullOrWhiteSpace(displayCurrency)
+            ? DefaultDisplayCurrency
+            : displayCurrency.Trim().ToUpperInvariant();
     }
 
     private static string ResolveGranularity(string granularity)
@@ -76,7 +80,7 @@ public class DashboardService
     )
     {
         var (from, to) = ResolvePeriod(period);
-        var display = await ResolveDisplayCurrencyAsync(displayCurrency);
+        var display = ResolveDisplayCurrency(displayCurrency);
         var lookup = await _exchangeRateService.GetLookupAsync();
 
         var bookingsInPeriod = BookingsOverlappingPeriod(from, to, organizationId);
@@ -86,7 +90,7 @@ public class DashboardService
             .Distinct()
             .CountAsync();
 
-        var activePartners = await _context.Bookings
+        var activeOrganizations = await _context.Bookings
             .Where(b => b.CreatedAt >= from && b.CreatedAt <= to)
             .Select(b => b.OrganizationId)
             .Distinct()
@@ -94,8 +98,18 @@ public class DashboardService
 
         var totalOnboarded = await _context.Organizations.CountAsync();
 
+        // FX groups the assistance amount by its *own* month (start_date, or
+        // upload date as a fallback) — not by when the row was inserted. This
+        // uses the InforEuro rate that was current when the assistance was
+        // delivered, and it dodges the "current month not fetched yet" gap
+        // that would otherwise trip rows created today.
         var groups = await bookingsInPeriod
-            .GroupBy(b => new { b.Currency, b.CreatedAt.Year, b.CreatedAt.Month })
+            .GroupBy(b => new
+            {
+                b.Currency,
+                Year = (b.StartDate ?? b.CreatedAt).Year,
+                Month = (b.StartDate ?? b.CreatedAt).Month
+            })
             .Select(g => new CurrencyMonthGroup
             {
                 Currency = g.Key.Currency,
@@ -111,7 +125,7 @@ public class DashboardService
         {
             HouseholdsAssisted = householdsAssisted,
             IndividualsReached = householdsAssisted * IndividualsPerHousehold,
-            ActivePartners = activePartners,
+            ActiveOrganizations = activeOrganizations,
             TotalOnboarded = totalOnboarded,
             ValueTransferred = BuildValueSummary(groups, display, lookup),
             AvgTransfer = BuildAvgTransfer(groups, display, lookup)
@@ -128,13 +142,16 @@ public class DashboardService
         var bucket = ResolveGranularity(granularity);
         var connection = _context.Database.GetDbConnection();
 
+        // COALESCE(start_date, created_at) matches the summary tile's
+        // `StartDate ?? CreatedAt` grouping — otherwise a booking with a null
+        // start_date counts in the summary total but is dropped from the trend
+        // and the two numbers stop agreeing.
         var households = (await connection.QueryAsync<TrendPointResponse>(
-            @"SELECT date_trunc(@bucket, start_date) AS bucket,
+            @"SELECT date_trunc(@bucket, COALESCE(start_date, created_at)) AS bucket,
                      count(DISTINCT household_id)::int AS count
                 FROM booking
-               WHERE start_date IS NOT NULL
-                 AND start_date >= @from
-                 AND start_date <= @to
+               WHERE COALESCE(start_date, created_at) >= @from
+                 AND COALESCE(start_date, created_at) <= @to
                  AND (@organizationId::uuid IS NULL OR organization_id = @organizationId::uuid)
                GROUP BY 1
                ORDER BY 1",
@@ -166,7 +183,7 @@ public class DashboardService
     )
     {
         var (from, to) = ResolvePeriod(period);
-        var display = await ResolveDisplayCurrencyAsync(displayCurrency);
+        var display = ResolveDisplayCurrency(displayCurrency);
         var lookup = await _exchangeRateService.GetLookupAsync();
 
         var groups = await BookingsOverlappingPeriod(from, to, organizationId)
@@ -175,8 +192,8 @@ public class DashboardService
                 b.OrganizationId,
                 b.Organization.Name,
                 b.Currency,
-                b.CreatedAt.Year,
-                b.CreatedAt.Month
+                Year = (b.StartDate ?? b.CreatedAt).Year,
+                Month = (b.StartDate ?? b.CreatedAt).Month
             })
             .Select(g => new
             {
@@ -273,7 +290,7 @@ public class DashboardService
     )
     {
         var (from, to) = ResolvePeriod(period);
-        var display = await ResolveDisplayCurrencyAsync(displayCurrency);
+        var display = ResolveDisplayCurrency(displayCurrency);
         var lookup = await _exchangeRateService.GetLookupAsync();
 
         var events = ConflictEventsInPeriod(from, to, organizationId);
@@ -294,12 +311,16 @@ public class DashboardService
 
         var householdRecordsChecked = await prebookingLogs.CountAsync();
 
+        // FX groups by overlap_start_date (the day the disputed money would
+        // have flowed) rather than first_detected_at. Same rationale as the
+        // Overview grouping: rate lookup keyed on when the assistance is due,
+        // not when the row was written.
         var groups = await events
             .GroupBy(e => new
             {
                 Currency = e.ProposedCurrency,
-                e.FirstDetectedAt.Year,
-                e.FirstDetectedAt.Month
+                Year = e.OverlapStartDate.Year,
+                Month = e.OverlapStartDate.Month
             })
             .Select(g => new CurrencyMonthGroup
             {
@@ -340,7 +361,9 @@ public class DashboardService
                 FROM booking_conflict_event
                WHERE first_detected_at >= @from
                  AND first_detected_at <= @to
-                 AND (@organizationId::uuid IS NULL OR requesting_organization_id = @organizationId::uuid)
+                 AND (@organizationId::uuid IS NULL
+                      OR requesting_organization_id = @organizationId::uuid
+                      OR blocking_organization_id = @organizationId::uuid)
                GROUP BY 1
                ORDER BY 1",
             new { bucket, from, to, organizationId }
@@ -425,7 +448,7 @@ public class DashboardService
     )
     {
         var (from, to) = ResolvePeriod(period);
-        var display = await ResolveDisplayCurrencyAsync(displayCurrency);
+        var display = ResolveDisplayCurrency(displayCurrency);
         var lookup = await _exchangeRateService.GetLookupAsync();
 
         page = Math.Max(page, 1);
@@ -468,16 +491,22 @@ public class DashboardService
         string displayCurrency
     )
     {
-        var display = await ResolveDisplayCurrencyAsync(displayCurrency);
+        var display = ResolveDisplayCurrency(displayCurrency);
         var lookup = await _exchangeRateService.GetLookupAsync();
 
+        // Both sides of a conflict can open its drill: the requesting org (who
+        // hit the duplicate) and the blocking org (whose prior booking caused
+        // it). The list endpoint already surfaces rows from both sides, so the
+        // detail must accept both — otherwise a blocker-side row 404s on click.
         var conflictEvent = await _context.BookingConflictEvents
             .Include(e => e.RequestingOrganization)
             .Include(e => e.BlockingOrganization)
             .Include(e => e.BlockingBooking)
             .FirstOrDefaultAsync(e =>
                 e.Id == id
-                && (organizationId == null || e.RequestingOrganizationId == organizationId)
+                && (organizationId == null
+                    || e.RequestingOrganizationId == organizationId
+                    || e.BlockingOrganizationId == organizationId)
             ) ?? throw new Helpers.NotFoundException("Conflict event not found");
 
         var response = MapConflictEvent(conflictEvent, new ConflictEventDetailResponse(), display, lookup);
@@ -485,12 +514,13 @@ public class DashboardService
         if (conflictEvent.BlockingBooking != null)
         {
             var booking = conflictEvent.BlockingBooking;
+            var fxDate = booking.StartDate ?? booking.CreatedAt;
             var converted = lookup.Convert(
                 booking.Amount,
                 booking.Currency,
                 display,
-                booking.CreatedAt.Year,
-                booking.CreatedAt.Month
+                fxDate.Year,
+                fxDate.Month
             );
 
             response.BlockingBooking = new BlockingBookingResponse
@@ -510,6 +540,277 @@ public class DashboardService
         }
 
         return response;
+    }
+
+    // ----------------------------------------------------------------- drills
+
+    /// <summary>
+    /// Per-(currency, year, month) rows powering the value-FX drill on both
+    /// tabs. Grouping matches the tile aggregation exactly — sums add up.
+    /// `source=bookings` reads Booking (start_date ?? created_at);
+    /// `source=conflicts` reads BookingConflictEvent (overlap_start_date).
+    /// </summary>
+    public async Task<ValueFxDrillResponse> GetValueFxDrill(
+        string source,
+        string period,
+        Guid? organizationId,
+        string displayCurrency
+    )
+    {
+        var (from, to) = ResolvePeriod(period);
+        var display = ResolveDisplayCurrency(displayCurrency);
+        var lookup = await _exchangeRateService.GetLookupAsync();
+
+        List<CurrencyMonthGroup> groups;
+        if (string.Equals(source, "conflicts", StringComparison.OrdinalIgnoreCase))
+        {
+            groups = await ConflictEventsInPeriod(from, to, organizationId)
+                .GroupBy(e => new
+                {
+                    Currency = e.ProposedCurrency,
+                    Year = e.OverlapStartDate.Year,
+                    Month = e.OverlapStartDate.Month
+                })
+                .Select(g => new CurrencyMonthGroup
+                {
+                    Currency = g.Key.Currency,
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    Amount = g.Sum(e => e.ProposedAmount),
+                    Rounds = 0,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+        }
+        else
+        {
+            groups = await BookingsOverlappingPeriod(from, to, organizationId)
+                .GroupBy(b => new
+                {
+                    b.Currency,
+                    Year = (b.StartDate ?? b.CreatedAt).Year,
+                    Month = (b.StartDate ?? b.CreatedAt).Month
+                })
+                .Select(g => new CurrencyMonthGroup
+                {
+                    Currency = g.Key.Currency,
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    Amount = g.Sum(b => b.Amount),
+                    Rounds = 0,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+        }
+
+        var rows = groups
+            .OrderBy(g => g.Currency)
+            .ThenBy(g => g.Year)
+            .ThenBy(g => g.Month)
+            .Select(g =>
+            {
+                var rate = lookup.RateNativeToDisplay(g.Currency, display, g.Year, g.Month);
+                var converted = rate.HasValue ? g.Amount * rate.Value : (decimal?)null;
+                var status = rate.HasValue
+                    ? ConversionStatus.Ok
+                    : (string.Equals(g.Currency, display, StringComparison.OrdinalIgnoreCase)
+                        ? ConversionStatus.Ok
+                        : ConversionStatus.MissingRate);
+                return new ValueFxRowResponse
+                {
+                    Currency = g.Currency,
+                    Year = g.Year,
+                    Month = g.Month,
+                    Native = g.Amount,
+                    Rate = rate,
+                    Converted = converted,
+                    Count = g.Count,
+                    ConversionStatus = status
+                };
+            })
+            .ToList();
+
+        var nativeTotals = groups
+            .GroupBy(g => g.Currency)
+            .Select(g => new CurrencyAmountResponse
+            {
+                Currency = g.Key,
+                Amount = g.Sum(x => x.Amount)
+            })
+            .OrderBy(x => x.Currency)
+            .ToList();
+
+        decimal? convertedTotal = null;
+        string totalsStatus = ConversionStatus.Ok;
+        if (rows.Count > 0)
+        {
+            var summed = 0m;
+            var anyMissing = false;
+            var anyConverted = false;
+            foreach (var r in rows)
+            {
+                if (r.Converted.HasValue)
+                {
+                    summed += r.Converted.Value;
+                    anyConverted = true;
+                }
+                else
+                {
+                    anyMissing = true;
+                }
+            }
+            convertedTotal = anyConverted ? summed : (decimal?)null;
+            totalsStatus = anyMissing
+                ? (anyConverted ? ConversionStatus.Partial : ConversionStatus.MissingRate)
+                : ConversionStatus.Ok;
+        }
+
+        return new ValueFxDrillResponse
+        {
+            DisplayCurrency = display,
+            Rows = rows,
+            Totals = new ValueFxTotalsResponse
+            {
+                Native = nativeTotals,
+                Converted = convertedTotal,
+                ConversionStatus = totalsStatus
+            }
+        };
+    }
+
+    /// <summary>
+    /// Per-org totals for orgs feeding data during the period. Mirrors the
+    /// existing `GetOverviewPartners` grouping (org × currency), with the
+    /// household count folded in.
+    /// </summary>
+    public async Task<List<OrganizationDrillRowResponse>> GetOrganizationsDrill(
+        string period,
+        Guid? organizationId,
+        string displayCurrency
+    )
+    {
+        var partners = await GetOverviewPartners(period, organizationId, displayCurrency);
+        return partners.Select(p => new OrganizationDrillRowResponse
+        {
+            OrganizationId = p.OrganizationId,
+            OrganizationName = p.OrganizationName,
+            BookingsCount = p.Bookings,
+            HouseholdsCount = p.Households,
+            NativeCurrency = p.NativeCurrency,
+            NativeAmount = p.NativeAmount,
+            ConvertedAmount = p.ConvertedAmount,
+            ConversionStatus = p.ConversionStatus
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Pre-booking submissions in the period — one row per submission_id,
+    /// with success/fail counts. Successful and failed rows are pulled from
+    /// booking_log where is_prebooking = true.
+    /// </summary>
+    public async Task<PrebookingRunDrillResponse> GetPrebookingRunsDrill(
+        string period,
+        Guid? organizationId,
+        int page,
+        int pageSize
+    )
+    {
+        var (from, to) = ResolvePeriod(period);
+
+        var logs = _context.BookingLogs
+            .Where(l => l.IsPrebooking
+                && l.SubmissionId != null
+                && l.CreatedAt >= from
+                && l.CreatedAt <= to
+                && (organizationId == null || l.OrganizationId == organizationId));
+
+        var grouped = logs
+            .GroupBy(l => l.SubmissionId!.Value)
+            .Select(g => new
+            {
+                SubmissionId = g.Key,
+                UploadedAt = g.Min(l => l.CreatedAt),
+                UploadedByFirstName = g.Min(l => l.UploadedBy.FirstName),
+                UploadedByLastName = g.Min(l => l.UploadedBy.LastName),
+                OrganizationName = g.Min(l => l.Organization.Name),
+                TotalRows = g.Count(),
+                SuccessRows = g.Count(l => l.IsSuccess),
+                FailedRows = g.Count(l => !l.IsSuccess)
+            });
+
+        var totalCount = await grouped.CountAsync();
+        var rows = await grouped
+            .OrderByDescending(x => x.UploadedAt)
+            .Skip(Math.Max(0, page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PrebookingRunDrillResponse
+        {
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            Data = rows.Select(r => new PrebookingRunRowResponse
+            {
+                SubmissionId = r.SubmissionId,
+                UploadedAt = r.UploadedAt,
+                UploadedByName = string.Join(" ",
+                    new[] { r.UploadedByFirstName, r.UploadedByLastName }
+                        .Where(s => !string.IsNullOrWhiteSpace(s))),
+                OrganizationName = r.OrganizationName,
+                TotalRows = r.TotalRows,
+                SuccessRows = r.SuccessRows,
+                FailedRows = r.FailedRows
+            }).ToList()
+        };
+    }
+
+    /// <summary>
+    /// Individual pre-booking booking_log rows in the period. This is what
+    /// backs the "Household records checked" drill — one row per household
+    /// the wizard evaluated.
+    /// </summary>
+    public async Task<RecordsCheckedDrillResponse> GetRecordsCheckedDrill(
+        string period,
+        Guid? organizationId,
+        int page,
+        int pageSize
+    )
+    {
+        var (from, to) = ResolvePeriod(period);
+
+        var logs = _context.BookingLogs
+            .Where(l => l.IsPrebooking
+                && l.CreatedAt >= from
+                && l.CreatedAt <= to
+                && (organizationId == null || l.OrganizationId == organizationId));
+
+        var totalCount = await logs.CountAsync();
+        var rows = await logs
+            .OrderByDescending(l => l.CreatedAt)
+            .Skip(Math.Max(0, page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(l => new RecordsCheckedRowResponse
+            {
+                Id = l.Id,
+                SubmissionId = l.SubmissionId,
+                CreatedAt = l.CreatedAt,
+                OrganizationName = l.Organization.Name,
+                IsSuccess = l.IsSuccess,
+                Currency = l.Currency,
+                Amount = l.Amount,
+                StartDate = l.StartDate,
+                EndDate = l.EndDate
+            })
+            .ToListAsync();
+
+        return new RecordsCheckedDrillResponse
+        {
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            Data = rows
+        };
     }
 
     // -------------------------------------------------------------- internals
@@ -545,10 +846,16 @@ public class DashboardService
         Guid? organizationId
     )
     {
+        // Org scope covers *involvement* on either side: an event where your
+        // org is the blocker is as relevant to you as one where it's the
+        // requester. The detail endpoint uses the same predicate so any row
+        // visible in the list is openable.
         return _context.BookingConflictEvents.Where(e =>
             e.FirstDetectedAt >= from
             && e.FirstDetectedAt <= to
-            && (organizationId == null || e.RequestingOrganizationId == organizationId)
+            && (organizationId == null
+                || e.RequestingOrganizationId == organizationId
+                || e.BlockingOrganizationId == organizationId)
         );
     }
 
@@ -709,8 +1016,8 @@ public class DashboardService
             conflictEvent.ProposedAmount,
             conflictEvent.ProposedCurrency,
             display,
-            conflictEvent.FirstDetectedAt.Year,
-            conflictEvent.FirstDetectedAt.Month
+            conflictEvent.OverlapStartDate.Year,
+            conflictEvent.OverlapStartDate.Month
         );
 
         response.Id = conflictEvent.Id;

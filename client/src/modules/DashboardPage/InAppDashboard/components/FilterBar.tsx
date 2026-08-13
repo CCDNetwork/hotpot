@@ -22,8 +22,8 @@ const CURRENCY_OPTIONS: { value: DisplayCurrency; label: string }[] = [
 type OrgScope = 'all' | 'own';
 
 const ORG_OPTIONS: { value: OrgScope; label: string }[] = [
-  { value: 'all', label: 'All organisations' },
-  { value: 'own', label: 'My organisation' },
+  { value: 'all', label: 'All organizations' },
+  { value: 'own', label: 'My organization' },
 ];
 
 export const FilterBar = ({
@@ -56,7 +56,7 @@ export const FilterBar = ({
         onChange={onPeriodChange}
       />
       <SegmentedControl
-        ariaLabel="Organisation"
+        ariaLabel="Organization"
         options={ORG_OPTIONS}
         value={myOrganizationOnly ? 'own' : 'all'}
         onChange={(scope) => onMyOrganizationOnlyChange(scope === 'own')}

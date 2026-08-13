@@ -11,6 +11,5 @@ public class SettingsUpdateRequest
     public string AdminLevel3Name { get; set; }
     public string AdminLevel4Name { get; set; }
     public string MetabaseUrl { get; set; }
-    public string DashboardDisplayCurrency { get; set; }
     public List<string> FundingSources { get; set; }
 }

@@ -9,19 +9,18 @@ import { OverviewTab } from './OverviewTab';
 import { FilterBar } from './components/FilterBar';
 import { DashboardApiParams, DashboardPeriod, DisplayCurrency } from './types';
 
+// SSO-only deployments (UNICEF) can't reach superadmin settings, so the
+// default currency is baked in. Users flip the view with the FilterBar toggle.
+const DEFAULT_DISPLAY_CURRENCY: DisplayCurrency = 'USD';
+
 export const InAppDashboard = () => {
-  const { organization, deploymentSettings } = useAuth();
+  const { organization } = useAuth();
 
-  // Default: rolling last 30 days (committee-confirmed)
-  const [period, setPeriod] = useState<DashboardPeriod>('30d');
+  const [period, setPeriod] = useState<DashboardPeriod>('all-time');
   const [myOrganizationOnly, setMyOrganizationOnly] = useState(false);
-  // null = follow the deployment default until the user overrides for the session
-  const [currencyOverride, setCurrencyOverride] =
-    useState<DisplayCurrency | null>(null);
-
-  const deploymentCurrency: DisplayCurrency =
-    deploymentSettings?.dashboardDisplayCurrency === 'USD' ? 'USD' : 'EUR';
-  const currency = currencyOverride ?? deploymentCurrency;
+  const [currency, setCurrency] = useState<DisplayCurrency>(
+    DEFAULT_DISPLAY_CURRENCY
+  );
 
   const params: DashboardApiParams = {
     period,
@@ -44,7 +43,7 @@ export const InAppDashboard = () => {
         myOrganizationOnly={myOrganizationOnly}
         onMyOrganizationOnlyChange={setMyOrganizationOnly}
         currency={currency}
-        onCurrencyChange={setCurrencyOverride}
+        onCurrencyChange={setCurrency}
       />
 
       {/* Filter state persists across tab switches by design. */}

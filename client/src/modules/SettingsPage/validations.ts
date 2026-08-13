@@ -10,7 +10,6 @@ export const SettingsFormSchema = z.object({
   adminLevel3Name: safeHtmlString,
   adminLevel4Name: safeHtmlString,
   metabaseUrl: z.string(),
-  dashboardDisplayCurrency: z.string(),
   fundingSources: z.array(z.object({ value: safeHtmlString })),
 });
 

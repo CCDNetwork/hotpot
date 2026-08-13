@@ -71,4 +71,23 @@ public class ExchangeRateLookup
 
         return amount * nativeToEur.Value / displayToEur.Value;
     }
+
+    /// <summary>
+    /// Direct native→display rate for the given month — the multiplier the
+    /// drill UI shows next to each row. `1` when native == display; `null`
+    /// when either month rate is missing.
+    /// </summary>
+    public decimal? RateNativeToDisplay(string native, string display, int year, int month)
+    {
+        if (string.Equals(native, display, StringComparison.OrdinalIgnoreCase))
+            return 1m;
+
+        var nativeToEur = RateToEur(native, year, month);
+        var displayToEur = RateToEur(display, year, month);
+
+        if (nativeToEur == null || displayToEur is null or 0)
+            return null;
+
+        return nativeToEur.Value / displayToEur.Value;
+    }
 }

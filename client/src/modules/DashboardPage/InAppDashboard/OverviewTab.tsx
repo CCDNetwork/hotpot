@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { cn } from '@/helpers/utils';
 
@@ -15,7 +15,7 @@ import {
   formatPercent,
   spansMultipleYears,
 } from './helpers';
-import { DashboardApiParams, TrendPoint } from './types';
+import { DashboardApiParams, DrillTarget, TrendPoint } from './types';
 import {
   AreaTrendChart,
   BarTrendChart,
@@ -25,6 +25,7 @@ import {
   HorizontalBars,
 } from './components/charts';
 import { ChartCard } from './components/ChartCard';
+import { DrilldownSheet } from './components/DrilldownSheet';
 import {
   FxMiniBreakdown,
   KpiTile,
@@ -41,6 +42,7 @@ const toTrendData = (points: TrendPoint[]) => {
 };
 
 export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
+  const [drillTarget, setDrillTarget] = useState<DrillTarget | null>(null);
   const summaryQuery = useOverviewSummary(params);
   const trendQuery = useOverviewTrend(params);
   const partnersQuery = useOverviewPartners(params);
@@ -118,10 +120,16 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
           }`}
         />
         <KpiTile
-          title="Active partners"
+          title="Active organizations"
           isLoading={summaryLoading}
-          value={formatCount(summary?.activePartners ?? 0)}
+          value={formatCount(summary?.activeOrganizations ?? 0)}
           secondary={`of ${formatCount(summary?.totalOnboarded ?? 0)} onboarded`}
+          onClick={() =>
+            setDrillTarget({
+              type: 'organizations',
+              label: 'Active organizations',
+            })
+          }
         />
         <KpiTile
           title="Value transferred"
@@ -130,6 +138,13 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
             summary
               ? formatDisplayAmount(summary.valueTransferred.display)
               : '—'
+          }
+          onClick={() =>
+            setDrillTarget({
+              type: 'value-fx',
+              source: 'bookings',
+              label: 'Value transferred',
+            })
           }
         >
           {summary && (
@@ -146,6 +161,13 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
             summary ? formatDisplayAmount(summary.avgTransfer.display) : '—'
           }
           secondary="per booking"
+          onClick={() =>
+            setDrillTarget({
+              type: 'value-fx',
+              source: 'bookings',
+              label: 'Average transfer',
+            })
+          }
         >
           {summary && (
             <div className="mt-2 space-y-0.5">
@@ -184,8 +206,8 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
           )}
         </ChartCard>
         <ChartCard
-          title="New partners over time"
-          description="Organisations onboarded per bucket"
+          title="New organizations over time"
+          description="Organizations onboarded per bucket"
         >
           {trendQuery.isLoading ? (
             <ChartSkeleton />
@@ -195,16 +217,16 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
         </ChartCard>
       </div>
 
-      {/* Partner row */}
+      {/* Organizations row */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChartCard title="Households per partner">
+        <ChartCard title="Households per organization">
           {partnersQuery.isLoading ? (
             <ChartSkeleton />
           ) : (
             <HorizontalBars data={partnerBars} />
           )}
         </ChartCard>
-        <ChartCard title="Assistance value per partner">
+        <ChartCard title="Assistance value per organization">
           {partnersQuery.isLoading ? (
             <ChartSkeleton />
           ) : partners.length === 0 ? (
@@ -216,7 +238,7 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
               <table className="w-full min-w-[26rem] text-sm">
                 <thead>
                   <tr className="border-b text-left text-xs text-muted-foreground">
-                    <th className="py-1.5 font-medium">Partner</th>
+                    <th className="py-1.5 font-medium">Organization</th>
                     <th className="py-1.5 text-right font-medium">
                       Native amount
                     </th>
@@ -282,6 +304,12 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
           />
         )}
       </ChartCard>
+
+      <DrilldownSheet
+        target={drillTarget}
+        onClose={() => setDrillTarget(null)}
+        params={params}
+      />
     </div>
   );
 };

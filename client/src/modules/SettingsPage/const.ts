@@ -8,7 +8,6 @@ export const defaultSettingsFormValues: Omit<Settings, 'id'> = {
   adminLevel3Name: '',
   adminLevel4Name: '',
   metabaseUrl: '',
-  dashboardDisplayCurrency: 'EUR',
   fundingSources: [],
 };
 

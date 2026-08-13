@@ -72,3 +72,11 @@ export const formatDate = (isoDate: string | null): string => {
     day: 'numeric',
   });
 };
+
+// "Mar 2026" style label for month-granular drill rows.
+export const formatMonth = (year: number, month: number): string =>
+  new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });

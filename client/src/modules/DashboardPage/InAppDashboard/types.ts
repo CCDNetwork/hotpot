@@ -55,7 +55,7 @@ export type AvgTransfer = {
 export type OverviewSummary = {
   householdsAssisted: number;
   individualsReached: number;
-  activePartners: number;
+  activeOrganizations: number;
   totalOnboarded: number;
   valueTransferred: ValueSummary;
   avgTransfer: AvgTransfer;
@@ -157,4 +157,91 @@ export type BlockingBooking = {
 
 export type ConflictEventDetail = ConflictEventRow & {
   blockingBooking: BlockingBooking | null;
+};
+
+/**
+ * Discriminated union identifying which drill the sheet should render.
+ * `null` closes the sheet. The `label` is the human-readable name of the
+ * source tile — used in the sheet header so the user knows which aggregate
+ * they're auditing.
+ */
+export type DrillTarget =
+  | {
+      type: 'unique-overlaps';
+      label: string;
+      // Optional: when set, the drill opens with this event pre-expanded.
+      // Only takes effect if the event appears on the first page.
+      focusEventId?: string;
+    }
+  | { type: 'value-fx'; source: 'bookings' | 'conflicts'; label: string }
+  | { type: 'organizations'; label: string }
+  | { type: 'prebooking-runs'; label: string }
+  | { type: 'records-checked'; label: string };
+
+export type ValueFxRow = {
+  currency: string;
+  year: number;
+  month: number;
+  native: number;
+  rate: number | null;
+  converted: number | null;
+  count: number;
+  conversionStatus: ConversionStatusValue;
+};
+
+export type ValueFxDrillResponse = {
+  displayCurrency: string;
+  rows: ValueFxRow[];
+  totals: {
+    native: CurrencyAmount[];
+    converted: number | null;
+    conversionStatus: ConversionStatusValue;
+  };
+};
+
+export type OrganizationDrillRow = {
+  organizationId: string;
+  organizationName: string;
+  bookingsCount: number;
+  householdsCount: number;
+  nativeCurrency: string;
+  nativeAmount: number;
+  convertedAmount: number | null;
+  conversionStatus: ConversionStatusValue;
+};
+
+export type PrebookingRunRow = {
+  submissionId: string;
+  uploadedAt: string;
+  uploadedByName: string;
+  organizationName: string;
+  totalRows: number;
+  successRows: number;
+  failedRows: number;
+};
+
+export type PrebookingRunDrillResponse = {
+  data: PrebookingRunRow[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+};
+
+export type RecordsCheckedRow = {
+  id: string;
+  submissionId: string | null;
+  createdAt: string;
+  organizationName: string;
+  isSuccess: boolean;
+  currency: string | null;
+  amount: number | null;
+  startDate: string | null;
+  endDate: string | null;
+};
+
+export type RecordsCheckedDrillResponse = {
+  data: RecordsCheckedRow[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
 };

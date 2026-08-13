@@ -18,7 +18,6 @@ public class Settings : UserChangeTracked
         AdminLevel3Name = "AdminLevel3",
         AdminLevel4Name = "AdminLevel4",
         MetabaseUrl = "https://default.metabase.url",
-        DashboardDisplayCurrency = "EUR",
         FundingSources = new List<string> { "BHA", "Other" }
     };
 
@@ -31,6 +30,5 @@ public class Settings : UserChangeTracked
     public string AdminLevel3Name { get; set; }
     public string AdminLevel4Name { get; set; }
     public string MetabaseUrl { get; set; }
-    public string DashboardDisplayCurrency { get; set; }
     [Column(TypeName = "jsonb")] public List<string> FundingSources { get; set; }
 }

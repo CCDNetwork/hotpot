@@ -63,7 +63,7 @@ public class OverviewSummaryResponse
 {
     public int HouseholdsAssisted { get; set; }
     public int IndividualsReached { get; set; }
-    public int ActivePartners { get; set; }
+    public int ActiveOrganizations { get; set; }
     public int TotalOnboarded { get; set; }
     public ValueSummaryResponse ValueTransferred { get; set; }
     public AvgTransferResponse AvgTransfer { get; set; }
@@ -188,4 +188,87 @@ public class BlockingBookingResponse
 public class ConflictEventDetailResponse : ConflictEventRowResponse
 {
     public BlockingBookingResponse BlockingBooking { get; set; }
+}
+
+// Drill responses ----------------------------------------------------------
+
+public class ValueFxRowResponse
+{
+    public string Currency { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public decimal Native { get; set; }
+
+    // 1 unit of native = Rate units of display currency (null if a rate for
+    // that month is missing — Converted is then null too).
+    public decimal? Rate { get; set; }
+    public decimal? Converted { get; set; }
+    public int Count { get; set; }
+    public string ConversionStatus { get; set; }
+}
+
+public class ValueFxTotalsResponse
+{
+    public List<CurrencyAmountResponse> Native { get; set; }
+    public decimal? Converted { get; set; }
+    public string ConversionStatus { get; set; }
+}
+
+public class ValueFxDrillResponse
+{
+    public string DisplayCurrency { get; set; }
+    public List<ValueFxRowResponse> Rows { get; set; }
+    public ValueFxTotalsResponse Totals { get; set; }
+}
+
+public class OrganizationDrillRowResponse
+{
+    public Guid OrganizationId { get; set; }
+    public string OrganizationName { get; set; }
+    public int BookingsCount { get; set; }
+    public int HouseholdsCount { get; set; }
+    public string NativeCurrency { get; set; }
+    public decimal NativeAmount { get; set; }
+    public decimal? ConvertedAmount { get; set; }
+    public string ConversionStatus { get; set; }
+}
+
+public class PrebookingRunRowResponse
+{
+    public Guid SubmissionId { get; set; }
+    public DateTime UploadedAt { get; set; }
+    public string UploadedByName { get; set; }
+    public string OrganizationName { get; set; }
+    public int TotalRows { get; set; }
+    public int SuccessRows { get; set; }
+    public int FailedRows { get; set; }
+}
+
+public class PrebookingRunDrillResponse
+{
+    public List<PrebookingRunRowResponse> Data { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+}
+
+public class RecordsCheckedRowResponse
+{
+    public Guid Id { get; set; }
+    public Guid? SubmissionId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string OrganizationName { get; set; }
+    public bool IsSuccess { get; set; }
+    public string Currency { get; set; }
+    public decimal? Amount { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+}
+
+public class RecordsCheckedDrillResponse
+{
+    public List<RecordsCheckedRowResponse> Data { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
 }

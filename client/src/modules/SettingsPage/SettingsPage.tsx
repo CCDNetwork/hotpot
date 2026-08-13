@@ -252,52 +252,24 @@ export const SettingsPage = () => {
                 )}
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={control}
-                name="metabaseUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Metabase Iframe URL</FormLabel>
-                    <FormControl>
-                      <Input
-                        id="metabaseUrl"
-                        maxLength={100}
-                        placeholder="URL"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={control}
-                name="dashboardDisplayCurrency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dashboard Display Currency</FormLabel>
-                    <FormControl>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select currency" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="USD">USD</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={control}
+              name="metabaseUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Metabase Iframe URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      id="metabaseUrl"
+                      maxLength={100}
+                      placeholder="URL"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div>
               <FormLabel>Funding Sources</FormLabel>
               {fields.length > 0 && (

@@ -11,9 +11,13 @@ import {
   DuplicatesSummary,
   DuplicatesTrendPoint,
   ModalityRow,
+  OrganizationDrillRow,
   OverviewSummary,
   OverviewTrend,
   PartnerRow,
+  PrebookingRunDrillResponse,
+  RecordsCheckedDrillResponse,
+  ValueFxDrillResponse,
 } from './types';
 
 enum QueryKeys {
@@ -27,6 +31,10 @@ enum QueryKeys {
   BlockingPartners = 'dashboard_blocking_partners',
   ConflictEvents = 'dashboard_conflict_events',
   ConflictEvent = 'dashboard_conflict_event',
+  ValueFxDrill = 'dashboard_drill_value_fx',
+  OrganizationsDrill = 'dashboard_drill_organizations',
+  PrebookingRunsDrill = 'dashboard_drill_prebooking_runs',
+  RecordsCheckedDrill = 'dashboard_drill_records_checked',
 }
 
 const commonOptions = { keepPreviousData: true } as const;
@@ -125,4 +133,67 @@ export const useConflictEvent = (
         })
       ).data,
     { enabled: !!id }
+  );
+
+export const useValueFxDrill = (
+  params: DashboardApiParams,
+  source: 'bookings' | 'conflicts',
+  enabled: boolean
+) =>
+  useQuery(
+    [QueryKeys.ValueFxDrill, params, source],
+    async (): Promise<ValueFxDrillResponse> =>
+      (
+        await api.get('/dashboards/drills/value', {
+          params: { ...params, source },
+        })
+      ).data,
+    { ...commonOptions, enabled }
+  );
+
+export const useOrganizationsDrill = (
+  params: DashboardApiParams,
+  enabled: boolean
+) =>
+  useQuery(
+    [QueryKeys.OrganizationsDrill, params],
+    async (): Promise<OrganizationDrillRow[]> =>
+      (
+        await api.get('/dashboards/overview/drills/organizations', {
+          params,
+        })
+      ).data,
+    { ...commonOptions, enabled }
+  );
+
+export const usePrebookingRunsDrill = (
+  params: DashboardApiParams,
+  page: number,
+  enabled: boolean
+) =>
+  useQuery(
+    [QueryKeys.PrebookingRunsDrill, params, page],
+    async (): Promise<PrebookingRunDrillResponse> =>
+      (
+        await api.get('/dashboards/duplicates/drills/prebooking-runs', {
+          params: { ...params, page, pageSize: 25 },
+        })
+      ).data,
+    { ...commonOptions, enabled }
+  );
+
+export const useRecordsCheckedDrill = (
+  params: DashboardApiParams,
+  page: number,
+  enabled: boolean
+) =>
+  useQuery(
+    [QueryKeys.RecordsCheckedDrill, params, page],
+    async (): Promise<RecordsCheckedDrillResponse> =>
+      (
+        await api.get('/dashboards/duplicates/drills/records-checked', {
+          params: { ...params, page, pageSize: 25 },
+        })
+      ).data,
+    { ...commonOptions, enabled }
   );
