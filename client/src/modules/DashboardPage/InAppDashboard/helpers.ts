@@ -46,10 +46,21 @@ export const formatCount = (value: number): string =>
 export const formatPercent = (share: number, decimals = 1): string =>
   `${(share * 100).toFixed(decimals)}%`;
 
-export const formatBucket = (isoDate: string): string => {
+export const formatBucket = (isoDate: string, withYear = false): string => {
   const date = new Date(isoDate);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    ...(withYear ? { year: 'numeric' } : {}),
+  });
 };
+
+/**
+ * True when trend buckets cross a calendar-year boundary (e.g. the "All time"
+ * period), in which case axis labels need the year to stay unambiguous.
+ */
+export const spansMultipleYears = (isoDates: string[]): boolean =>
+  new Set(isoDates.map((d) => new Date(d).getFullYear())).size > 1;
 
 export const formatDate = (isoDate: string | null): string => {
   if (!isoDate) {

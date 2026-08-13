@@ -1,3 +1,7 @@
+import { useMemo } from 'react';
+
+import { cn } from '@/helpers/utils';
+
 import {
   useOverviewModality,
   useOverviewPartners,
@@ -9,14 +13,16 @@ import {
   formatCount,
   formatCurrency,
   formatPercent,
+  spansMultipleYears,
 } from './helpers';
-import { DashboardApiParams } from './types';
+import { DashboardApiParams, TrendPoint } from './types';
 import {
+  AreaTrendChart,
   BarTrendChart,
+  ChartSkeleton,
   DONUT_COLORS,
   DonutChart,
   HorizontalBars,
-  LineTrendChart,
 } from './components/charts';
 import { ChartCard } from './components/ChartCard';
 import {
@@ -26,23 +32,74 @@ import {
   formatDisplayAmount,
 } from './components/KpiTile';
 
-const ChartSkeleton = () => (
-  <div className="h-40 animate-pulse rounded bg-muted" />
-);
+const toTrendData = (points: TrendPoint[]) => {
+  const withYear = spansMultipleYears(points.map((p) => p.bucket));
+  return points.map((p) => ({
+    label: formatBucket(p.bucket, withYear),
+    value: p.count,
+  }));
+};
 
 export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
-  const { data: summary, isLoading: summaryLoading } =
-    useOverviewSummary(params);
-  const { data: trend, isLoading: trendLoading } = useOverviewTrend(params);
-  const { data: partners, isLoading: partnersLoading } =
-    useOverviewPartners(params);
-  const { data: modality, isLoading: modalityLoading } =
-    useOverviewModality(params);
+  const summaryQuery = useOverviewSummary(params);
+  const trendQuery = useOverviewTrend(params);
+  const partnersQuery = useOverviewPartners(params);
+  const modalityQuery = useOverviewModality(params);
+
+  const summary = summaryQuery.data;
+  const summaryLoading = summaryQuery.isLoading;
+  const partners = partnersQuery.data ?? [];
+
+  // keepPreviousData keeps stale data on screen during filter changes; dim it
+  // so the change is visibly acknowledged.
+  const isRefreshing = [
+    summaryQuery,
+    trendQuery,
+    partnersQuery,
+    modalityQuery,
+  ].some((q) => q.isFetching && !q.isLoading);
+
+  const householdsTrend = useMemo(
+    () => toTrendData(trendQuery.data?.households ?? []),
+    [trendQuery.data]
+  );
+  const newPartnersTrend = useMemo(
+    () => toTrendData(trendQuery.data?.newPartners ?? []),
+    [trendQuery.data]
+  );
+  const partnerBars = useMemo(
+    () =>
+      (partnersQuery.data ?? []).map((p) => ({
+        key: `${p.organizationId}-${p.nativeCurrency}`,
+        label: p.organizationName,
+        value: p.households,
+      })),
+    [partnersQuery.data]
+  );
+  const modalitySegments = useMemo(
+    () =>
+      (modalityQuery.data ?? []).map((m, idx) => ({
+        key: m.modality || 'unknown',
+        label: `${m.modality || 'Unknown'} (${formatPercent(m.share)})`,
+        value: m.households,
+        color: DONUT_COLORS[idx % DONUT_COLORS.length],
+      })),
+    [modalityQuery.data]
+  );
+  const modalityTotal = useMemo(
+    () => (modalityQuery.data ?? []).reduce((sum, m) => sum + m.households, 0),
+    [modalityQuery.data]
+  );
 
   return (
-    <div className="space-y-4">
+    <div
+      className={cn(
+        'space-y-4 transition-opacity duration-300',
+        isRefreshing && 'opacity-60'
+      )}
+    >
       {/* KPI row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiTile
           title="Households assisted"
           isLoading={summaryLoading}
@@ -95,7 +152,7 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
               {summary.avgTransfer.breakdown.map((row) => (
                 <div
                   key={row.currency}
-                  className="flex items-center justify-between gap-2 text-xs text-muted-foreground"
+                  className="flex flex-wrap items-center justify-between gap-x-2 text-xs text-muted-foreground"
                 >
                   <span>{formatCurrency(row.avgNative, row.currency)}</span>
                   {row.avgConverted != null ? (
@@ -120,30 +177,20 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
           title="Households assisted over time"
           description="Distinct households by assistance start date"
         >
-          {trendLoading ? (
+          {trendQuery.isLoading ? (
             <ChartSkeleton />
           ) : (
-            <LineTrendChart
-              data={(trend?.households ?? []).map((p) => ({
-                label: formatBucket(p.bucket),
-                value: p.count,
-              }))}
-            />
+            <AreaTrendChart data={householdsTrend} />
           )}
         </ChartCard>
         <ChartCard
           title="New partners over time"
           description="Organisations onboarded per bucket"
         >
-          {trendLoading ? (
+          {trendQuery.isLoading ? (
             <ChartSkeleton />
           ) : (
-            <BarTrendChart
-              data={(trend?.newPartners ?? []).map((p) => ({
-                label: formatBucket(p.bucket),
-                value: p.count,
-              }))}
-            />
+            <BarTrendChart data={newPartnersTrend} />
           )}
         </ChartCard>
       </div>
@@ -151,28 +198,22 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
       {/* Partner row */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard title="Households per partner">
-          {partnersLoading ? (
+          {partnersQuery.isLoading ? (
             <ChartSkeleton />
           ) : (
-            <HorizontalBars
-              data={(partners ?? []).map((p) => ({
-                key: `${p.organizationId}-${p.nativeCurrency}`,
-                label: p.organizationName,
-                value: p.households,
-              }))}
-            />
+            <HorizontalBars data={partnerBars} />
           )}
         </ChartCard>
         <ChartCard title="Assistance value per partner">
-          {partnersLoading ? (
+          {partnersQuery.isLoading ? (
             <ChartSkeleton />
-          ) : (partners ?? []).length === 0 ? (
+          ) : partners.length === 0 ? (
             <p className="flex h-40 items-center justify-center text-sm text-muted-foreground">
               No data in this period
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[26rem] text-sm">
                 <thead>
                   <tr className="border-b text-left text-xs text-muted-foreground">
                     <th className="py-1.5 font-medium">Partner</th>
@@ -186,7 +227,7 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {(partners ?? []).map((p) => (
+                  {partners.map((p) => (
                     <tr
                       key={`${p.organizationId}-${p.nativeCurrency}`}
                       className="border-b last:border-0"
@@ -232,19 +273,12 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
         title="Reached by assistance type"
         description="Distinct households per modality"
       >
-        {modalityLoading ? (
+        {modalityQuery.isLoading ? (
           <ChartSkeleton />
         ) : (
           <DonutChart
-            segments={(modality ?? []).map((m, idx) => ({
-              key: m.modality || 'unknown',
-              label: `${m.modality || 'Unknown'} (${formatPercent(m.share)})`,
-              value: m.households,
-              color: DONUT_COLORS[idx % DONUT_COLORS.length],
-            }))}
-            centerLabel={formatCount(
-              (modality ?? []).reduce((sum, m) => sum + m.households, 0)
-            )}
+            segments={modalitySegments}
+            centerLabel={formatCount(modalityTotal)}
           />
         )}
       </ChartCard>

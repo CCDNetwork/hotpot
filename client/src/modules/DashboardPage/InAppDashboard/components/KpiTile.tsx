@@ -34,7 +34,7 @@ export const FxMiniBreakdown = ({
       {breakdown.map((row) => (
         <div
           key={row.currency}
-          className="flex items-center justify-between gap-2 text-xs text-muted-foreground"
+          className="flex flex-wrap items-center justify-between gap-x-2 text-xs text-muted-foreground"
         >
           <span>{formatCurrency(row.native, row.currency)}</span>
           {row.converted != null ? (
@@ -88,7 +88,7 @@ export const KpiTile = ({
       }
       className={cn(
         onClick &&
-          'cursor-pointer transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+          'cursor-pointer outline-none transition-colors hover:border-primary/50 focus-visible:border-primary/50'
       )}
     >
       <CardHeader className="px-4 pb-2 pt-4 sm:px-6 sm:pt-6">
@@ -104,7 +104,9 @@ export const KpiTile = ({
           </div>
         ) : (
           <>
-            <div className="text-2xl font-bold">{value}</div>
+            <div className="text-2xl font-bold leading-tight tabular-nums">
+              {value}
+            </div>
             {secondary && (
               <p className="text-xs text-muted-foreground">{secondary}</p>
             )}

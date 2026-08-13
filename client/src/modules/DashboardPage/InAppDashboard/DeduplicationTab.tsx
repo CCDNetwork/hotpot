@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+
+import { cn } from '@/helpers/utils';
 
 import {
   useBlockingPartners,
@@ -13,9 +15,15 @@ import {
   formatCurrency,
   formatDate,
   formatPercent,
+  spansMultipleYears,
 } from './helpers';
 import { DashboardApiParams } from './types';
-import { BarTrendChart, DonutChart, HorizontalBars } from './components/charts';
+import {
+  ChartSkeleton,
+  DonutChart,
+  HorizontalBars,
+  RateTrendChart,
+} from './components/charts';
 import { ChartCard } from './components/ChartCard';
 import { DrilldownSheet } from './components/DrilldownSheet';
 import {
@@ -25,10 +33,6 @@ import {
   formatDisplayAmount,
 } from './components/KpiTile';
 
-const ChartSkeleton = () => (
-  <div className="h-40 animate-pulse rounded bg-muted" />
-);
-
 export const DeduplicationTab = ({
   params,
 }: {
@@ -36,23 +40,69 @@ export const DeduplicationTab = ({
 }) => {
   const [isDrilldownOpen, setIsDrilldownOpen] = useState(false);
 
-  const { data: summary, isLoading: summaryLoading } =
-    useDuplicatesSummary(params);
-  const { data: trend, isLoading: trendLoading } = useDuplicatesTrend(params);
-  const { data: split, isLoading: splitLoading } = useDuplicatesSplit(params);
-  const { data: blockingPartners, isLoading: blockingLoading } =
-    useBlockingPartners(params);
+  const summaryQuery = useDuplicatesSummary(params);
+  const trendQuery = useDuplicatesTrend(params);
+  const splitQuery = useDuplicatesSplit(params);
+  const blockingQuery = useBlockingPartners(params);
   // Recent events preview (first page) shown inline on the tab
-  const { data: recentEvents, isLoading: recentLoading } = useConflictEvents(
-    params,
-    1,
-    true
-  );
+  const recentQuery = useConflictEvents(params, 1, true);
+
+  const summary = summaryQuery.data;
+  const summaryLoading = summaryQuery.isLoading;
+  const split = splitQuery.data;
+  const recentEvents = recentQuery.data;
+
+  // keepPreviousData keeps stale data on screen during filter changes; dim it
+  // so the change is visibly acknowledged.
+  const isRefreshing = [
+    summaryQuery,
+    trendQuery,
+    splitQuery,
+    blockingQuery,
+    recentQuery,
+  ].some((q) => q.isFetching && !q.isLoading);
+
+  // Per-bucket overlap rate, derived from the counts the trend already carries.
+  const rateTrend = useMemo(() => {
+    const points = trendQuery.data ?? [];
+    const withYear = spansMultipleYears(points.map((p) => p.bucket));
+    return points.map((p) => ({
+      label: formatBucket(p.bucket, withYear),
+      count: p.uniqueOverlaps,
+      checked: p.householdRecordsChecked,
+      rate:
+        p.householdRecordsChecked > 0
+          ? p.uniqueOverlaps / p.householdRecordsChecked
+          : null,
+    }));
+  }, [trendQuery.data]);
+
+  // Each blocking partner's share of all overlaps in the period.
+  const blockingBars = useMemo(() => {
+    const rows = blockingQuery.data ?? [];
+    const total = rows.reduce((sum, r) => sum + r.overlapsCaused, 0);
+    return rows.map((r) => ({
+      key: r.organizationId,
+      label: r.organizationName,
+      value: r.overlapsCaused,
+      valueLabel:
+        total > 0
+          ? `${formatCount(r.overlapsCaused)} (${formatPercent(
+              r.overlapsCaused / total
+            )})`
+          : formatCount(r.overlapsCaused),
+    }));
+  }, [blockingQuery.data]);
 
   return (
-    <div className="space-y-4">
+    <div
+      className={cn(
+        'space-y-4 transition-opacity duration-300',
+        isRefreshing && 'opacity-60'
+      )}
+    >
       {/* KPI row */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiTile
           title="Unique overlaps detected"
           isLoading={summaryLoading}
@@ -101,23 +151,17 @@ export const DeduplicationTab = ({
       {/* Trend + split row */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard
-          title="Unique overlaps over time"
-          description="By first detection date"
+          title="Overlaps and overlap rate over time"
+          description="Bars: unique overlaps · line: overlaps ÷ records checked, by first detection date"
         >
-          {trendLoading ? (
+          {trendQuery.isLoading ? (
             <ChartSkeleton />
           ) : (
-            <BarTrendChart
-              data={(trend ?? []).map((p) => ({
-                label: formatBucket(p.bucket),
-                value: p.uniqueOverlaps,
-                secondary: `${formatCount(p.householdRecordsChecked)} checked`,
-              }))}
-            />
+            <RateTrendChart data={rateTrend} />
           )}
         </ChartCard>
         <ChartCard title="Cross-agency vs within-agency">
-          {splitLoading ? (
+          {splitQuery.isLoading ? (
             <ChartSkeleton />
           ) : (
             <DonutChart
@@ -147,22 +191,16 @@ export const DeduplicationTab = ({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard
           title="Blocking partners"
-          description="Whose existing bookings caused the blocks"
+          description="Whose existing bookings caused the blocks · share of all overlaps"
         >
-          {blockingLoading ? (
+          {blockingQuery.isLoading ? (
             <ChartSkeleton />
           ) : (
-            <HorizontalBars
-              data={(blockingPartners ?? []).map((p) => ({
-                key: p.organizationId,
-                label: p.organizationName,
-                value: p.overlapsCaused,
-              }))}
-            />
+            <HorizontalBars data={blockingBars} />
           )}
         </ChartCard>
         <ChartCard title="Recent overlap events">
-          {recentLoading ? (
+          {recentQuery.isLoading ? (
             <ChartSkeleton />
           ) : (recentEvents?.data ?? []).length === 0 ? (
             <p className="flex h-40 items-center justify-center text-sm text-muted-foreground">
@@ -170,7 +208,7 @@ export const DeduplicationTab = ({
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[26rem] text-sm">
                 <thead>
                   <tr className="border-b text-left text-xs text-muted-foreground">
                     <th className="py-1.5 font-medium">

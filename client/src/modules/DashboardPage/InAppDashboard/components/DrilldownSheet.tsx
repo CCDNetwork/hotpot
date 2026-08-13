@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronRight, Loader2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -138,6 +138,9 @@ export const DrilldownSheet = ({
       <SheetContent
         side="right"
         className="flex w-full flex-col overflow-y-auto sm:max-w-2xl"
+        // Don't auto-focus the first row on open — it paints a focus ring on
+        // a row the user never interacted with.
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <SheetHeader>
           <SheetTitle>Unique overlaps detected</SheetTitle>
@@ -165,45 +168,46 @@ export const DrilldownSheet = ({
             {data.data.map((event) => {
               const isExpanded = expandedId === event.id;
               return (
-                <div key={event.id} className="py-2">
+                <div key={event.id} className="py-1">
                   <button
                     type="button"
                     onClick={() => setExpandedId(isExpanded ? null : event.id)}
-                    className="flex w-full items-start justify-between gap-2 text-left"
+                    className="-mx-2 flex w-[calc(100%+1rem)] items-start gap-2 rounded-md px-2 py-2 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:bg-muted/50"
                   >
-                    <div className="min-w-0 space-y-0.5">
-                      <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 shrink-0" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 shrink-0" />
-                        )}
-                        <span className="truncate">
-                          {event.requestingOrganizationName} · blocked by{' '}
-                          {event.blockingOrganizationName}
-                        </span>
-                        <CategoryBadge category={event.category} />
-                      </div>
-                      <div className="pl-6 text-xs text-muted-foreground">
+                    <ChevronRight
+                      className={`mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                        isExpanded ? 'rotate-90' : ''
+                      }`}
+                    />
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="truncate text-sm font-medium">
+                        {event.requestingOrganizationName} ·{' '}
+                        <span className="text-muted-foreground">
+                          blocked by
+                        </span>{' '}
+                        {event.blockingOrganizationName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
                         {event.subjectLabel} ·{' '}
                         {formatDate(event.overlapStartDate)} –{' '}
                         {formatDate(event.overlapEndDate)} ·{' '}
                         {event.proposedModality || '—'} · {event.proposedRounds}{' '}
                         round{event.proposedRounds === 1 ? '' : 's'}
-                      </div>
-                      <div className="pl-6 text-xs text-muted-foreground">
+                      </p>
+                      <p className="text-xs text-muted-foreground">
                         First seen {formatDate(event.firstDetectedAt)} · last
                         seen {formatDate(event.lastDetectedAt)} · detected{' '}
                         {event.detectionCount}×
-                      </div>
+                      </p>
                     </div>
-                    <div className="shrink-0 text-sm">
+                    <div className="flex shrink-0 flex-col items-end gap-1 text-sm">
                       <ConvertedAmount
                         amount={event.proposedAmount}
                         currency={event.proposedCurrency}
                         converted={event.convertedAmount}
                         displayCurrency={params.displayCurrency}
                       />
+                      <CategoryBadge category={event.category} />
                     </div>
                   </button>
                   {isExpanded && (
@@ -222,6 +226,7 @@ export const DrilldownSheet = ({
             <Button
               variant="outline"
               size="sm"
+              className="focus-visible:ring-0"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
             >
@@ -233,6 +238,7 @@ export const DrilldownSheet = ({
             <Button
               variant="outline"
               size="sm"
+              className="focus-visible:ring-0"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
             >

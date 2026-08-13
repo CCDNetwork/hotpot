@@ -25,7 +25,7 @@ export const SegmentedControl = <T extends string>({
           type="button"
           onClick={() => onChange(option.value)}
           className={cn(
-            'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium outline-none transition-all',
             option.value === value
               ? 'bg-background text-foreground shadow'
               : 'hover:text-foreground'

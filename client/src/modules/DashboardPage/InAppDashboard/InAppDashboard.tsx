@@ -20,7 +20,7 @@ export const InAppDashboard = () => {
     useState<DisplayCurrency | null>(null);
 
   const deploymentCurrency: DisplayCurrency =
-    deploymentSettings?.dashboardDisplayCurrency === 'EUR' ? 'EUR' : 'USD';
+    deploymentSettings?.dashboardDisplayCurrency === 'USD' ? 'USD' : 'EUR';
   const currency = currencyOverride ?? deploymentCurrency;
 
   const params: DashboardApiParams = {
@@ -48,15 +48,32 @@ export const InAppDashboard = () => {
       />
 
       {/* Filter state persists across tab switches by design. */}
+      {/* ring-0 overrides: no focus rings on dashboard chrome (user preference) */}
       <Tabs defaultValue="overview">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="deduplication">Deduplication</TabsTrigger>
+          <TabsTrigger
+            value="overview"
+            className="focus-visible:ring-0 focus-visible:ring-offset-0"
+          >
+            Overview
+          </TabsTrigger>
+          <TabsTrigger
+            value="deduplication"
+            className="focus-visible:ring-0 focus-visible:ring-offset-0"
+          >
+            Deduplication
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="overview">
+        <TabsContent
+          value="overview"
+          className="focus-visible:ring-0 focus-visible:ring-offset-0"
+        >
           <OverviewTab params={params} />
         </TabsContent>
-        <TabsContent value="deduplication">
+        <TabsContent
+          value="deduplication"
+          className="focus-visible:ring-0 focus-visible:ring-offset-0"
+        >
           <DeduplicationTab params={params} />
         </TabsContent>
       </Tabs>

@@ -288,8 +288,8 @@ export const SettingsPage = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="USD">USD</SelectItem>
                           <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="USD">USD</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormControl>

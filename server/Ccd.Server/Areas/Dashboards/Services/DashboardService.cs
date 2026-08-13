@@ -39,6 +39,9 @@ public class DashboardService
                 new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc),
                 now
             ),
+            // UnixEpoch rather than DateTime.MinValue: Npgsql requires Kind=Utc
+            // and maps MinValue to -infinity, which breaks date_trunc bucketing.
+            "all-time" => new DashboardPeriod(DateTime.UnixEpoch, now),
             // Default: rolling last 30 days (committee-confirmed)
             _ => new DashboardPeriod(now.AddDays(-30), now),
         };

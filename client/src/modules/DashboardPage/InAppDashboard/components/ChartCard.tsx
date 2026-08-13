@@ -17,7 +17,9 @@ export const ChartCard = ({
   description?: string;
   children: React.ReactNode;
 }) => (
-  <Card>
+  // min-w-0: as a grid child the card must be allowed to shrink below its
+  // content width, otherwise inner tables defeat their overflow-x-auto.
+  <Card className="min-w-0">
     <CardHeader className="px-4 py-4 sm:px-6 sm:py-6">
       <CardTitle className="text-base">{title}</CardTitle>
       {description && <CardDescription>{description}</CardDescription>}

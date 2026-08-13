@@ -1,5 +1,10 @@
-export type DashboardPeriod = '7d' | '30d' | '90d' | 'current-month';
-export type DisplayCurrency = 'USD' | 'EUR';
+export type DashboardPeriod =
+  | '7d'
+  | '30d'
+  | '90d'
+  | 'current-month'
+  | 'all-time';
+export type DisplayCurrency = 'EUR' | 'USD';
 export type ConversionStatusValue = 'ok' | 'partial' | 'missing_rate';
 
 export type DashboardApiParams = {
