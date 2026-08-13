@@ -1,27 +1,33 @@
-import { useState } from 'react';
+import { Suspense, lazy } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/providers/GlobalProvider';
 
+import { MetabaseDashboard } from './MetabaseDashboard';
+
+// Lazy so Metabase deployments never download the in-app dashboard chunk
+// (recharts and all).
+const InAppDashboard = lazy(() =>
+  import('./InAppDashboard').then((m) => ({ default: m.InAppDashboard }))
+);
+
+// Deployment-selected dashboard provider, mirroring the VITE_AUTH_PROVIDER
+// pattern: "metabase" (default) keeps the existing iframe embed; "in_app"
+// renders the built-in dashboard against /api/v1/dashboards/*.
 export const DashboardPage = () => {
-  const { deploymentSettings } = useAuth();
-  const [isMetabaseLoaded, setIsMetabaseLoaded] = useState<boolean>(false);
+  const provider = import.meta.env.VITE_DASHBOARD_PROVIDER ?? 'metabase';
 
-  const onIframeLoad = () => setIsMetabaseLoaded(true);
-  return (
-    <div className="h-full w-full">
-      {!isMetabaseLoaded && (
-        <div className="w-full h-full flex flex-col justify-center items-center p-6">
-          <Loader2 className="w-10 h-10 animate-spin" />
-        </div>
-      )}
+  if (provider === 'in_app') {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex h-full w-full items-center justify-center p-6">
+            <Loader2 className="h-10 w-10 animate-spin" />
+          </div>
+        }
+      >
+        <InAppDashboard />
+      </Suspense>
+    );
+  }
 
-      <iframe
-        onLoad={onIframeLoad}
-        className="dark:invert dark:hue-rotate-180"
-        src={deploymentSettings?.metabaseUrl}
-        width="100%"
-        height="100%"
-      />
-    </div>
-  );
+  return <MetabaseDashboard />;
 };

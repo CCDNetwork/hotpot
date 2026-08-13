@@ -6,6 +6,7 @@ using Ccd.Server.AdministrativeRegions;
 using Ccd.Server.Authentication;
 using Ccd.Server.Beneficiaries;
 using Ccd.Server.BeneficiaryAttributes;
+using Ccd.Server.Dashboards;
 using Ccd.Server.Data;
 using Ccd.Server.Deduplication;
 using Ccd.Server.Email;
@@ -214,6 +215,7 @@ public class Startup
         services.AddScoped<B2cClaimMappingService>();
         services.AddScoped<DeduplicationService>();
         services.AddScoped<BookingService>();
+        services.AddScoped<ConflictEventService>();
         services.AddScoped<BeneficiaryAttributeService>();
         services.AddScoped<BeneficiaryAttributeGroupService>();
         services.AddScoped<BeneficaryService>();
@@ -228,6 +230,10 @@ public class Startup
         services.AddScoped<IStorageService, StorageService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<TemporaryFileCleanupJob>();
+        services.AddScoped<ExchangeRateService>();
+        services.AddScoped<ExchangeRateFetchJob>();
+        services.AddScoped<DashboardService>();
+        services.AddHttpClient();
 
         services.AddHangfire(config =>
             config
@@ -264,9 +270,16 @@ public class Startup
         IApplicationBuilder app,
         IWebHostEnvironment env,
         CcdContext ccdContext,
-        IRecurringJobManager recurringJobs
+        IRecurringJobManager recurringJobs,
+        IBackgroundJobClient backgroundJobs
     )
     {
+        if (string.IsNullOrWhiteSpace(StaticConfiguration.ConflictEventHmacKey))
+            Console.WriteLine(
+                "WARNING: CONFLICT_EVENT_HMAC_KEY is not configured — the booking "
+                + "wizard's DB-duplicate path will fail until it is provisioned."
+            );
+
         app.UseForwardedHeaders();
 
         if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
@@ -306,6 +319,16 @@ public class Startup
             job => job.Run(),
             StaticConfiguration.FileCleanupCron
         );
+
+        recurringJobs.AddOrUpdate<ExchangeRateFetchJob>(
+            ExchangeRateFetchJob.JobId,
+            job => job.Run(),
+            StaticConfiguration.FxFetchCron
+        );
+
+        // Backfill missing FX months on startup so historical dashboards render
+        // from day one; no-ops when the window is already populated.
+        backgroundJobs.Enqueue<ExchangeRateFetchJob>(job => job.Bootstrap());
 
         app.UseSwagger();
         app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "CcdServerTests Server"); });

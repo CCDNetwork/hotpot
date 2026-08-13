@@ -63,6 +63,7 @@
     "react-router-dom": "^6.8.1",
     "react-select": "^5.8.0",
     "react-use": "^17.4.2",
+    "recharts": "^3.10.1",
     "tailwind-merge": "^2.1.0",
     "tailwindcss-animate": "^1.0.7",
     "validator": "^13.11.0",

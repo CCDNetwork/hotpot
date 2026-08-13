@@ -38,7 +38,7 @@ public static class IdEncryptor
         aes.Padding = PaddingMode.PKCS7;
 
         using var encryptor = aes.CreateEncryptor();
-        var plainBytes = Encoding.UTF8.GetBytes(value.Trim());
+        var plainBytes = Encoding.UTF8.GetBytes(HouseholdIdNormalizer.Normalize(value));
         var cipherBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
 
         return Convert.ToBase64String(cipherBytes);

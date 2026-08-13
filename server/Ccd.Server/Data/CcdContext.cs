@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Ccd.Server.AdministrativeRegions;
 using Ccd.Server.Beneficiaries;
 using Ccd.Server.BeneficiaryAttributes;
+using Ccd.Server.Dashboards;
 using Ccd.Server.Deduplication;
 using Ccd.Server.Handbooks;
 using Ccd.Server.Organizations;
@@ -39,6 +40,8 @@ public class CcdContext : DbContext
     public DbSet<BeneficaryDeduplication> BeneficaryDeduplications { get; set; }
     public DbSet<Booking> Bookings { get; set; }
     public DbSet<BookingLog> BookingLogs { get; set; }
+    public DbSet<BookingConflictEvent> BookingConflictEvents { get; set; }
+    public DbSet<ExchangeRate> ExchangeRates { get; set; }
     public DbSet<BeneficiaryAttribute> BeneficiaryAttributes { get; set; }
     public DbSet<List> Lists { get; set; }
     public DbSet<Referral> Referrals { get; set; }
@@ -230,6 +233,28 @@ public class CcdContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // Fingerprint uniqueness per DigiCap's refined definition —
+        // (requesting_org, blocking_org, subject_key, overlap_period), no blocking_booking_id.
+        modelBuilder.Entity<BookingConflictEvent>()
+            .HasIndex(e => new
+            {
+                e.RequestingOrganizationId,
+                e.BlockingOrganizationId,
+                e.SubjectKey,
+                e.OverlapStartDate,
+                e.OverlapEndDate
+            })
+            .IsUnique()
+            .HasDatabaseName("idx_conflict_event_fingerprint");
+        modelBuilder.Entity<BookingConflictEvent>().HasIndex(e => e.FirstDetectedAt);
+
+        modelBuilder.Entity<ExchangeRate>()
+            .HasIndex(e => new { e.Currency, e.Year, e.Month, e.Source })
+            .IsUnique();
+
+        modelBuilder.Entity<BookingLog>().HasIndex(e => new { e.IsPrebooking, e.CreatedAt });
+        modelBuilder.Entity<BookingLog>().HasIndex(e => e.SubmissionId);
 
         DbFormatter.SetDefaultValues(modelBuilder);
         DbFormatter.FormatTableNames(modelBuilder);

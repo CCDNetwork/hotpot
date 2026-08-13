@@ -92,6 +92,40 @@ public class StaticConfiguration
         Environment.GetEnvironmentVariable("ENCRYPTION_KEY")
         ?? _configuration.GetValue<string>("EncryptionKey");
 
+    // Deployment-scoped HMAC secret for booking_conflict_event.subject_key.
+    // Deliberately separate from ENCRYPTION_KEY (domain separation): rotating or
+    // compromising one must not affect the other.
+    public static string ConflictEventHmacKey =>
+        Environment.GetEnvironmentVariable("CONFLICT_EVENT_HMAC_KEY")
+        ?? _configuration.GetValue<string>("ConflictEventHmacKey");
+
+    public static string FxSourceProvider =>
+        Environment.GetEnvironmentVariable("FX_SOURCE_PROVIDER")
+        ?? _configuration.GetValue<string>("FxSource:Provider")
+        ?? "inforeuro";
+
+    public static string FxSourceBaseUrl =>
+        Environment.GetEnvironmentVariable("FX_SOURCE_BASE_URL")
+        ?? _configuration.GetValue<string>("FxSource:BaseUrl")
+        ?? "https://ec.europa.eu/budg/inforeuro/api/public/monthly-rates";
+
+    public static string FxSourceBaseCurrency =>
+        Environment.GetEnvironmentVariable("FX_SOURCE_BASE_CURRENCY")
+        ?? _configuration.GetValue<string>("FxSource:BaseCurrency")
+        ?? "EUR";
+
+    public static string FxFetchCron =>
+        Environment.GetEnvironmentVariable("FX_FETCH_CRON")
+        ?? _configuration.GetValue<string>("FxSource:FetchCron")
+        ?? "0 2 1 * *"; // 1st of each month at 02:00 UTC
+
+    public static int FxBootstrapMonths =>
+        int.Parse(
+            Environment.GetEnvironmentVariable("FX_BOOTSTRAP_MONTHS")
+                ?? _configuration.GetValue<string>("FxSource:BootstrapMonths")
+                ?? "12"
+        );
+
     public static string[] CorsAllowedOrigins =>
         (
             Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS")

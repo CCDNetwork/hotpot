@@ -19,6 +19,8 @@ public class BookingLog
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public bool IsSuccess { get; set; }
+    public bool IsPrebooking { get; set; }
+    public Guid? SubmissionId { get; set; }
     [ForeignKey("User")] public Guid UploadedById { get; set; }
     public User UploadedBy { get; set; }
     public Guid? FileId { get; set; }

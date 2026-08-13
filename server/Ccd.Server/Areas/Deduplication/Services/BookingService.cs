@@ -10,6 +10,7 @@ using Ccd.Server.Storage;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Ccd.Server.Deduplication;
 
@@ -19,14 +20,21 @@ public class BookingService
     private readonly IMapper _mapper;
 
     private readonly IStorageService _storageService;
+    private readonly ConflictEventService _conflictEventService;
 
     private readonly Dictionary<string, int> HeaderIndexCache = new();
 
-    public BookingService(CcdContext context, IMapper mapper, IStorageService storageService)
+    public BookingService(
+        CcdContext context,
+        IMapper mapper,
+        IStorageService storageService,
+        ConflictEventService conflictEventService
+    )
     {
         _context = context;
         _mapper = mapper;
         _storageService = storageService;
+        _conflictEventService = conflictEventService;
     }
 
     private readonly string _selectSql =
@@ -159,16 +167,30 @@ public class BookingService
 
         var isExcelValid = true;
 
+        // One wizard-run identifier per step-2 call; stamped on every booking_log
+        // row so runs stay countable after wizard-finish nulls file_id.
+        var submissionId = Guid.NewGuid();
+
         // STEP 1 — On BookingDeduplicationStep1 we already validated fields and internal duplicates
         var allValidNationalIds = GetAllValidNationalIds(worksheet, lastRowNumber);
 
         // STEP 2 — Validate duplicates from DB
-        ValidateDatabaseDuplicates(worksheet, lastRowNumber, lastColumnIndex, allValidNationalIds, ref isExcelValid);
+        var conflicts = ValidateDatabaseDuplicates(worksheet, lastRowNumber, lastColumnIndex, allValidNationalIds, ref isExcelValid);
 
-        if (!isPrebooking)
-        {
-            await ProcessValidBookings(organizationId, userId, file.Id, worksheet, lastRowNumber, lastColumnIndex, allValidNationalIds);
-        }
+        // Both wizard modes write booking_log rows and conflict events; only the
+        // real Booking wizard persists bookings.
+        await ProcessValidBookings(
+            organizationId,
+            userId,
+            file.Id,
+            worksheet,
+            lastRowNumber,
+            lastColumnIndex,
+            allValidNationalIds,
+            conflicts,
+            isPrebooking,
+            submissionId
+        );
 
         using var memoryStream = new MemoryStream();
         workbook.SaveAs(memoryStream);
@@ -312,7 +334,7 @@ public class BookingService
         return allValidIds;
     }
 
-    private void ValidateDatabaseDuplicates(
+    private Dictionary<int, ConflictDetectionContext> ValidateDatabaseDuplicates(
         IXLWorksheet worksheet,
         int lastRowNumber,
         int alreadyBookedColumnIndex,
@@ -320,9 +342,16 @@ public class BookingService
         ref bool isExcelValid
     )
     {
+        var conflicts = new Dictionary<int, ConflictDetectionContext>();
+
         var hohIndex = GetHeaderIndex("headofhouseholdid", worksheet);
         var spouseIndex = GetHeaderIndex("spouseid", worksheet);
         var startDateIndex = GetHeaderIndex("startdate", worksheet);
+        var endDateIndex = GetHeaderIndex("enddate", worksheet);
+        var amountIndex = GetHeaderIndex("amount", worksheet);
+        var currencyIndex = GetHeaderIndex("currency", worksheet);
+        var roundsIndex = GetHeaderIndex("rounds", worksheet);
+        var modalityIndex = GetHeaderIndex("modality", worksheet);
 
         // Encrypt Excel IDs for DB comparison
         var encryptedExcelIds = allExcelIds
@@ -385,8 +414,37 @@ public class BookingService
                 alreadyBookedCell.Style.Fill.BackgroundColor = XLColor.RedPigment;
 
                 isExcelValid = false;
+
+                try
+                {
+                    var endDate = ParseExcelDateUtc(worksheet.Cell(row, endDateIndex).GetString().Trim());
+                    var amount = decimal.Parse(worksheet.Cell(row, amountIndex).GetString().Replace(",", ""));
+                    var rounds = int.Parse(worksheet.Cell(row, roundsIndex).GetString());
+                    var currency = worksheet.Cell(row, currencyIndex).GetString().Trim();
+                    var modality = worksheet.Cell(row, modalityIndex).GetString().Trim();
+
+                    conflicts[row] = new ConflictDetectionContext(
+                        dbRecord.Id,
+                        dbRecord.OrganizationId,
+                        matchedId,
+                        startDate,
+                        endDate,
+                        amount,
+                        currency,
+                        modality,
+                        rounds
+                    );
+                }
+                catch (Exception)
+                {
+                    // Row fields don't parse (step-1 validation already flagged
+                    // them) — without a complete proposed period/value there is
+                    // no conflict event to record.
+                }
             }
         }
+
+        return conflicts;
     }
 
     private async Task ProcessValidBookings(
@@ -396,7 +454,10 @@ public class BookingService
         IXLWorksheet worksheet,
         int lastRowNumber,
         int alreadyBookedColumnIndex,
-        HashSet<string> allValidExcelIds
+        HashSet<string> allValidExcelIds,
+        Dictionary<int, ConflictDetectionContext> conflicts,
+        bool isPrebooking,
+        Guid submissionId
     )
     {
         var hohIndex = GetHeaderIndex("headofhouseholdid", worksheet);
@@ -477,12 +538,24 @@ public class BookingService
                 FileId = savedFileId,
                 Modality = modality,
                 IsSuccess = isSuccess,
+                IsPrebooking = isPrebooking,
+                SubmissionId = submissionId,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
             bookingLogs.Add(bookingLog);
 
+            // DB-duplicate rows produce (or re-detect) a conflict event in both
+            // wizard modes — the fingerprint dedup collapses preview-then-submit
+            // into one event with detection_count = 2.
+            if (conflicts.TryGetValue(row, out var conflictContext))
+                await _conflictEventService.RecordOrIncrementAsync(organizationId, conflictContext);
+
             if (!isSuccess)
+                continue;
+
+            // Pre-Booking never persists bookings — it only logs the run.
+            if (isPrebooking)
                 continue;
 
             // Find existing using encrypted IDs
@@ -518,7 +591,61 @@ public class BookingService
 
         _context.BookingLogs.AddRange(bookingLogs);
 
-        await _context.SaveChangesAsync();
+        await SaveWithConflictEventRetryAsync();
+    }
+
+    /// <summary>
+    /// SaveChanges with a bounded retry for the conflict-event fingerprint
+    /// unique index: two simultaneous uploads with the same fingerprint can both
+    /// take the insert path; the loser converts its pending insert into an
+    /// increment of the committed row and retries. Wizard flows are
+    /// user-initiated and low-concurrency, so this is defensive rather than
+    /// critical.
+    /// </summary>
+    private async Task SaveWithConflictEventRetryAsync()
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                await _context.SaveChangesAsync();
+                return;
+            }
+            catch (DbUpdateException ex) when (
+                attempt < 3
+                && ex.InnerException is PostgresException pg
+                && pg.ConstraintName == "idx_conflict_event_fingerprint"
+            )
+            {
+                var pendingEvents = _context.ChangeTracker.Entries<BookingConflictEvent>()
+                    .Where(e => e.State == EntityState.Added)
+                    .ToList();
+
+                foreach (var entry in pendingEvents)
+                {
+                    var pending = entry.Entity;
+                    var committed = await _context.BookingConflictEvents
+                        .FirstOrDefaultAsync(e =>
+                            e.RequestingOrganizationId == pending.RequestingOrganizationId
+                            && e.BlockingOrganizationId == pending.BlockingOrganizationId
+                            && e.SubjectKey == pending.SubjectKey
+                            && e.OverlapStartDate == pending.OverlapStartDate
+                            && e.OverlapEndDate == pending.OverlapEndDate);
+
+                    if (committed == null)
+                        continue; // not the colliding row — keep the insert
+
+                    entry.State = EntityState.Detached;
+                    committed.LastDetectedAt = DateTime.UtcNow;
+                    committed.DetectionCount += pending.DetectionCount;
+                    committed.ProposedAmount = pending.ProposedAmount;
+                    committed.ProposedCurrency = pending.ProposedCurrency;
+                    committed.ProposedModality = pending.ProposedModality;
+                    committed.ProposedRounds = pending.ProposedRounds;
+                    committed.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+        }
     }
 
     public async Task ReleaseBooking(Guid bookingId, Guid organizationId)
