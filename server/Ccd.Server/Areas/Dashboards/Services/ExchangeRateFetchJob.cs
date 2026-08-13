@@ -36,22 +36,35 @@ public class ExchangeRateFetchJob
         _logger = logger;
     }
 
-    /// <summary>Monthly cron entrypoint — fetches the previous month's rates.</summary>
+    /// <summary>
+    /// Monthly cron entrypoint — refreshes the current month (InforEuro can
+    /// update rates mid-month) and re-fetches the previous month too so any
+    /// late publication is picked up.
+    /// </summary>
     public async Task Run()
     {
-        var previousMonth = DateTime.UtcNow.AddMonths(-1);
-        await FetchMonth(previousMonth.Year, previousMonth.Month);
+        var now = DateTime.UtcNow;
+        await SafeFetchMonth(now.Year, now.Month);
+        var previous = now.AddMonths(-1);
+        await SafeFetchMonth(previous.Year, previous.Month);
     }
 
     /// <summary>
-    /// Startup entrypoint — fills any missing months in the bootstrap window.
-    /// No-ops when everything is already present.
+    /// Startup entrypoint — fetches the current month unconditionally, then
+    /// backfills the previous N months (only those missing from the table).
+    /// Prevents the "current month missing until next cron" gap that showed
+    /// up on every deployment during the first days of a new month.
     /// </summary>
     public async Task Bootstrap()
     {
-        var months = StaticConfiguration.FxBootstrapMonths;
-        var cursor = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
+        // Current month first, unconditionally: even if a row exists, the
+        // upsert refreshes it to whatever InforEuro is publishing today.
+        await SafeFetchMonth(now.Year, now.Month);
 
+        // Then backfill history, skipping any month already present.
+        var months = StaticConfiguration.FxBootstrapMonths;
+        var cursor = now;
         for (var i = 0; i < months; i++)
         {
             cursor = cursor.AddMonths(-1);
@@ -65,16 +78,21 @@ public class ExchangeRateFetchJob
             if (hasMonth)
                 continue;
 
-            try
-            {
-                await FetchMonth(cursor.Year, cursor.Month);
-            }
-            catch (Exception ex)
-            {
-                // A missing month degrades to "no rate" indicators on the
-                // dashboard; it must not block startup or the remaining months.
-                _logger.LogError(ex, "FX bootstrap failed for {Year}-{Month}", cursor.Year, cursor.Month);
-            }
+            await SafeFetchMonth(cursor.Year, cursor.Month);
+        }
+    }
+
+    private async Task SafeFetchMonth(int year, int month)
+    {
+        try
+        {
+            await FetchMonth(year, month);
+        }
+        catch (Exception ex)
+        {
+            // A missing month degrades to "no rate" indicators on the
+            // dashboard; it must not block startup or the remaining months.
+            _logger.LogError(ex, "FX fetch failed for {Year}-{Month}", year, month);
         }
     }
 
