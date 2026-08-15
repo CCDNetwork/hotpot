@@ -4,7 +4,7 @@ export type DashboardPeriod =
   | '90d'
   | 'current-month'
   | 'all-time';
-export type DisplayCurrency = 'EUR' | 'USD';
+export type DisplayCurrency = 'EUR' | 'USD' | 'ILS';
 export type ConversionStatusValue = 'ok' | 'partial' | 'missing_rate';
 
 export type DashboardApiParams = {
@@ -12,6 +12,13 @@ export type DashboardApiParams = {
   displayCurrency: DisplayCurrency;
   organizationId?: string;
 };
+
+// Cross-org only (default) hides overlaps where the requesting and blocking
+// organization are the same — those tend to be data-entry issues inside one
+// org, not coordination failures. Kept as a dedup-tab-local filter so
+// switching doesn't invalidate the Overview queries.
+export type OverlapScope = 'cross' | 'all';
+export type DedupApiParams = DashboardApiParams & { overlapScope: OverlapScope };
 
 export type CurrencyAmount = {
   currency: string;
@@ -176,7 +183,8 @@ export type DrillTarget =
   | { type: 'value-fx'; source: 'bookings' | 'conflicts'; label: string }
   | { type: 'organizations'; label: string }
   | { type: 'prebooking-runs'; label: string }
-  | { type: 'records-checked'; label: string };
+  | { type: 'records-checked'; label: string }
+  | { type: 'consecutive-months'; bucket: string; label: string };
 
 export type ValueFxRow = {
   currency: string;
@@ -241,6 +249,33 @@ export type RecordsCheckedRow = {
 
 export type RecordsCheckedDrillResponse = {
   data: RecordsCheckedRow[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+};
+
+export type ConsecutiveMonthsBucket = {
+  bucket: string; // "1".."5" | "6+"
+  episodes: number;
+};
+
+export type ConsecutiveMonthsHistogram = {
+  windowStart: string;
+  windowEnd: string;
+  buckets: ConsecutiveMonthsBucket[];
+};
+
+export type ConsecutiveMonthsRun = {
+  householdIdMasked: string;
+  runStartMonth: string;
+  runEndMonth: string;
+  monthsCount: number;
+  organizationNames: string[];
+};
+
+export type ConsecutiveMonthsDrillResponse = {
+  bucket: string;
+  data: ConsecutiveMonthsRun[];
   page: number;
   pageSize: number;
   totalCount: number;

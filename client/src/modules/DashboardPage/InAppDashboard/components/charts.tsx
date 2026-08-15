@@ -139,6 +139,82 @@ export const BarTrendChart = ({
   );
 };
 
+/**
+ * Vertical bar chart for categorical distributions where each bar is
+ * clickable — used by the consecutive-months histogram. Differs from
+ * BarTrendChart in that: (a) every label is shown (interval=0), (b) the bar
+ * has a pointer cursor and fires onBarClick with the bucket label, and
+ * (c) the tooltip nudges the user that the bar is clickable.
+ */
+export const HistogramBars = ({
+  data,
+  onBarClick,
+  emptyLabel = 'No data',
+  unitLabel = 'episode',
+}: {
+  data: BarPoint[];
+  onBarClick?: (bucket: string) => void;
+  emptyLabel?: string;
+  unitLabel?: string;
+}) => {
+  if (!data.length) return <EmptyState label={emptyLabel} />;
+
+  return (
+    <ChartFrame>
+      <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+        <CartesianGrid vertical={false} strokeOpacity={0.2} />
+        <XAxis
+          dataKey="label"
+          tickLine={false}
+          axisLine={false}
+          tick={AXIS_STYLE}
+          interval={0}
+        />
+        <YAxis
+          allowDecimals={false}
+          width={32}
+          tickLine={false}
+          axisLine={false}
+          tick={AXIS_STYLE}
+        />
+        <Tooltip
+          content={({ active, payload, label }) => {
+            if (!active || !payload?.length) return null;
+            const point = payload[0].payload as BarPoint;
+            const count = point.value;
+            return (
+              <div className="rounded-md border bg-background px-2.5 py-1.5 text-xs shadow-md">
+                <p className="font-medium">{label}</p>
+                <p className="text-muted-foreground">
+                  {formatCount(count)} {unitLabel}
+                  {count === 1 ? '' : 's'}
+                  {onBarClick ? ' · click to inspect' : ''}
+                </p>
+              </div>
+            );
+          }}
+          cursor={{ fill: 'hsl(var(--muted))', opacity: 0.4 }}
+        />
+        <Bar
+          dataKey="value"
+          fill="hsl(var(--primary))"
+          fillOpacity={0.85}
+          radius={[3, 3, 0, 0]}
+          maxBarSize={48}
+          animationDuration={ANIMATION_MS}
+          cursor={onBarClick ? 'pointer' : undefined}
+          onClick={(entry: unknown) => {
+            const point = entry as { label?: string } | null;
+            if (onBarClick && point?.label) {
+              onBarClick(point.label);
+            }
+          }}
+        />
+      </BarChart>
+    </ChartFrame>
+  );
+};
+
 /** Gradient area chart for time-bucketed trends. */
 export const AreaTrendChart = ({
   data,

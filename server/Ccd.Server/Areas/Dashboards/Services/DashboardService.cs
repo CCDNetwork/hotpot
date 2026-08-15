@@ -286,14 +286,15 @@ public class DashboardService
     public async Task<DuplicatesSummaryResponse> GetDuplicatesSummary(
         string period,
         Guid? organizationId,
-        string displayCurrency
+        string displayCurrency,
+        string overlapScope
     )
     {
         var (from, to) = ResolvePeriod(period);
         var display = ResolveDisplayCurrency(displayCurrency);
         var lookup = await _exchangeRateService.GetLookupAsync();
 
-        var events = ConflictEventsInPeriod(from, to, organizationId);
+        var events = ConflictEventsInPeriod(from, to, organizationId, overlapScope);
         var uniqueOverlaps = await events.CountAsync();
 
         var prebookingLogs = _context.BookingLogs.Where(l =>
@@ -348,11 +349,13 @@ public class DashboardService
     public async Task<List<DuplicatesTrendPointResponse>> GetDuplicatesTrend(
         string period,
         Guid? organizationId,
-        string granularity
+        string granularity,
+        string overlapScope
     )
     {
         var (from, to) = ResolvePeriod(period);
         var bucket = ResolveGranularity(granularity);
+        var crossOnly = IsCrossOrgOnly(overlapScope);
         var connection = _context.Database.GetDbConnection();
 
         var overlaps = await connection.QueryAsync<TrendPointResponse>(
@@ -364,9 +367,10 @@ public class DashboardService
                  AND (@organizationId::uuid IS NULL
                       OR requesting_organization_id = @organizationId::uuid
                       OR blocking_organization_id = @organizationId::uuid)
+                 AND (NOT @crossOnly OR requesting_organization_id <> blocking_organization_id)
                GROUP BY 1
                ORDER BY 1",
-            new { bucket, from, to, organizationId }
+            new { bucket, from, to, organizationId, crossOnly }
         );
 
         var recordsChecked = await connection.QueryAsync<TrendPointResponse>(
@@ -399,13 +403,17 @@ public class DashboardService
         return merged.Values.ToList();
     }
 
+    // Composition intentionally uses ALL events (no scope filter) — the split
+    // is *about* the within-vs-across composition, so hiding one side would
+    // defeat the chart's purpose. This is the only dedup endpoint that
+    // ignores the overlapScope filter by design.
     public async Task<DuplicatesSplitResponse> GetDuplicatesSplit(
         string period,
         Guid? organizationId
     )
     {
         var (from, to) = ResolvePeriod(period);
-        var events = ConflictEventsInPeriod(from, to, organizationId);
+        var events = ConflictEventsInPeriod(from, to, organizationId, "all");
 
         var withinAgency = await events
             .CountAsync(e => e.RequestingOrganizationId == e.BlockingOrganizationId);
@@ -421,12 +429,13 @@ public class DashboardService
 
     public async Task<List<BlockingPartnerRowResponse>> GetBlockingPartners(
         string period,
-        Guid? organizationId
+        Guid? organizationId,
+        string overlapScope
     )
     {
         var (from, to) = ResolvePeriod(period);
 
-        return await ConflictEventsInPeriod(from, to, organizationId)
+        return await ConflictEventsInPeriod(from, to, organizationId, overlapScope)
             .GroupBy(e => new { e.BlockingOrganizationId, e.BlockingOrganization.Name })
             .Select(g => new BlockingPartnerRowResponse
             {
@@ -442,6 +451,7 @@ public class DashboardService
         string period,
         Guid? organizationId,
         string displayCurrency,
+        string overlapScope,
         int page,
         int pageSize,
         string sort
@@ -454,7 +464,7 @@ public class DashboardService
         page = Math.Max(page, 1);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var events = ConflictEventsInPeriod(from, to, organizationId);
+        var events = ConflictEventsInPeriod(from, to, organizationId, overlapScope);
         var totalCount = await events.CountAsync();
 
         var ordered = sort switch
@@ -554,7 +564,8 @@ public class DashboardService
         string source,
         string period,
         Guid? organizationId,
-        string displayCurrency
+        string displayCurrency,
+        string overlapScope
     )
     {
         var (from, to) = ResolvePeriod(period);
@@ -564,7 +575,9 @@ public class DashboardService
         List<CurrencyMonthGroup> groups;
         if (string.Equals(source, "conflicts", StringComparison.OrdinalIgnoreCase))
         {
-            groups = await ConflictEventsInPeriod(from, to, organizationId)
+            // Value-of-overlaps drill inherits the dedup tab's scope so the
+            // drill totals match the tile that opened it.
+            groups = await ConflictEventsInPeriod(from, to, organizationId, overlapScope)
                 .GroupBy(e => new
                 {
                     Currency = e.ProposedCurrency,
@@ -813,6 +826,239 @@ public class DashboardService
         };
     }
 
+    // -------------------------------------------- consecutive-months metric
+
+    /// <summary>
+    /// Histogram of consecutive booked-assistance-months per household over
+    /// the trailing 12 months. Each booking's rounds are exploded into
+    /// monthly assistance dates; rows for the same household (identified by
+    /// deterministic ciphertext, which lets us group across orgs without
+    /// decrypting) are combined; consecutive months form a run; each run is
+    /// counted once and bucketed 1..5 exact / 6+ open-ended. Released
+    /// bookings (start_date/end_date = null) are excluded — those months
+    /// were cancelled and shouldn't count as booked assistance.
+    /// This metric ignores the org filter by design: cross-org linkage is
+    /// central to the "consecutive months" question — restricting to one
+    /// org would produce artificially short runs.
+    /// </summary>
+    public async Task<ConsecutiveMonthsHistogramResponse> GetConsecutiveMonthsHistogram()
+    {
+        var connection = _context.Database.GetDbConnection();
+
+        var now = DateTime.UtcNow;
+        var windowStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-11);
+        var windowEnd = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var rows = await connection.QueryAsync<BucketRow>(
+            @"WITH booking_months AS (
+                SELECT
+                  b.household_id AS subject,
+                  date_trunc('month', b.start_date + (m * interval '1 month'))::date AS assistance_month
+                FROM booking b
+                CROSS JOIN generate_series(0, b.rounds - 1) AS m
+                WHERE b.start_date IS NOT NULL
+                  AND b.end_date IS NOT NULL
+              ),
+              in_window AS (
+                SELECT DISTINCT subject, assistance_month
+                FROM booking_months
+                WHERE assistance_month >= @windowStart::date
+                  AND assistance_month <= @windowEnd::date
+              ),
+              numbered AS (
+                SELECT
+                  subject,
+                  assistance_month,
+                  (assistance_month
+                     - (row_number() OVER (PARTITION BY subject ORDER BY assistance_month) * interval '1 month')
+                  )::date AS island_group
+                FROM in_window
+              ),
+              run_lengths AS (
+                SELECT subject, island_group, count(*)::int AS run_length
+                FROM numbered
+                GROUP BY subject, island_group
+              )
+              SELECT
+                CASE WHEN run_length >= 6 THEN 6 ELSE run_length END AS bucket,
+                count(*)::int AS episodes
+              FROM run_lengths
+              GROUP BY bucket
+              ORDER BY bucket",
+            new { windowStart, windowEnd }
+        );
+
+        // Pad missing buckets so the frontend always sees 1..5 + 6+ in order.
+        var byBucket = rows.ToDictionary(r => r.Bucket, r => r.Episodes);
+        var buckets = new List<ConsecutiveMonthsBucketResponse>();
+        for (var i = 1; i <= 6; i++)
+        {
+            buckets.Add(new ConsecutiveMonthsBucketResponse
+            {
+                Bucket = i == 6 ? "6+" : i.ToString(),
+                Episodes = byBucket.GetValueOrDefault(i, 0)
+            });
+        }
+
+        return new ConsecutiveMonthsHistogramResponse
+        {
+            WindowStart = windowStart,
+            WindowEnd = windowEnd,
+            Buckets = buckets
+        };
+    }
+
+    /// <summary>
+    /// Detail rows for one bucket of the consecutive-months histogram. Bucket
+    /// "6+" returns runs of length >= 6; "1".."5" return exact matches. Each
+    /// row lists the organizations that booked the household during the run.
+    /// </summary>
+    public async Task<ConsecutiveMonthsDrillResponse> GetConsecutiveMonthsDetails(
+        string bucket,
+        int page,
+        int pageSize
+    )
+    {
+        var connection = _context.Database.GetDbConnection();
+
+        var now = DateTime.UtcNow;
+        var windowStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc).AddMonths(-11);
+        var windowEnd = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var openEnded = string.Equals(bucket, "6+", StringComparison.Ordinal);
+        var exactLength = openEnded ? 6 : int.TryParse(bucket, out var b) ? b : 0;
+        if (!openEnded && (exactLength < 1 || exactLength > 5))
+            throw new Helpers.BadRequestException("bucket must be 1, 2, 3, 4, 5 or 6+");
+
+        page = Math.Max(page, 1);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        // Count runs matching the bucket
+        var totalCount = await connection.QuerySingleAsync<int>(
+            @"WITH booking_months AS (
+                SELECT b.household_id AS subject,
+                       date_trunc('month', b.start_date + (m * interval '1 month'))::date AS assistance_month
+                FROM booking b
+                CROSS JOIN generate_series(0, b.rounds - 1) AS m
+                WHERE b.start_date IS NOT NULL AND b.end_date IS NOT NULL
+              ),
+              in_window AS (
+                SELECT DISTINCT subject, assistance_month FROM booking_months
+                WHERE assistance_month >= @windowStart::date AND assistance_month <= @windowEnd::date
+              ),
+              numbered AS (
+                SELECT subject, assistance_month,
+                       (assistance_month - (row_number() OVER (PARTITION BY subject ORDER BY assistance_month) * interval '1 month'))::date AS island_group
+                FROM in_window
+              ),
+              run_lengths AS (
+                SELECT subject, island_group, count(*)::int AS run_length
+                FROM numbered GROUP BY subject, island_group
+              )
+              SELECT count(*)::int
+              FROM run_lengths
+              WHERE (@openEnded AND run_length >= 6)
+                 OR (NOT @openEnded AND run_length = @exactLength)",
+            new { windowStart, windowEnd, openEnded, exactLength }
+        );
+
+        var rows = await connection.QueryAsync<RunRow>(
+            @"WITH booking_months AS (
+                SELECT b.household_id AS subject,
+                       date_trunc('month', b.start_date + (m * interval '1 month'))::date AS assistance_month
+                FROM booking b
+                CROSS JOIN generate_series(0, b.rounds - 1) AS m
+                WHERE b.start_date IS NOT NULL AND b.end_date IS NOT NULL
+              ),
+              in_window AS (
+                SELECT DISTINCT subject, assistance_month FROM booking_months
+                WHERE assistance_month >= @windowStart::date AND assistance_month <= @windowEnd::date
+              ),
+              numbered AS (
+                SELECT subject, assistance_month,
+                       (assistance_month - (row_number() OVER (PARTITION BY subject ORDER BY assistance_month) * interval '1 month'))::date AS island_group
+                FROM in_window
+              ),
+              runs AS (
+                SELECT subject, island_group,
+                       count(*)::int AS run_length,
+                       min(assistance_month) AS run_start,
+                       max(assistance_month) AS run_end
+                FROM numbered GROUP BY subject, island_group
+              ),
+              matched AS (
+                SELECT * FROM runs
+                WHERE (@openEnded AND run_length >= 6)
+                   OR (NOT @openEnded AND run_length = @exactLength)
+              ),
+              orgs_per_run AS (
+                SELECT m.subject, m.island_group,
+                       array_agg(DISTINCT o.name ORDER BY o.name) AS org_names
+                FROM matched m
+                JOIN booking b ON b.household_id = m.subject
+                              AND b.start_date IS NOT NULL
+                              AND b.end_date IS NOT NULL
+                              AND date_trunc('month', b.start_date)::date <= m.run_end
+                              AND (date_trunc('month', b.start_date) + ((b.rounds - 1) * interval '1 month'))::date >= m.run_start
+                JOIN organization o ON o.id = b.organization_id
+                GROUP BY m.subject, m.island_group
+              )
+              SELECT m.subject AS Subject,
+                     m.run_length AS RunLength,
+                     m.run_start AS RunStart,
+                     m.run_end AS RunEnd,
+                     coalesce(op.org_names, ARRAY[]::text[]) AS OrgNames
+              FROM matched m
+              LEFT JOIN orgs_per_run op USING(subject, island_group)
+              ORDER BY m.run_length DESC, m.run_end DESC
+              LIMIT @limit OFFSET @offset",
+            new
+            {
+                windowStart,
+                windowEnd,
+                openEnded,
+                exactLength,
+                limit = pageSize,
+                offset = (page - 1) * pageSize
+            }
+        );
+
+        return new ConsecutiveMonthsDrillResponse
+        {
+            Bucket = bucket,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            Data = rows.Select(r => new ConsecutiveMonthsRunResponse
+            {
+                HouseholdIdMasked = MaskId(r.Subject),
+                RunStartMonth = r.RunStart,
+                RunEndMonth = r.RunEnd,
+                MonthsCount = r.RunLength,
+                OrganizationNames = r.OrgNames?.ToList() ?? new List<string>()
+            }).ToList()
+        };
+    }
+
+    private class BucketRow { public int Bucket { get; set; } public int Episodes { get; set; } }
+    private class RunRow
+    {
+        public string Subject { get; set; }
+        public int RunLength { get; set; }
+        public DateTime RunStart { get; set; }
+        public DateTime RunEnd { get; set; }
+        public string[] OrgNames { get; set; }
+    }
+
+    // Reintroduced (previously removed with the households drill): last 6
+    // chars of the deterministic ciphertext — enough to distinguish rows in
+    // a UI list without leaking the plaintext ID.
+    private static string MaskId(string cipher)
+    {
+        if (string.IsNullOrWhiteSpace(cipher))
+            return "—";
+        return cipher.Length <= 6 ? cipher : "…" + cipher.Substring(cipher.Length - 6);
+    }
+
     // -------------------------------------------------------------- internals
 
     private class CurrencyMonthGroup
@@ -840,23 +1086,39 @@ public class DashboardService
         );
     }
 
+    // Anything other than "all" means cross-org-only (the default). Kept
+    // permissive so an omitted / misspelled scope silently gives the safer
+    // (cleaner) reading rather than accidentally exposing intra-org noise.
+    private static bool IsCrossOrgOnly(string overlapScope) =>
+        !string.Equals(overlapScope, "all", StringComparison.OrdinalIgnoreCase);
+
     private IQueryable<BookingConflictEvent> ConflictEventsInPeriod(
         DateTime from,
         DateTime to,
-        Guid? organizationId
+        Guid? organizationId,
+        string overlapScope = "cross"
     )
     {
         // Org scope covers *involvement* on either side: an event where your
         // org is the blocker is as relevant to you as one where it's the
         // requester. The detail endpoint uses the same predicate so any row
         // visible in the list is openable.
-        return _context.BookingConflictEvents.Where(e =>
+        var query = _context.BookingConflictEvents.Where(e =>
             e.FirstDetectedAt >= from
             && e.FirstDetectedAt <= to
             && (organizationId == null
                 || e.RequestingOrganizationId == organizationId
                 || e.BlockingOrganizationId == organizationId)
         );
+
+        if (IsCrossOrgOnly(overlapScope))
+        {
+            // Intra-org overlaps (same org on both sides) are treated as
+            // data-entry noise, not a coordination signal — hidden by default.
+            query = query.Where(e => e.RequestingOrganizationId != e.BlockingOrganizationId);
+        }
+
+        return query;
     }
 
     private static decimal? SumConverted(

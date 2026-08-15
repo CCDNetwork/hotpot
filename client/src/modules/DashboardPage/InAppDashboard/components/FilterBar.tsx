@@ -15,8 +15,9 @@ const PERIOD_OPTIONS: { value: DashboardPeriod; label: string }[] = [
 ];
 
 const CURRENCY_OPTIONS: { value: DisplayCurrency; label: string }[] = [
-  { value: 'EUR', label: 'EUR' },
   { value: 'USD', label: 'USD' },
+  { value: 'EUR', label: 'EUR' },
+  { value: 'ILS', label: 'ILS' },
 ];
 
 type OrgScope = 'all' | 'own';

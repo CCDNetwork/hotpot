@@ -12,6 +12,7 @@ import { ValueFxDrill } from './drills/ValueFxDrill';
 import { OrganizationsDrill } from './drills/OrganizationsDrill';
 import { PrebookingRunsDrill } from './drills/PrebookingRunsDrill';
 import { RecordsCheckedDrill } from './drills/RecordsCheckedDrill';
+import { ConsecutiveMonthsDrill } from './drills/ConsecutiveMonthsDrill';
 
 const describe = (target: DrillTarget): { title: string; description: string } => {
   switch (target.type) {
@@ -44,6 +45,11 @@ const describe = (target: DrillTarget): { title: string; description: string } =
         title: target.label,
         description: 'Every household row that went through the pre-booking wizard, one per row.',
       };
+    case 'consecutive-months':
+      return {
+        title: target.label,
+        description: `Runs matching the "${target.bucket} months" bucket.`,
+      };
   }
 };
 
@@ -65,6 +71,8 @@ const renderBody = (target: DrillTarget, params: DashboardApiParams, open: boole
       return <PrebookingRunsDrill params={params} open={open} />;
     case 'records-checked':
       return <RecordsCheckedDrill params={params} open={open} />;
+    case 'consecutive-months':
+      return <ConsecutiveMonthsDrill bucket={target.bucket} open={open} />;
   }
 };
 

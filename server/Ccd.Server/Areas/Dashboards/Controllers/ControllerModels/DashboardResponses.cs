@@ -272,3 +272,39 @@ public class RecordsCheckedDrillResponse
     public int PageSize { get; set; }
     public int TotalCount { get; set; }
 }
+
+// Consecutive-assistance-months distribution ---------------------------------
+// Each booking's rounds are exploded into monthly assistance dates; runs of
+// consecutive months across all orgs for the same household are counted.
+// Bucket label is the month count (1..5 exact, "6+" open-ended).
+
+public class ConsecutiveMonthsBucketResponse
+{
+    public string Bucket { get; set; }
+    public int Episodes { get; set; }
+}
+
+public class ConsecutiveMonthsHistogramResponse
+{
+    public DateTime WindowStart { get; set; }
+    public DateTime WindowEnd { get; set; }
+    public List<ConsecutiveMonthsBucketResponse> Buckets { get; set; }
+}
+
+public class ConsecutiveMonthsRunResponse
+{
+    public string HouseholdIdMasked { get; set; }
+    public DateTime RunStartMonth { get; set; }
+    public DateTime RunEndMonth { get; set; }
+    public int MonthsCount { get; set; }
+    public List<string> OrganizationNames { get; set; }
+}
+
+public class ConsecutiveMonthsDrillResponse
+{
+    public string Bucket { get; set; }
+    public List<ConsecutiveMonthsRunResponse> Data { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+}

@@ -97,13 +97,15 @@ public class DashboardsController : ControllerBaseExtended
     public async Task<ActionResult<DuplicatesSummaryResponse>> GetDuplicatesSummary(
         string period,
         Guid? organizationId,
-        string displayCurrency
+        string displayCurrency,
+        string overlapScope
     )
     {
         var result = await _dashboardService.GetDuplicatesSummary(
             period,
             ResolveOrganizationFilter(organizationId),
-            displayCurrency
+            displayCurrency,
+            overlapScope
         );
         return Ok(result);
     }
@@ -113,13 +115,15 @@ public class DashboardsController : ControllerBaseExtended
     public async Task<ActionResult<List<DuplicatesTrendPointResponse>>> GetDuplicatesTrend(
         string period,
         Guid? organizationId,
-        string granularity
+        string granularity,
+        string overlapScope
     )
     {
         var result = await _dashboardService.GetDuplicatesTrend(
             period,
             ResolveOrganizationFilter(organizationId),
-            granularity
+            granularity,
+            overlapScope
         );
         return Ok(result);
     }
@@ -142,12 +146,14 @@ public class DashboardsController : ControllerBaseExtended
     [PermissionLevel(UserRole.User)]
     public async Task<ActionResult<List<BlockingPartnerRowResponse>>> GetBlockingPartners(
         string period,
-        Guid? organizationId
+        Guid? organizationId,
+        string overlapScope
     )
     {
         var result = await _dashboardService.GetBlockingPartners(
             period,
-            ResolveOrganizationFilter(organizationId)
+            ResolveOrganizationFilter(organizationId),
+            overlapScope
         );
         return Ok(result);
     }
@@ -158,6 +164,7 @@ public class DashboardsController : ControllerBaseExtended
         string period,
         Guid? organizationId,
         string displayCurrency,
+        string overlapScope,
         int page = 1,
         int pageSize = 20,
         string sort = null
@@ -167,6 +174,7 @@ public class DashboardsController : ControllerBaseExtended
             period,
             ResolveOrganizationFilter(organizationId),
             displayCurrency,
+            overlapScope,
             page,
             pageSize,
             sort
@@ -201,14 +209,16 @@ public class DashboardsController : ControllerBaseExtended
         string source,
         string period,
         Guid? organizationId,
-        string displayCurrency
+        string displayCurrency,
+        string overlapScope
     )
     {
         var result = await _dashboardService.GetValueFxDrill(
             source,
             period,
             ResolveOrganizationFilter(organizationId),
-            displayCurrency
+            displayCurrency,
+            overlapScope
         );
         return Ok(result);
     }
@@ -262,6 +272,31 @@ public class DashboardsController : ControllerBaseExtended
             page,
             pageSize
         );
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Consecutive-assistance-months histogram — trailing 12 months,
+    /// cross-org, released bookings excluded, buckets 1..5 exact + 6+.
+    /// See DashboardService for the run-detection semantics.
+    /// </summary>
+    [HttpGet("overview/consecutive-months")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult<ConsecutiveMonthsHistogramResponse>> GetConsecutiveMonthsHistogram()
+    {
+        var result = await _dashboardService.GetConsecutiveMonthsHistogram();
+        return Ok(result);
+    }
+
+    [HttpGet("overview/consecutive-months/details")]
+    [PermissionLevel(UserRole.User)]
+    public async Task<ActionResult<ConsecutiveMonthsDrillResponse>> GetConsecutiveMonthsDetails(
+        string bucket,
+        int page = 1,
+        int pageSize = 25
+    )
+    {
+        var result = await _dashboardService.GetConsecutiveMonthsDetails(bucket, page, pageSize);
         return Ok(result);
     }
 }

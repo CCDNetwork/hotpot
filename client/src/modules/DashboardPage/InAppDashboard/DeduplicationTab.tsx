@@ -17,7 +17,12 @@ import {
   formatPercent,
   spansMultipleYears,
 } from './helpers';
-import { DashboardApiParams, DrillTarget } from './types';
+import {
+  DashboardApiParams,
+  DedupApiParams,
+  DrillTarget,
+  OverlapScope,
+} from './types';
 import {
   ChartSkeleton,
   DonutChart,
@@ -32,6 +37,12 @@ import {
   MissingRateBadge,
   formatDisplayAmount,
 } from './components/KpiTile';
+import { SegmentedControl } from './components/SegmentedControl';
+
+const SCOPE_OPTIONS: { value: OverlapScope; label: string }[] = [
+  { value: 'cross', label: 'Cross-org only' },
+  { value: 'all', label: 'All overlaps' },
+];
 
 export const DeduplicationTab = ({
   params,
@@ -39,13 +50,19 @@ export const DeduplicationTab = ({
   params: DashboardApiParams;
 }) => {
   const [drillTarget, setDrillTarget] = useState<DrillTarget | null>(null);
+  // Dedup-tab-local: within-org overlaps are usually data-entry noise, not a
+  // coordination signal, so hidden by default. Kept out of FilterBar so
+  // toggling doesn't invalidate Overview queries.
+  const [overlapScope, setOverlapScope] = useState<OverlapScope>('cross');
 
-  const summaryQuery = useDuplicatesSummary(params);
-  const trendQuery = useDuplicatesTrend(params);
-  const splitQuery = useDuplicatesSplit(params);
-  const blockingQuery = useBlockingPartners(params);
+  const dedupParams: DedupApiParams = { ...params, overlapScope };
+
+  const summaryQuery = useDuplicatesSummary(dedupParams);
+  const trendQuery = useDuplicatesTrend(dedupParams);
+  const splitQuery = useDuplicatesSplit(dedupParams);
+  const blockingQuery = useBlockingPartners(dedupParams);
   // Recent events preview (first page) shown inline on the tab
-  const recentQuery = useConflictEvents(params, 1, true);
+  const recentQuery = useConflictEvents(dedupParams, 1, true);
 
   const summary = summaryQuery.data;
   const summaryLoading = summaryQuery.isLoading;
@@ -101,6 +118,17 @@ export const DeduplicationTab = ({
         isRefreshing && 'opacity-60'
       )}
     >
+      {/* Overlap-scope filter (dedup-tab-local) */}
+      <div className="flex items-center justify-end gap-3 text-sm text-muted-foreground">
+        <span>Overlap scope</span>
+        <SegmentedControl
+          options={SCOPE_OPTIONS}
+          value={overlapScope}
+          onChange={setOverlapScope}
+          ariaLabel="Overlap scope"
+        />
+      </div>
+
       {/* KPI row */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiTile
@@ -310,7 +338,7 @@ export const DeduplicationTab = ({
       <DrilldownSheet
         target={drillTarget}
         onClose={() => setDrillTarget(null)}
-        params={params}
+        params={dedupParams}
       />
     </div>
   );

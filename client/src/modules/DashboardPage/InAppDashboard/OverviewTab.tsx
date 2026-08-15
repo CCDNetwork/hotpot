@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { cn } from '@/helpers/utils';
 
 import {
+  useConsecutiveMonthsHistogram,
   useOverviewModality,
   useOverviewPartners,
   useOverviewSummary,
@@ -22,6 +23,7 @@ import {
   ChartSkeleton,
   DONUT_COLORS,
   DonutChart,
+  HistogramBars,
   HorizontalBars,
 } from './components/charts';
 import { ChartCard } from './components/ChartCard';
@@ -44,6 +46,7 @@ const toTrendData = (points: TrendPoint[]) => {
 export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
   const [drillTarget, setDrillTarget] = useState<DrillTarget | null>(null);
   const summaryQuery = useOverviewSummary(params);
+  const continuityQuery = useConsecutiveMonthsHistogram();
   const trendQuery = useOverviewTrend(params);
   const partnersQuery = useOverviewPartners(params);
   const modalityQuery = useOverviewModality(params);
@@ -301,6 +304,33 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
           <DonutChart
             segments={modalitySegments}
             centerLabel={formatCount(modalityTotal)}
+          />
+        )}
+      </ChartCard>
+
+      <ChartCard
+        title="Consecutive booked-assistance months per household"
+        description="Trailing 12 months · cross-org · each bar counts assistance episodes (a household may contribute more than one run) · click a bar for the list"
+      >
+        {continuityQuery.isLoading ? (
+          <ChartSkeleton />
+        ) : (
+          <HistogramBars
+            data={(continuityQuery.data?.buckets ?? []).map((b) => ({
+              label: b.bucket,
+              value: b.episodes,
+            }))}
+            onBarClick={(bucket) =>
+              setDrillTarget({
+                type: 'consecutive-months',
+                bucket,
+                label: `Runs of ${bucket} consecutive month${
+                  bucket === '1' ? '' : 's'
+                }`,
+              })
+            }
+            unitLabel="episode"
+            emptyLabel="No booked assistance in the trailing 12 months"
           />
         )}
       </ChartCard>

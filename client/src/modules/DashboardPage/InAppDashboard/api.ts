@@ -6,6 +6,8 @@ import {
   BlockingPartnerRow,
   ConflictEventDetail,
   ConflictEventList,
+  ConsecutiveMonthsDrillResponse,
+  ConsecutiveMonthsHistogram,
   DashboardApiParams,
   DuplicatesSplit,
   DuplicatesSummary,
@@ -35,6 +37,8 @@ enum QueryKeys {
   OrganizationsDrill = 'dashboard_drill_organizations',
   PrebookingRunsDrill = 'dashboard_drill_prebooking_runs',
   RecordsCheckedDrill = 'dashboard_drill_records_checked',
+  ConsecutiveMonthsHistogram = 'dashboard_consecutive_months',
+  ConsecutiveMonthsDetails = 'dashboard_consecutive_months_details',
 }
 
 const commonOptions = { keepPreviousData: true } as const;
@@ -193,6 +197,33 @@ export const useRecordsCheckedDrill = (
       (
         await api.get('/dashboards/duplicates/drills/records-checked', {
           params: { ...params, page, pageSize: 25 },
+        })
+      ).data,
+    { ...commonOptions, enabled }
+  );
+
+// Consecutive-months histogram intentionally takes no params — the server
+// pins it to trailing 12 months, platform-wide (cross-org linkage is the
+// whole point of the metric).
+export const useConsecutiveMonthsHistogram = () =>
+  useQuery(
+    [QueryKeys.ConsecutiveMonthsHistogram],
+    async (): Promise<ConsecutiveMonthsHistogram> =>
+      (await api.get('/dashboards/overview/consecutive-months')).data,
+    commonOptions
+  );
+
+export const useConsecutiveMonthsDetails = (
+  bucket: string,
+  page: number,
+  enabled: boolean
+) =>
+  useQuery(
+    [QueryKeys.ConsecutiveMonthsDetails, bucket, page],
+    async (): Promise<ConsecutiveMonthsDrillResponse> =>
+      (
+        await api.get('/dashboards/overview/consecutive-months/details', {
+          params: { bucket, page, pageSize: 25 },
         })
       ).data,
     { ...commonOptions, enabled }
