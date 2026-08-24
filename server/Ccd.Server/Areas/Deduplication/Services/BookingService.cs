@@ -47,9 +47,11 @@ public class BookingService
                 AND (
                     @activities::text[] IS NULL AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL
                     OR @activities::text[] IS NOT NULL AND (
-                        ('previous' = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.end_date < CURRENT_DATE)
+                        -- End Date is exclusive (first day NOT covered): a booking with end_date = today
+                        -- has already stopped covering as of yesterday, so it belongs to 'previous', not 'current'.
+                        ('previous' = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.end_date <= CURRENT_DATE)
                         OR
-                        ('current'  = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.start_date <= CURRENT_DATE AND b.end_date >= CURRENT_DATE)
+                        ('current'  = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.start_date <= CURRENT_DATE AND b.end_date > CURRENT_DATE)
                         OR
                         ('upcoming' = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.start_date > CURRENT_DATE)
                         OR
@@ -397,13 +399,17 @@ public class BookingService
             string matchedId = null;
             Booking dbRecord = null;
 
-            // Check HoH ID (encrypt for comparison against encrypted DB values)
+            // Check HoH ID (encrypt for comparison against encrypted DB values).
+            // End Date is exclusive (first day NOT covered), so a booking whose
+            // end date equals the incoming start date is back-to-back — no
+            // overlap, no conflict. Strict `>` correctly separates adjacent
+            // bookings (e.g. Org A ends Feb 1 / Org B starts Feb 1).
             if (!string.IsNullOrWhiteSpace(hohId))
             {
                 var encryptedHohId = IdEncryptor.Encrypt(hohId);
                 dbRecord = existingBookings.FirstOrDefault(b =>
                     (b.HouseholdId == encryptedHohId || b.SpouseId == encryptedHohId) &&
-                    b.EndDate >= startDate
+                    b.EndDate > startDate
                 );
 
                 if (dbRecord != null)
@@ -416,7 +422,7 @@ public class BookingService
                 var encryptedSpouseId = IdEncryptor.Encrypt(spouseId);
                 dbRecord = existingBookings.FirstOrDefault(b =>
                     (b.HouseholdId == encryptedSpouseId || b.SpouseId == encryptedSpouseId) &&
-                    b.EndDate >= startDate
+                    b.EndDate > startDate
                 );
 
                 if (dbRecord != null)

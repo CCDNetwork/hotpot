@@ -104,10 +104,16 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         if (errors.Count == 0 && !ExcelFieldValidator.IsDateRangeValid(start, end, roundsValue))
         {
+            // End Date is exclusive: the first calendar day NOT covered by the
+            // booking. So a rounds=1 booking starting on the 1st of a month
+            // has End Date = the 1st of the next month (last covered day is
+            // the last day of the start month). Message makes that explicit.
             var expectedEnd = start.AddMonths(roundsValue);
             errors.Add(
-                $"End Date must equal Start Date + {roundsValue} calendar month(s) — "
-                + $"expected {expectedEnd:yyyyMMdd} (got {end:yyyyMMdd})"
+                $"End Date must be Start Date + {roundsValue} calendar month(s) — "
+                + $"expected {expectedEnd:yyyyMMdd} (the first day NOT covered) "
+                + $"for Start Date {start:yyyyMMdd} with Rounds {roundsValue} "
+                + $"(got {end:yyyyMMdd})"
             );
             MarkInvalid("startdate");
             MarkInvalid("enddate");

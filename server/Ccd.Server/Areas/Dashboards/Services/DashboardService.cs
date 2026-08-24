@@ -1077,11 +1077,14 @@ public class DashboardService
         Guid? organizationId
     )
     {
+        // End Date is exclusive (first day NOT covered), so a booking whose
+        // end date equals the window's `from` doesn't actually overlap the
+        // window — strict `>` treats adjacent bookings as non-overlapping.
         return _context.Bookings.Where(b =>
             b.StartDate != null
             && b.EndDate != null
             && b.StartDate <= to
-            && b.EndDate >= from
+            && b.EndDate > from
             && (organizationId == null || b.OrganizationId == organizationId)
         );
     }
