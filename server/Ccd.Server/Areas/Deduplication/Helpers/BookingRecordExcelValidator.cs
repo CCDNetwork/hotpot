@@ -27,7 +27,7 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         if (!ExcelFieldValidator.IsNationalIdValid(record.HeadOfHouseHoldId))
         {
-            errors.Add("Invalid Head Of Household ID");
+            errors.Add("Invalid Head Of Household ID — expected a 9-digit number");
             MarkInvalid("headofhouseholdid");
         }
 
@@ -36,7 +36,7 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         if (!ExcelFieldValidator.IsSpouseIdValid(record.SpouseId))
         {
-            errors.Add("Invalid Spouse ID");
+            errors.Add("Invalid Spouse ID — expected a 9-digit number or empty");
             MarkInvalid("spouseid");
         }
 
@@ -45,7 +45,7 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         if (!ExcelFieldValidator.IsModalityValid(record.Modality))
         {
-            errors.Add("Invalid Modality");
+            errors.Add("Invalid Modality — expected MPCA");
             MarkInvalid("Modality");
         }
 
@@ -55,7 +55,7 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         if (!ExcelFieldValidator.IsAmountValid(record.Amount, out var _))
         {
-            errors.Add("Invalid Amount");
+            errors.Add("Invalid Amount — expected a positive number (e.g., 1250.00)");
             MarkInvalid("amount");
         }
 
@@ -64,7 +64,7 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         if (!ExcelFieldValidator.IsCurrencyValid(record.Currency))
         {
-            errors.Add("Invalid Currency");
+            errors.Add("Invalid Currency — expected an ISO-4217 code (e.g., ILS, USD, EUR)");
             MarkInvalid("currency");
         }
 
@@ -73,7 +73,7 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         if (!ExcelFieldValidator.IsDateValid(record.StartDate, out var start))
         {
-            errors.Add("Invalid Start Date");
+            errors.Add("Invalid Start Date — expected an 8-digit YYYYMMDD value (e.g., 20260201)");
             MarkInvalid("startdate");
         }
 
@@ -82,7 +82,7 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         if (!ExcelFieldValidator.IsDateValid(record.EndDate, out var end))
         {
-            errors.Add("Invalid End Date");
+            errors.Add("Invalid End Date — expected an 8-digit YYYYMMDD value (e.g., 20260301)");
             MarkInvalid("enddate");
         }
 
@@ -91,16 +91,24 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         if (!ExcelFieldValidator.IsRoundsValid(record.Rounds, out var roundsValue))
         {
-            errors.Add("Rounds must be 1 or 3");
+            errors.Add("Invalid Rounds — expected 1 or 3");
             MarkInvalid("rounds");
         }
 
         // ----------------------------
-        // RANGE CHECK (only if both parsed)
+        // RANGE CHECK (only if fields parsed)
+        // The check is exact equality: End Date must equal Start Date + rounds
+        // calendar months (day-of-month preserved). A range too short OR too
+        // long fails the same way — surface the specific expected end date so
+        // the user can see whether to shorten, extend, or adjust rounds.
         // ----------------------------
         if (errors.Count == 0 && !ExcelFieldValidator.IsDateRangeValid(start, end, roundsValue))
         {
-            errors.Add($"Date range must not exceed {roundsValue} month(s)");
+            var expectedEnd = start.AddMonths(roundsValue);
+            errors.Add(
+                $"End Date must equal Start Date + {roundsValue} calendar month(s) — "
+                + $"expected {expectedEnd:yyyyMMdd} (got {end:yyyyMMdd})"
+            );
             MarkInvalid("startdate");
             MarkInvalid("enddate");
         }

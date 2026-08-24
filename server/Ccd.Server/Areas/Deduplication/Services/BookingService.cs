@@ -136,8 +136,17 @@ public class BookingService
         worksheet.Cell(1, lastColumnIndex).Style.Fill.BackgroundColor = XLColor.Gainsboro;
         worksheet.Cell(1, lastColumnIndex).Style.Font.Bold = true;
 
+        // A second appended column carries per-row field-validation messages so
+        // users can see WHY a cell is red (dates, rounds, format, etc.). Without
+        // this the row's `errors` list was only logged server-side and users had
+        // to guess. Client feedback #1 — "Missing Error Messages in Returned File".
+        var rowErrorsColumnIndex = lastColumnIndex + 1;
+        worksheet.Cell(1, rowErrorsColumnIndex).Value = "Row errors";
+        worksheet.Cell(1, rowErrorsColumnIndex).Style.Fill.BackgroundColor = XLColor.Gainsboro;
+        worksheet.Cell(1, rowErrorsColumnIndex).Style.Font.Bold = true;
+
         // STEP 1 — Validate row fields
-        var isExcelValid = ValidateRowFields(worksheet, lastRowNumber);
+        var isExcelValid = ValidateRowFields(worksheet, lastRowNumber, rowErrorsColumnIndex);
 
         // STEP 2 — Validate internal Excel duplicates
         var allValidNationalIds = ValidateExcelDuplicates(worksheet, lastRowNumber, lastColumnIndex, ref isExcelValid);
@@ -201,7 +210,7 @@ public class BookingService
         return (isExcelValid, fileApi.Url, savedFile.Id);
     }
 
-    private bool ValidateRowFields(IXLWorksheet worksheet, int lastRowNumber)
+    private bool ValidateRowFields(IXLWorksheet worksheet, int lastRowNumber, int rowErrorsColumnIndex)
     {
         bool isValid = true;
 
@@ -237,6 +246,14 @@ public class BookingService
 
             if (errors.Count != 0)
             {
+                // Surface the messages inside the returned file — same red tint
+                // as the field cells so the summary and the offending cells read
+                // as one visual group.
+                var rowErrorsCell = worksheet.Cell(i, rowErrorsColumnIndex);
+                rowErrorsCell.Value = string.Join("; ", errors);
+                rowErrorsCell.Style.Fill.BackgroundColor = XLColor.Red;
+                rowErrorsCell.Style.Alignment.WrapText = true;
+
                 Console.WriteLine($"Row {i} errors: {string.Join(", ", errors)}");
                 isValid = false;
             }
