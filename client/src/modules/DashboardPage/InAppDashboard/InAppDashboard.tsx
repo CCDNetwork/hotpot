@@ -17,6 +17,11 @@ export const InAppDashboard = () => {
   const { organization } = useAuth();
 
   const [period, setPeriod] = useState<DashboardPeriod>('all-time');
+  // Custom-range endpoints. Kept alongside `period`; only sent to the API when
+  // period === 'custom'. Preserving them across preset switches lets the user
+  // toggle preset → custom → preset without losing their last picked range.
+  const [customFrom, setCustomFrom] = useState<string | undefined>();
+  const [customTo, setCustomTo] = useState<string | undefined>();
   const [myOrganizationOnly, setMyOrganizationOnly] = useState(false);
   const [currency, setCurrency] = useState<DisplayCurrency>(
     DEFAULT_DISPLAY_CURRENCY
@@ -30,6 +35,15 @@ export const InAppDashboard = () => {
     ...(myOrganizationOnly && organization?.id
       ? { organizationId: organization.id }
       : {}),
+    ...(period === 'custom' && customFrom && customTo
+      ? { from: customFrom, to: customTo }
+      : {}),
+  };
+
+  const handleCustomRangeChange = (from: string, to: string) => {
+    setCustomFrom(from);
+    setCustomTo(to);
+    setPeriod('custom');
   };
 
   return (
@@ -39,7 +53,10 @@ export const InAppDashboard = () => {
     >
       <FilterBar
         period={period}
+        customFrom={customFrom}
+        customTo={customTo}
         onPeriodChange={setPeriod}
+        onCustomRangeChange={handleCustomRangeChange}
         myOrganizationOnly={myOrganizationOnly}
         onMyOrganizationOnlyChange={setMyOrganizationOnly}
         currency={currency}

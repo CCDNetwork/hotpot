@@ -35,13 +35,17 @@ public class DashboardsController : ControllerBaseExtended
     public async Task<ActionResult<OverviewSummaryResponse>> GetOverviewSummary(
         string period,
         Guid? organizationId,
-        string displayCurrency
+        string displayCurrency,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetOverviewSummary(
             period,
             ResolveOrganizationFilter(organizationId),
-            displayCurrency
+            displayCurrency,
+            from,
+            to
         );
         return Ok(result);
     }
@@ -51,13 +55,17 @@ public class DashboardsController : ControllerBaseExtended
     public async Task<ActionResult<OverviewTrendResponse>> GetOverviewTrend(
         string period,
         Guid? organizationId,
-        string granularity
+        string granularity,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetOverviewTrend(
             period,
             ResolveOrganizationFilter(organizationId),
-            granularity
+            granularity,
+            from,
+            to
         );
         return Ok(result);
     }
@@ -67,13 +75,17 @@ public class DashboardsController : ControllerBaseExtended
     public async Task<ActionResult<List<PartnerRowResponse>>> GetOverviewPartners(
         string period,
         Guid? organizationId,
-        string displayCurrency
+        string displayCurrency,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetOverviewPartners(
             period,
             ResolveOrganizationFilter(organizationId),
-            displayCurrency
+            displayCurrency,
+            from,
+            to
         );
         return Ok(result);
     }
@@ -82,12 +94,16 @@ public class DashboardsController : ControllerBaseExtended
     [PermissionLevel(UserRole.User)]
     public async Task<ActionResult<List<ModalityRowResponse>>> GetOverviewModality(
         string period,
-        Guid? organizationId
+        Guid? organizationId,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetOverviewModality(
             period,
-            ResolveOrganizationFilter(organizationId)
+            ResolveOrganizationFilter(organizationId),
+            from,
+            to
         );
         return Ok(result);
     }
@@ -98,14 +114,18 @@ public class DashboardsController : ControllerBaseExtended
         string period,
         Guid? organizationId,
         string displayCurrency,
-        string overlapScope
+        string overlapScope,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetDuplicatesSummary(
             period,
             ResolveOrganizationFilter(organizationId),
             displayCurrency,
-            overlapScope
+            overlapScope,
+            from,
+            to
         );
         return Ok(result);
     }
@@ -116,14 +136,18 @@ public class DashboardsController : ControllerBaseExtended
         string period,
         Guid? organizationId,
         string granularity,
-        string overlapScope
+        string overlapScope,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetDuplicatesTrend(
             period,
             ResolveOrganizationFilter(organizationId),
             granularity,
-            overlapScope
+            overlapScope,
+            from,
+            to
         );
         return Ok(result);
     }
@@ -132,12 +156,16 @@ public class DashboardsController : ControllerBaseExtended
     [PermissionLevel(UserRole.User)]
     public async Task<ActionResult<DuplicatesSplitResponse>> GetDuplicatesSplit(
         string period,
-        Guid? organizationId
+        Guid? organizationId,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetDuplicatesSplit(
             period,
-            ResolveOrganizationFilter(organizationId)
+            ResolveOrganizationFilter(organizationId),
+            from,
+            to
         );
         return Ok(result);
     }
@@ -147,13 +175,17 @@ public class DashboardsController : ControllerBaseExtended
     public async Task<ActionResult<List<BlockingPartnerRowResponse>>> GetBlockingPartners(
         string period,
         Guid? organizationId,
-        string overlapScope
+        string overlapScope,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetBlockingPartners(
             period,
             ResolveOrganizationFilter(organizationId),
-            overlapScope
+            overlapScope,
+            from,
+            to
         );
         return Ok(result);
     }
@@ -167,7 +199,9 @@ public class DashboardsController : ControllerBaseExtended
         string overlapScope,
         int page = 1,
         int pageSize = 20,
-        string sort = null
+        string sort = null,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetConflictEvents(
@@ -177,7 +211,9 @@ public class DashboardsController : ControllerBaseExtended
             overlapScope,
             page,
             pageSize,
-            sort
+            sort,
+            from,
+            to
         );
         return Ok(result);
     }
@@ -210,7 +246,9 @@ public class DashboardsController : ControllerBaseExtended
         string period,
         Guid? organizationId,
         string displayCurrency,
-        string overlapScope
+        string overlapScope,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetValueFxDrill(
@@ -218,7 +256,9 @@ public class DashboardsController : ControllerBaseExtended
             period,
             ResolveOrganizationFilter(organizationId),
             displayCurrency,
-            overlapScope
+            overlapScope,
+            from,
+            to
         );
         return Ok(result);
     }
@@ -228,13 +268,17 @@ public class DashboardsController : ControllerBaseExtended
     public async Task<ActionResult<List<OrganizationDrillRowResponse>>> GetOrganizationsDrill(
         string period,
         Guid? organizationId,
-        string displayCurrency
+        string displayCurrency,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetOrganizationsDrill(
             period,
             ResolveOrganizationFilter(organizationId),
-            displayCurrency
+            displayCurrency,
+            from,
+            to
         );
         return Ok(result);
     }
@@ -245,14 +289,18 @@ public class DashboardsController : ControllerBaseExtended
         string period,
         Guid? organizationId,
         int page = 1,
-        int pageSize = 25
+        int pageSize = 25,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetPrebookingRunsDrill(
             period,
             ResolveOrganizationFilter(organizationId),
             page,
-            pageSize
+            pageSize,
+            from,
+            to
         );
         return Ok(result);
     }
@@ -263,14 +311,18 @@ public class DashboardsController : ControllerBaseExtended
         string period,
         Guid? organizationId,
         int page = 1,
-        int pageSize = 25
+        int pageSize = 25,
+        DateTime? from = null,
+        DateTime? to = null
     )
     {
         var result = await _dashboardService.GetRecordsCheckedDrill(
             period,
             ResolveOrganizationFilter(organizationId),
             page,
-            pageSize
+            pageSize,
+            from,
+            to
         );
         return Ok(result);
     }

@@ -3,14 +3,31 @@ export type DashboardPeriod =
   | '30d'
   | '90d'
   | 'current-month'
-  | 'all-time';
+  | 'all-time'
+  | 'custom';
 export type DisplayCurrency = 'EUR' | 'USD' | 'ILS';
 export type ConversionStatusValue = 'ok' | 'partial' | 'missing_rate';
+
+/**
+ * Bucketing for trend charts. Server maps these to Postgres date_trunc units;
+ * `weekly` is the default when the client sends nothing.
+ */
+export type TrendGranularity =
+  | 'daily'
+  | 'weekly'
+  | 'monthly'
+  | 'quarterly'
+  | 'annual';
 
 export type DashboardApiParams = {
   period: DashboardPeriod;
   displayCurrency: DisplayCurrency;
   organizationId?: string;
+  // Only sent when period === 'custom'. Format: 'YYYY-MM-DD' — the server
+  // interprets these as UTC calendar days (from = 00:00 UTC, to = end-of-day
+  // UTC), matching the FX-active-rate rule.
+  from?: string;
+  to?: string;
 };
 
 // Cross-org only (default) hides overlaps where the requesting and blocking

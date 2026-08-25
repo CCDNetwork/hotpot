@@ -22,6 +22,7 @@ import {
   DedupApiParams,
   DrillTarget,
   OverlapScope,
+  TrendGranularity,
 } from './types';
 import {
   ChartSkeleton,
@@ -31,6 +32,7 @@ import {
 } from './components/charts';
 import { ChartCard } from './components/ChartCard';
 import { DrilldownSheet } from './components/DrilldownSheet';
+import { GranularitySelect } from './components/GranularitySelect';
 import {
   FxMiniBreakdown,
   KpiTile,
@@ -54,11 +56,12 @@ export const DeduplicationTab = ({
   // coordination signal, so hidden by default. Kept out of FilterBar so
   // toggling doesn't invalidate Overview queries.
   const [overlapScope, setOverlapScope] = useState<OverlapScope>('cross');
+  const [granularity, setGranularity] = useState<TrendGranularity>('weekly');
 
   const dedupParams: DedupApiParams = { ...params, overlapScope };
 
   const summaryQuery = useDuplicatesSummary(dedupParams);
-  const trendQuery = useDuplicatesTrend(dedupParams);
+  const trendQuery = useDuplicatesTrend(dedupParams, granularity);
   const splitQuery = useDuplicatesSplit(dedupParams);
   const blockingQuery = useBlockingPartners(dedupParams);
   // Recent events preview (first page) shown inline on the tab
@@ -119,7 +122,8 @@ export const DeduplicationTab = ({
       )}
     >
       {/* Overlap-scope filter (dedup-tab-local) */}
-      <div className="flex items-center justify-end gap-3 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-end gap-3 text-sm text-muted-foreground">
+        <GranularitySelect value={granularity} onChange={setGranularity} />
         <span>Overlap scope</span>
         <SegmentedControl
           options={SCOPE_OPTIONS}

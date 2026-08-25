@@ -16,7 +16,12 @@ import {
   formatPercent,
   spansMultipleYears,
 } from './helpers';
-import { DashboardApiParams, DrillTarget, TrendPoint } from './types';
+import {
+  DashboardApiParams,
+  DrillTarget,
+  TrendGranularity,
+  TrendPoint,
+} from './types';
 import {
   AreaTrendChart,
   BarTrendChart,
@@ -28,6 +33,7 @@ import {
 } from './components/charts';
 import { ChartCard } from './components/ChartCard';
 import { DrilldownSheet } from './components/DrilldownSheet';
+import { GranularitySelect } from './components/GranularitySelect';
 import {
   FxMiniBreakdown,
   KpiTile,
@@ -45,9 +51,13 @@ const toTrendData = (points: TrendPoint[]) => {
 
 export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
   const [drillTarget, setDrillTarget] = useState<DrillTarget | null>(null);
+  // Tab-local: the trend charts are the only widgets that consume granularity,
+  // so keeping it here means changing it doesn't invalidate the summary /
+  // partners / modality queries.
+  const [granularity, setGranularity] = useState<TrendGranularity>('weekly');
   const summaryQuery = useOverviewSummary(params);
   const continuityQuery = useConsecutiveMonthsHistogram();
-  const trendQuery = useOverviewTrend(params);
+  const trendQuery = useOverviewTrend(params, granularity);
   const partnersQuery = useOverviewPartners(params);
   const modalityQuery = useOverviewModality(params);
 
@@ -197,6 +207,9 @@ export const OverviewTab = ({ params }: { params: DashboardApiParams }) => {
       </div>
 
       {/* Trend row */}
+      <div className="flex justify-end">
+        <GranularitySelect value={granularity} onChange={setGranularity} />
+      </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard
           title="Households assisted over time"

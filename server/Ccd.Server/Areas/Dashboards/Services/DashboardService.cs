@@ -30,7 +30,34 @@ public class DashboardService
 
     public static DashboardPeriod ResolvePeriod(string period)
     {
+        return ResolvePeriod(period, null, null);
+    }
+
+    /// <summary>
+    /// Resolves a period name to a (From, To) window, with an override for
+    /// "custom" that takes explicit dates. Explicit dates are anchored to UTC
+    /// calendar days: from -&gt; 00:00:00 UTC of the picked day, to -&gt;
+    /// 23:59:59.999 UTC of the picked day (inclusive). This mirrors how the
+    /// InforEuro-active-rate FX rule expects UTC-anchored ranges.
+    /// </summary>
+    public static DashboardPeriod ResolvePeriod(string period, DateTime? from, DateTime? to)
+    {
         var now = DateTime.UtcNow;
+
+        if (period == "custom" && from.HasValue && to.HasValue)
+        {
+            var f = DateTime.SpecifyKind(from.Value.Date, DateTimeKind.Utc);
+            var t = DateTime.SpecifyKind(to.Value.Date, DateTimeKind.Utc)
+                .AddDays(1).AddTicks(-1);
+            // Guard against inverted input: swap rather than error so a picker
+            // that stores from > to during selection can't blank every widget.
+            if (t < f)
+            {
+                (f, t) = (t, f);
+            }
+            return new DashboardPeriod(f, t);
+        }
+
         return period switch
         {
             "7d" => new DashboardPeriod(now.AddDays(-7), now),
@@ -60,12 +87,16 @@ public class DashboardService
             : displayCurrency.Trim().ToUpperInvariant();
     }
 
+    // Whitelist: `bucket` is interpolated into SQL (Dapper cannot parameterise
+    // date_trunc's field name), so only these values may reach the query.
     private static string ResolveGranularity(string granularity)
     {
         return granularity switch
         {
             "daily" => "day",
             "monthly" => "month",
+            "quarterly" => "quarter",
+            "annual" => "year",
             // Default: weekly (delivery-lead default; user-selectable)
             _ => "week",
         };
@@ -76,10 +107,12 @@ public class DashboardService
     public async Task<OverviewSummaryResponse> GetOverviewSummary(
         string period,
         Guid? organizationId,
-        string displayCurrency
+        string displayCurrency,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
         var display = ResolveDisplayCurrency(displayCurrency);
         var lookup = await _exchangeRateService.GetLookupAsync();
 
@@ -135,10 +168,12 @@ public class DashboardService
     public async Task<OverviewTrendResponse> GetOverviewTrend(
         string period,
         Guid? organizationId,
-        string granularity
+        string granularity,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
         var bucket = ResolveGranularity(granularity);
         var connection = _context.Database.GetDbConnection();
 
@@ -179,10 +214,12 @@ public class DashboardService
     public async Task<List<PartnerRowResponse>> GetOverviewPartners(
         string period,
         Guid? organizationId,
-        string displayCurrency
+        string displayCurrency,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
         var display = ResolveDisplayCurrency(displayCurrency);
         var lookup = await _exchangeRateService.GetLookupAsync();
 
@@ -254,10 +291,12 @@ public class DashboardService
 
     public async Task<List<ModalityRowResponse>> GetOverviewModality(
         string period,
-        Guid? organizationId
+        Guid? organizationId,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
 
         var rows = await BookingsOverlappingPeriod(from, to, organizationId)
             .GroupBy(b => b.Modality)
@@ -287,10 +326,12 @@ public class DashboardService
         string period,
         Guid? organizationId,
         string displayCurrency,
-        string overlapScope
+        string overlapScope,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
         var display = ResolveDisplayCurrency(displayCurrency);
         var lookup = await _exchangeRateService.GetLookupAsync();
 
@@ -350,10 +391,12 @@ public class DashboardService
         string period,
         Guid? organizationId,
         string granularity,
-        string overlapScope
+        string overlapScope,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
         var bucket = ResolveGranularity(granularity);
         var crossOnly = IsCrossOrgOnly(overlapScope);
         var connection = _context.Database.GetDbConnection();
@@ -409,10 +452,12 @@ public class DashboardService
     // ignores the overlapScope filter by design.
     public async Task<DuplicatesSplitResponse> GetDuplicatesSplit(
         string period,
-        Guid? organizationId
+        Guid? organizationId,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
         var events = ConflictEventsInPeriod(from, to, organizationId, "all");
 
         var withinAgency = await events
@@ -430,10 +475,12 @@ public class DashboardService
     public async Task<List<BlockingPartnerRowResponse>> GetBlockingPartners(
         string period,
         Guid? organizationId,
-        string overlapScope
+        string overlapScope,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
 
         return await ConflictEventsInPeriod(from, to, organizationId, overlapScope)
             .GroupBy(e => new { e.BlockingOrganizationId, e.BlockingOrganization.Name })
@@ -454,10 +501,12 @@ public class DashboardService
         string overlapScope,
         int page,
         int pageSize,
-        string sort
+        string sort,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
         var display = ResolveDisplayCurrency(displayCurrency);
         var lookup = await _exchangeRateService.GetLookupAsync();
 
@@ -565,10 +614,12 @@ public class DashboardService
         string period,
         Guid? organizationId,
         string displayCurrency,
-        string overlapScope
+        string overlapScope,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
         var display = ResolveDisplayCurrency(displayCurrency);
         var lookup = await _exchangeRateService.GetLookupAsync();
 
@@ -699,10 +750,12 @@ public class DashboardService
     public async Task<List<OrganizationDrillRowResponse>> GetOrganizationsDrill(
         string period,
         Guid? organizationId,
-        string displayCurrency
+        string displayCurrency,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var partners = await GetOverviewPartners(period, organizationId, displayCurrency);
+        var partners = await GetOverviewPartners(period, organizationId, displayCurrency, fromParam, toParam);
         return partners.Select(p => new OrganizationDrillRowResponse
         {
             OrganizationId = p.OrganizationId,
@@ -725,10 +778,12 @@ public class DashboardService
         string period,
         Guid? organizationId,
         int page,
-        int pageSize
+        int pageSize,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
 
         var logs = _context.BookingLogs
             .Where(l => l.IsPrebooking
@@ -787,10 +842,12 @@ public class DashboardService
         string period,
         Guid? organizationId,
         int page,
-        int pageSize
+        int pageSize,
+        DateTime? fromParam = null,
+        DateTime? toParam = null
     )
     {
-        var (from, to) = ResolvePeriod(period);
+        var (from, to) = ResolvePeriod(period, fromParam, toParam);
 
         var logs = _context.BookingLogs
             .Where(l => l.IsPrebooking

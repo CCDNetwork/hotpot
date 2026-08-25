@@ -19,6 +19,7 @@ import {
   PartnerRow,
   PrebookingRunDrillResponse,
   RecordsCheckedDrillResponse,
+  TrendGranularity,
   ValueFxDrillResponse,
 } from './types';
 
@@ -51,11 +52,18 @@ export const useOverviewSummary = (params: DashboardApiParams) =>
     commonOptions
   );
 
-export const useOverviewTrend = (params: DashboardApiParams) =>
+export const useOverviewTrend = (
+  params: DashboardApiParams,
+  granularity: TrendGranularity
+) =>
   useQuery(
-    [QueryKeys.OverviewTrend, params],
+    [QueryKeys.OverviewTrend, params, granularity],
     async (): Promise<OverviewTrend> =>
-      (await api.get('/dashboards/overview/trend', { params })).data,
+      (
+        await api.get('/dashboards/overview/trend', {
+          params: { ...params, granularity },
+        })
+      ).data,
     commonOptions
   );
 
@@ -83,11 +91,18 @@ export const useDuplicatesSummary = (params: DashboardApiParams) =>
     commonOptions
   );
 
-export const useDuplicatesTrend = (params: DashboardApiParams) =>
+export const useDuplicatesTrend = (
+  params: DashboardApiParams,
+  granularity: TrendGranularity
+) =>
   useQuery(
-    [QueryKeys.DuplicatesTrend, params],
+    [QueryKeys.DuplicatesTrend, params, granularity],
     async (): Promise<DuplicatesTrendPoint[]> =>
-      (await api.get('/dashboards/duplicates/trend', { params })).data,
+      (
+        await api.get('/dashboards/duplicates/trend', {
+          params: { ...params, granularity },
+        })
+      ).data,
     commonOptions
   );
 
