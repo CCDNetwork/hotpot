@@ -20,25 +20,25 @@
 trigger:
   branches:
     exclude:
-      - '*'
+      - "*"
   tags:
     include:
       - save-the-children
 
 pr: none
 
-pool: 'mdp-hotpot-common'
+pool: "mdp-hotpot-common"
 
 variables:
   - group: ccd-save-the-children
   - name: imageTag
     value: save-the-children
   - name: azureSubscription
-    value: 'unicrmenarohotpotcommon'
+    value: "unicrmenarohotpotcommon"
   - name: imageRepository
     value: init/ccd-data-portal/image
   - name: aksServiceConnection
-    value: 'UNI_MENA_RO RG-MENA-RO-HotPot-PRD'
+    value: "UNI_MENA_RO RG-MENA-RO-HotPot-PRD"
   - name: aksResourceGroup
     value: RG-MENA-RO-HotPot-PRD
   - name: aksCluster
@@ -55,7 +55,7 @@ stages:
         steps:
           - task: NodeTool@0
             inputs:
-              versionSpec: '18.x'
+              versionSpec: "18.x"
             displayName: Use Node 18
 
           - task: PowerShell@2
@@ -71,6 +71,7 @@ stages:
                 @"
                 VITE_API_URL=$env:API_URL
                 VITE_DIRECTUS_URL=$env:DIRECTUS_URL
+                VITE_DASHBOARD_PROVIDER=$env:DASHBOARD_PROVIDER
                 VITE_DIRECTUS_TOKEN=$env:DIRECTUS_TOKEN
                 VITE_STORAGE_TYPE_ID=$env:STORAGE_TYPE_ID
                 VITE_AUTH_PROVIDER=$env:AUTH_PROVIDER
@@ -111,12 +112,12 @@ stages:
         steps:
           - task: UseDotNet@2
             inputs:
-              version: '8.0.x'
+              version: "8.0.x"
             displayName: Use .NET 8 SDK
 
           - task: NodeTool@0
             inputs:
-              versionSpec: '18.x'
+              versionSpec: "18.x"
             displayName: Use Node 18
 
           - task: PowerShell@2
@@ -147,7 +148,7 @@ stages:
     displayName: Restart production deployments
     dependsOn: Build
     condition: succeeded()
-    pool: 'MENA-HotPot Pipelines'
+    pool: "MENA-HotPot Pipelines"
     jobs:
       - job: RestartDeployments
         displayName: Restart client and server
