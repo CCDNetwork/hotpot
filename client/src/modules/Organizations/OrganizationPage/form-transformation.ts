@@ -13,6 +13,7 @@ export const dataToOrganizationEditFormData = (
     isFoodAssistanceActive: data.isFoodAssistanceActive,
     isLivelihoodsActive: data.isLivelihoodsActive,
     isProtectionActive: data.isProtectionActive,
+    isIncentivePaymentsActive: data.isIncentivePaymentsActive,
     activities: data.activities,
   };
 };

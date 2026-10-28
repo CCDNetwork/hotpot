@@ -137,10 +137,6 @@ public class ConflictEventRowResponse
 {
     public Guid Id { get; set; }
 
-    // Truncated HMAC-derived label ("HH …a3f9c1") — stable per household,
-    // never the plaintext ID.
-    public string SubjectLabel { get; set; }
-
     public Guid RequestingOrganizationId { get; set; }
     public string RequestingOrganizationName { get; set; }
     public Guid BlockingOrganizationId { get; set; }
@@ -237,7 +233,6 @@ public class PrebookingRunRowResponse
 {
     public Guid SubmissionId { get; set; }
     public DateTime UploadedAt { get; set; }
-    public string UploadedByName { get; set; }
     public string OrganizationName { get; set; }
     public int TotalRows { get; set; }
     public int SuccessRows { get; set; }
@@ -293,7 +288,6 @@ public class ConsecutiveMonthsHistogramResponse
 
 public class ConsecutiveMonthsRunResponse
 {
-    public string HouseholdIdMasked { get; set; }
     public DateTime RunStartMonth { get; set; }
     public DateTime RunEndMonth { get; set; }
     public int MonthsCount { get; set; }

@@ -28,11 +28,10 @@ export const PrebookingRunsDrill = ({
       <p className="text-xs text-muted-foreground">
         {formatCount(data.totalCount)} pre-booking run{data.totalCount === 1 ? '' : 's'}
       </p>
-      <table className="w-full min-w-[34rem] text-sm">
+      <table className="w-full min-w-[28rem] text-sm">
         <thead>
           <tr className="border-b text-left text-xs text-muted-foreground">
             <th className="py-2 font-medium">Uploaded</th>
-            <th className="py-2 font-medium">By</th>
             <th className="py-2 font-medium">Organization</th>
             <th className="py-2 text-right font-medium">Rows</th>
             <th className="py-2 text-right font-medium">Success / Fail</th>
@@ -43,9 +42,6 @@ export const PrebookingRunsDrill = ({
             <tr key={row.submissionId} className="border-b last:border-0">
               <td className="py-1.5 whitespace-nowrap text-muted-foreground">
                 {formatDate(row.uploadedAt)}
-              </td>
-              <td className="py-1.5 max-w-[10rem] truncate">
-                {row.uploadedByName || '—'}
               </td>
               <td className="py-1.5 max-w-[12rem] truncate">
                 {row.organizationName}

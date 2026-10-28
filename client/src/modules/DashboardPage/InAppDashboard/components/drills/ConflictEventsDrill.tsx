@@ -125,12 +125,8 @@ const EventDetail = ({
         </dd>
       </dl>
 
-      <SectionHeading>Overlap subject</SectionHeading>
+      <SectionHeading>Overlap</SectionHeading>
       <dl className="grid grid-cols-[10rem_1fr] gap-x-4 gap-y-1">
-        <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-          Household ref
-        </dt>
-        <dd className="font-mono text-xs">{data.subjectLabel}</dd>
         <dt className="text-xs uppercase tracking-wide text-muted-foreground">
           Overlap window
         </dt>
@@ -197,7 +193,6 @@ export const ConflictEventsDrill = ({
                     {event.blockingOrganizationName}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {event.subjectLabel} ·{' '}
                     {formatDate(event.overlapStartDate)} –{' '}
                     {formatDate(event.overlapEndDate)} ·{' '}
                     {event.proposedModality || '—'} · {event.proposedRounds}{' '}

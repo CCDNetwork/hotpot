@@ -14,6 +14,8 @@ export const serviceCategoryToLabel = (serviceCategory: string) => {
       return 'Food Assistance';
     case OrgActivity.Protection:
       return 'Protection';
+    case OrgActivity.IncentivePayments:
+      return 'Incentive Payments';
     default:
       return 'N/A';
   }

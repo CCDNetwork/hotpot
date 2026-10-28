@@ -1078,6 +1078,10 @@ namespace Ccd.Server.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_food_assistance_active");
 
+                    b.Property<bool>("IsIncentivePaymentsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_incentive_payments_active");
+
                     b.Property<bool>("IsLivelihoodsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_livelihoods_active");

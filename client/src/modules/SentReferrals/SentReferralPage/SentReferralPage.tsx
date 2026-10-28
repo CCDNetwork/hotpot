@@ -139,7 +139,8 @@ export const SentReferralPage = () => {
         | 'isShelterActive'
         | 'isLivelihoodsActive'
         | 'isFoodAssistanceActive'
-        | 'isProtectionActive';
+        | 'isProtectionActive'
+        | 'isIncentivePaymentsActive';
       id: string;
       label: string;
     }[] = [
@@ -153,6 +154,11 @@ export const SentReferralPage = () => {
         label: 'Food Assistance',
       },
       { key: 'isProtectionActive', id: 'protection', label: 'Protection' },
+      {
+        key: 'isIncentivePaymentsActive',
+        id: 'incentivePayments',
+        label: 'Incentive Payments',
+      },
     ];
 
     return (
@@ -515,6 +521,7 @@ export const SentReferralPage = () => {
                           currentFormSelectedOrganization.isWashActive ||
                           currentFormSelectedOrganization.isFoodAssistanceActive ||
                           currentFormSelectedOrganization.isProtectionActive ||
+                          currentFormSelectedOrganization.isIncentivePaymentsActive ||
                           currentFormSelectedOrganization.isLivelihoodsActive) && (
                           <FormField
                             control={control}

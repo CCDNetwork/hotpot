@@ -151,7 +151,7 @@ public class BookingService
         var isExcelValid = ValidateRowFields(worksheet, lastRowNumber, rowErrorsColumnIndex);
 
         // STEP 2 — Validate internal Excel duplicates
-        var allValidNationalIds = ValidateExcelDuplicates(worksheet, lastRowNumber, lastColumnIndex, ref isExcelValid);
+        var allValidNationalIds = ValidateExcelDuplicates(worksheet, lastRowNumber, lastColumnIndex, rowErrorsColumnIndex, ref isExcelValid);
 
         using var memoryStream = new MemoryStream();
         workbook.SaveAs(memoryStream);
@@ -172,9 +172,20 @@ public class BookingService
         var lastRowNumber = worksheet.LastRowUsed().RowNumber();
 
         // Add headers
-        worksheet.Cell(1, lastColumnIndex).Value = "Already booked";
-        worksheet.Cell(1, lastColumnIndex).Style.Fill.BackgroundColor = XLColor.Gainsboro;
-        worksheet.Cell(1, lastColumnIndex).Style.Font.Bold = true;
+        string[] alreadyBookedHeaders =
+        [
+            "ID booked",
+            "Previously booked by",
+            "Start Date for previous booking",
+            "End Date for previous booking",
+        ];
+        for (var i = 0; i < alreadyBookedHeaders.Length; i++)
+        {
+            var headerCell = worksheet.Cell(1, lastColumnIndex + i);
+            headerCell.Value = alreadyBookedHeaders[i];
+            headerCell.Style.Fill.BackgroundColor = XLColor.Gainsboro;
+            headerCell.Style.Font.Bold = true;
+        }
 
         var isExcelValid = true;
 
@@ -294,17 +305,37 @@ public class BookingService
         IXLWorksheet worksheet,
         int lastRowNumber,
         int duplicateColumnIndex,
+        int rowErrorsColumnIndex,
         ref bool isExcelValid
     )
     {
+        const string hohLabel = "Head of Household ID";
+        const string spouseLabel = "Spouse ID";
+
         var hohIndex = GetHeaderIndex("headofhouseholdid", worksheet);
         var spouseIndex = GetHeaderIndex("spouseid", worksheet);
 
         // Global map → ID appears only once across both columns
-        var globalDict = new Dictionary<string, int>();
+        var globalDict = new Dictionary<string, (int Row, string Column)>();
 
         // Return set for DB checks
         var allValidIds = new HashSet<string>();
+        var hasDuplicates = false;
+
+        void MarkDuplicate(int row, string id, string column, (int Row, string Column) first)
+        {
+            // Mark duplicate in the SINGLE duplicate column
+            var duplicateCell = worksheet.Cell(row, duplicateColumnIndex);
+            duplicateCell.Value = first.Row;
+            duplicateCell.Style.Fill.BackgroundColor = XLColor.Redwood;
+
+            var message = first.Row == row
+                ? $"{hohLabel} and {spouseLabel} are the same — {id}"
+                : $"Duplicate {column} — {id} already appears in row {first.Row} ({first.Column})";
+            AppendRowError(worksheet, row, rowErrorsColumnIndex, message);
+
+            hasDuplicates = true;
+        }
 
         for (var i = 2; i <= lastRowNumber; i++)
         {
@@ -314,18 +345,13 @@ public class BookingService
             // ---- HANDLE HoH ID ----
             if (!string.IsNullOrWhiteSpace(hohId))
             {
-                if (globalDict.TryGetValue(hohId, out int firstRow))
+                if (globalDict.TryGetValue(hohId, out var first))
                 {
-                    // Mark duplicate in the SINGLE duplicate column
-                    var duplicateCell = worksheet.Cell(i, duplicateColumnIndex);
-                    duplicateCell.Value = firstRow;
-                    duplicateCell.Style.Fill.BackgroundColor = XLColor.Redwood;
-
-                    isExcelValid = false;
+                    MarkDuplicate(i, hohId, hohLabel, first);
                 }
                 else
                 {
-                    globalDict[hohId] = i;
+                    globalDict[hohId] = (i, hohLabel);
                     allValidIds.Add(hohId);
                 }
             }
@@ -333,24 +359,31 @@ public class BookingService
             // ---- HANDLE Spouse ID ----
             if (!string.IsNullOrWhiteSpace(spouseId))
             {
-                if (globalDict.TryGetValue(spouseId, out int firstRow))
+                if (globalDict.TryGetValue(spouseId, out var first))
                 {
-                    // Mark duplicate in SAME duplicate column
-                    var duplicateCell = worksheet.Cell(i, duplicateColumnIndex);
-                    duplicateCell.Value = firstRow;
-                    duplicateCell.Style.Fill.BackgroundColor = XLColor.Redwood;
-
-                    isExcelValid = false;
+                    MarkDuplicate(i, spouseId, spouseLabel, first);
                 }
                 else
                 {
-                    globalDict[spouseId] = i;
+                    globalDict[spouseId] = (i, spouseLabel);
                     allValidIds.Add(spouseId);
                 }
             }
         }
 
+        if (hasDuplicates)
+            isExcelValid = false;
+
         return allValidIds;
+    }
+
+    private static void AppendRowError(IXLWorksheet worksheet, int row, int rowErrorsColumnIndex, string message)
+    {
+        var rowErrorsCell = worksheet.Cell(row, rowErrorsColumnIndex);
+        var existing = rowErrorsCell.GetString();
+        rowErrorsCell.Value = string.IsNullOrEmpty(existing) ? message : $"{existing}; {message}";
+        rowErrorsCell.Style.Fill.BackgroundColor = XLColor.Red;
+        rowErrorsCell.Style.Alignment.WrapText = true;
     }
 
     private Dictionary<int, ConflictDetectionContext> ValidateDatabaseDuplicates(
@@ -431,10 +464,21 @@ public class BookingService
 
             if (dbRecord != null)
             {
-                var alreadyBookedCell = worksheet.Cell(row, alreadyBookedColumnIndex);
-                alreadyBookedCell.Value =
-                    $"{matchedId} already has a booking by {dbRecord.Organization.Name} from {dbRecord.StartDate:yyyy-MM-dd} until {dbRecord.EndDate:yyyy-MM-dd}";
-                alreadyBookedCell.Style.Fill.BackgroundColor = XLColor.RedPigment;
+                // ProcessValidBookings detects conflict rows by the RedPigment fill
+                // on the first of these columns (alreadyBookedColumnIndex).
+                string[] alreadyBookedValues =
+                [
+                    matchedId,
+                    dbRecord.Organization.Name,
+                    $"{dbRecord.StartDate:yyyy-MM-dd}",
+                    $"{dbRecord.EndDate:yyyy-MM-dd}",
+                ];
+                for (var i = 0; i < alreadyBookedValues.Length; i++)
+                {
+                    var alreadyBookedCell = worksheet.Cell(row, alreadyBookedColumnIndex + i);
+                    alreadyBookedCell.Value = alreadyBookedValues[i];
+                    alreadyBookedCell.Style.Fill.BackgroundColor = XLColor.RedPigment;
+                }
 
                 isExcelValid = false;
 

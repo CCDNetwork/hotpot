@@ -77,7 +77,8 @@ export const BatchCreateModal: React.FC<BatchCreateModalProps> = ({
         | 'isShelterActive'
         | 'isLivelihoodsActive'
         | 'isFoodAssistanceActive'
-        | 'isProtectionActive';
+        | 'isProtectionActive'
+        | 'isIncentivePaymentsActive';
       id: string;
       label: string;
     }[] = [
@@ -91,6 +92,11 @@ export const BatchCreateModal: React.FC<BatchCreateModalProps> = ({
         label: 'Food Assistance',
       },
       { key: 'isProtectionActive', id: 'protection', label: 'Protection' },
+      {
+        key: 'isIncentivePaymentsActive',
+        id: 'incentivePayments',
+        label: 'Incentive Payments',
+      },
     ];
 
     return (
@@ -109,6 +115,7 @@ export const BatchCreateModal: React.FC<BatchCreateModalProps> = ({
       currentFormSelectedOrganization.isWashActive,
       currentFormSelectedOrganization.isFoodAssistanceActive,
       currentFormSelectedOrganization.isProtectionActive,
+      currentFormSelectedOrganization.isIncentivePaymentsActive,
       currentFormSelectedOrganization.isLivelihoodsActive,
     ].some(Boolean);
   }, [currentFormSelectedOrganization]);

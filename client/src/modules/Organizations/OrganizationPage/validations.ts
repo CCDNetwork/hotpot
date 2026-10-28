@@ -9,6 +9,7 @@ export const OrganizationEditFormSchema = z.object({
   isFoodAssistanceActive: z.boolean(),
   isLivelihoodsActive: z.boolean(),
   isProtectionActive: z.boolean(),
+  isIncentivePaymentsActive: z.boolean(),
   activities: z.array(
     z.object({
       id: z.string().optional(),

@@ -798,8 +798,6 @@ public class DashboardService
             {
                 SubmissionId = g.Key,
                 UploadedAt = g.Min(l => l.CreatedAt),
-                UploadedByFirstName = g.Min(l => l.UploadedBy.FirstName),
-                UploadedByLastName = g.Min(l => l.UploadedBy.LastName),
                 OrganizationName = g.Min(l => l.Organization.Name),
                 TotalRows = g.Count(),
                 SuccessRows = g.Count(l => l.IsSuccess),
@@ -822,9 +820,6 @@ public class DashboardService
             {
                 SubmissionId = r.SubmissionId,
                 UploadedAt = r.UploadedAt,
-                UploadedByName = string.Join(" ",
-                    new[] { r.UploadedByFirstName, r.UploadedByLastName }
-                        .Where(s => !string.IsNullOrWhiteSpace(s))),
                 OrganizationName = r.OrganizationName,
                 TotalRows = r.TotalRows,
                 SuccessRows = r.SuccessRows,
@@ -1087,7 +1082,6 @@ public class DashboardService
             TotalCount = totalCount,
             Data = rows.Select(r => new ConsecutiveMonthsRunResponse
             {
-                HouseholdIdMasked = MaskId(r.Subject),
                 RunStartMonth = r.RunStart,
                 RunEndMonth = r.RunEnd,
                 MonthsCount = r.RunLength,
@@ -1099,21 +1093,10 @@ public class DashboardService
     private class BucketRow { public int Bucket { get; set; } public int Episodes { get; set; } }
     private class RunRow
     {
-        public string Subject { get; set; }
         public int RunLength { get; set; }
         public DateTime RunStart { get; set; }
         public DateTime RunEnd { get; set; }
         public string[] OrgNames { get; set; }
-    }
-
-    // Reintroduced (previously removed with the households drill): last 6
-    // chars of the deterministic ciphertext — enough to distinguish rows in
-    // a UI list without leaking the plaintext ID.
-    private static string MaskId(string cipher)
-    {
-        if (string.IsNullOrWhiteSpace(cipher))
-            return "—";
-        return cipher.Length <= 6 ? cipher : "…" + cipher.Substring(cipher.Length - 6);
     }
 
     // -------------------------------------------------------------- internals
@@ -1343,7 +1326,6 @@ public class DashboardService
         );
 
         response.Id = conflictEvent.Id;
-        response.SubjectLabel = BuildSubjectLabel(conflictEvent.SubjectKey);
         response.RequestingOrganizationId = conflictEvent.RequestingOrganizationId;
         response.RequestingOrganizationName = conflictEvent.RequestingOrganization?.Name;
         response.BlockingOrganizationId = conflictEvent.BlockingOrganizationId;
@@ -1367,14 +1349,5 @@ public class DashboardService
             : "across_agencies";
 
         return response;
-    }
-
-    private static string BuildSubjectLabel(string subjectKey)
-    {
-        if (string.IsNullOrEmpty(subjectKey))
-            return "HH …?";
-
-        var suffix = subjectKey.Length <= 6 ? subjectKey : subjectKey[^6..];
-        return $"HH …{suffix.ToLowerInvariant()}";
     }
 }

@@ -6,5 +6,6 @@ export const defaultOrganizationEditFormFormValues = {
   isFoodAssistanceActive: false,
   isLivelihoodsActive: false,
   isProtectionActive: false,
+  isIncentivePaymentsActive: false,
   activities: undefined,
 };

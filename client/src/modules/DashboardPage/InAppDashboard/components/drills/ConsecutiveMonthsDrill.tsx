@@ -36,10 +36,9 @@ export const ConsecutiveMonthsDrill = ({
         household; the household may appear more than once if it has separate
         runs.
       </p>
-      <table className="w-full min-w-[32rem] text-sm">
+      <table className="w-full min-w-[26rem] text-sm">
         <thead>
           <tr className="border-b text-left text-xs text-muted-foreground">
-            <th className="py-2 font-medium">Household</th>
             <th className="py-2 font-medium">Run window</th>
             <th className="py-2 text-right font-medium">Months</th>
             <th className="py-2 font-medium">Organizations</th>
@@ -51,12 +50,9 @@ export const ConsecutiveMonthsDrill = ({
             const e = parseIsoMonth(row.runEndMonth);
             return (
               <tr
-                key={`${row.householdIdMasked}-${row.runStartMonth}-${idx}`}
+                key={`${row.runStartMonth}-${idx}`}
                 className="border-b last:border-0"
               >
-                <td className="py-1.5 font-mono text-xs">
-                  {row.householdIdMasked}
-                </td>
                 <td className="py-1.5 whitespace-nowrap text-muted-foreground">
                   {formatMonth(s.year, s.month)} – {formatMonth(e.year, e.month)}
                 </td>

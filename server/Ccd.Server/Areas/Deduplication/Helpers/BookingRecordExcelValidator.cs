@@ -91,7 +91,7 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         if (!ExcelFieldValidator.IsRoundsValid(record.Rounds, out var roundsValue))
         {
-            errors.Add("Invalid Rounds — expected 1 or 3");
+            errors.Add("Invalid Rounds — expected 1, 2 or 3");
             MarkInvalid("rounds");
         }
 

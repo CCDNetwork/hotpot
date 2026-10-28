@@ -100,7 +100,7 @@ public static class ExcelFieldValidator
         if (string.IsNullOrWhiteSpace(rounds))
             return false;
 
-        return int.TryParse(rounds, out value) && (value == 1 || value == 3);
+        return int.TryParse(rounds, out value) && value is >= 1 and <= 3;
     }
 
     // ----------------------------

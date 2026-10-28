@@ -7,6 +7,7 @@ export enum OrgActivity {
   FoodAssistance = 'foodAssistance',
   Livelihoods = 'livelihoods',
   Protection = 'protection',
+  IncentivePayments = 'incentivePayments',
 }
 
 export enum OrgActivityFilterMap {
@@ -16,6 +17,7 @@ export enum OrgActivityFilterMap {
   'Food Assistance' = 'foodAssistance',
   Livelihoods = 'livelihoods',
   Protection = 'protection',
+  'Incentive Payments' = 'incentivePayments',
 }
 
 export const initialOrganization: Organization = {
@@ -24,6 +26,7 @@ export const initialOrganization: Organization = {
   isLivelihoodsActive: false,
   isMpcaActive: false,
   isProtectionActive: false,
+  isIncentivePaymentsActive: false,
   isShelterActive: false,
   isWashActive: false,
   name: '',

@@ -10,6 +10,7 @@ export const AddOrganizationModalFormSchema = z.object({
   isFoodAssistanceActive: z.boolean(),
   isLivelihoodsActive: z.boolean(),
   isProtectionActive: z.boolean(),
+  isIncentivePaymentsActive: z.boolean(),
   activities: z
     .array(
       z.object({

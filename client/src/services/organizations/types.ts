@@ -13,6 +13,7 @@ export interface Organization {
   isFoodAssistanceActive: boolean;
   isLivelihoodsActive: boolean;
   isProtectionActive: boolean;
+  isIncentivePaymentsActive: boolean;
   activities: OrganizationActivity[];
   createdAt: Date | null;
   updatedAt: Date | null;

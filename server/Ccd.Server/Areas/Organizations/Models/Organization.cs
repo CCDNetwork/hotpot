@@ -16,6 +16,7 @@ public class Organization
     public bool IsFoodAssistanceActive { get; set; }
     public bool IsLivelihoodsActive { get; set; }
     public bool IsProtectionActive { get; set; }
+    public bool IsIncentivePaymentsActive { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

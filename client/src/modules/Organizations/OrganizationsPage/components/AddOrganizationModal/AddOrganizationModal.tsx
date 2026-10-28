@@ -59,6 +59,7 @@ export const AddOrganizationModal = () => {
     isFoodAssistanceChecked,
     isLivelihoodsChecked,
     isProtectionChecked,
+    isIncentivePaymentsChecked,
   ] = watch([
     'isMpcaActive',
     'isWashActive',
@@ -66,6 +67,7 @@ export const AddOrganizationModal = () => {
     'isFoodAssistanceActive',
     'isLivelihoodsActive',
     'isProtectionActive',
+    'isIncentivePaymentsActive',
   ]);
 
   const { fields, append, remove } = useFieldArray({
@@ -308,6 +310,34 @@ export const AddOrganizationModal = () => {
                         addActivity={append}
                         removeActivity={remove}
                         serviceType={OrgActivity.Protection}
+                      />
+                    )}
+                  </div>
+                  <Separator />
+                  <div>
+                    <FormField
+                      control={control}
+                      name="isIncentivePaymentsActive"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm space-y-0">
+                          <div className="space-y-0.5">
+                            <FormLabel>Incentive Payments</FormLabel>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    {isIncentivePaymentsChecked && (
+                      <ServiceActivities
+                        activities={fields}
+                        addActivity={append}
+                        removeActivity={remove}
+                        serviceType={OrgActivity.IncentivePayments}
                       />
                     )}
                   </div>

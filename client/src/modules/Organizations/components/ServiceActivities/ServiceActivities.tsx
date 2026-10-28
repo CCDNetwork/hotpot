@@ -20,6 +20,7 @@ interface Props {
       isFoodAssistanceActive: boolean;
       isLivelihoodsActive: boolean;
       isProtectionActive: boolean;
+      isIncentivePaymentsActive: boolean;
       activities: {
         title: string;
         serviceType: string;
@@ -39,6 +40,7 @@ interface Props {
       isFoodAssistanceActive: boolean;
       isLivelihoodsActive: boolean;
       isProtectionActive: boolean;
+      isIncentivePaymentsActive: boolean;
       activities: {
         title: string;
         serviceType: string;

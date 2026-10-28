@@ -141,7 +141,6 @@ export type ConflictEventCategory = 'within_same_agency' | 'across_agencies';
 
 export type ConflictEventRow = {
   id: string;
-  subjectLabel: string;
   requestingOrganizationId: string;
   requestingOrganizationName: string;
   blockingOrganizationId: string;
@@ -238,7 +237,6 @@ export type OrganizationDrillRow = {
 export type PrebookingRunRow = {
   submissionId: string;
   uploadedAt: string;
-  uploadedByName: string;
   organizationName: string;
   totalRows: number;
   successRows: number;
@@ -283,7 +281,6 @@ export type ConsecutiveMonthsHistogram = {
 };
 
 export type ConsecutiveMonthsRun = {
-  householdIdMasked: string;
   runStartMonth: string;
   runEndMonth: string;
   monthsCount: number;

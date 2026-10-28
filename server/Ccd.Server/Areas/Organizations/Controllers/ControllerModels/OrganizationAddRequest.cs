@@ -12,5 +12,6 @@ public class OrganizationAddRequest
     [Required] public bool IsFoodAssistanceActive { get; set; }
     [Required] public bool IsLivelihoodsActive { get; set; }
     [Required] public bool IsProtectionActive { get; set; }
+    [Required] public bool IsIncentivePaymentsActive { get; set; }
     public List<ActivityAddRequest> Activities { get; set; }
 }

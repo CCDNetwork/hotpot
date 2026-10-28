@@ -18,6 +18,7 @@ export const resToOrganization = (res: any): Organization => {
     isFoodAssistanceActive: res.isFoodAssistanceActive ?? false,
     isLivelihoodsActive: res.isLivelihoodsActive ?? false,
     isProtectionActive: res.isProtectionActive ?? false,
+    isIncentivePaymentsActive: res.isIncentivePaymentsActive ?? false,
     activities: res.activities ? res.activities.map(resToActivities) : [],
     createdAt: res.createdAt ? new Date(res.createdAt) : null,
     updatedAt: res.updatedAt ? new Date(res.updatedAt) : null,
@@ -33,6 +34,7 @@ export const organizationToReq = (data: any): Omit<Organization, 'id'> => {
     isFoodAssistanceActive: data.isFoodAssistanceActive ?? false,
     isLivelihoodsActive: data.isLivelihoodsActive ?? false,
     isProtectionActive: data.isProtectionActive ?? false,
+    isIncentivePaymentsActive: data.isIncentivePaymentsActive ?? false,
     activities: data.activities ? data.activities.map(resToActivities) : [],
   };
 
@@ -48,6 +50,7 @@ export const organizationMeToReq = (data: any): Omit<Organization, 'id'> => {
     isFoodAssistanceActive: data.isFoodAssistanceActive ?? false,
     isLivelihoodsActive: data.isLivelihoodsActive ?? false,
     isProtectionActive: data.isProtectionActive ?? false,
+    isIncentivePaymentsActive: data.isIncentivePaymentsActive ?? false,
     activities: data.activities ? data.activities.map(resToActivities) : [],
   };
 

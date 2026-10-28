@@ -184,7 +184,8 @@ public class ApiFixture
             IsShelterActive = true,
             IsFoodAssistanceActive = true,
             IsLivelihoodsActive = true,
-            IsProtectionActive = true
+            IsProtectionActive = true,
+            IsIncentivePaymentsActive = true
         };
 
         context.Organizations.Add(organization);

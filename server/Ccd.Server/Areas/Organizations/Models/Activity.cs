@@ -22,9 +22,10 @@ public class ServiceType
     public const string FoodAssistance = "foodAssistance";
     public const string Livelihoods = "livelihoods";
     public const string Protection = "protection";
+    public const string IncentivePayments = "incentivePayments";
 
     public static bool IsValid(string serviceType)
     {
-        return serviceType == Mpca || serviceType == Wash || serviceType == Shelter || serviceType == FoodAssistance || serviceType == Livelihoods || serviceType == Protection;
+        return serviceType == Mpca || serviceType == Wash || serviceType == Shelter || serviceType == FoodAssistance || serviceType == Livelihoods || serviceType == Protection || serviceType == IncentivePayments;
     }
 }
