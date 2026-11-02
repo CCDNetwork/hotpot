@@ -197,6 +197,19 @@ export const UserPage = () => {
                           </FormDescription>
                         </div>
                       </div>
+                      <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <Checkbox
+                          className="shadow-none"
+                          checked={currentFormPermissions?.includes('booking')}
+                          onCheckedChange={() => onPermissionClick('booking')}
+                        />
+                        <div className="space-y-1 leading-3">
+                          <FormLabel>Booking</FormLabel>
+                          <FormDescription>
+                            User can use booking.
+                          </FormDescription>
+                        </div>
+                      </div>
                     </div>
                   )}
                   <FormField
