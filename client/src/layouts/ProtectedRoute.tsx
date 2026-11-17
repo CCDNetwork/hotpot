@@ -7,6 +7,7 @@ import { useAuth } from '@/providers/GlobalProvider';
 export const ProtectedRoute = ({
   children = <Outlet />,
   userPermissions,
+  roles,
 }: Props) => {
   const { user } = useAuth();
   console.log('ProtectedRoute userPermissions:', userPermissions);
@@ -21,10 +22,15 @@ export const ProtectedRoute = ({
     return <Navigate to="/permission-denied" replace />;
   }
 
+  if (roles && !roles.includes(user.role as UserRole)) {
+    return <Navigate to="/permission-denied" replace />;
+  }
+
   return children;
 };
 
 type Props = {
   children?: ReactNode;
   userPermissions?: UserPermission[];
+  roles?: UserRole[];
 };

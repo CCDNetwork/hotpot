@@ -24,15 +24,15 @@ public class PermissionLevelAttribute : ActionFilterAttribute
 
     private bool isAuthorizedRole(string userRole, string requiredRole)
     {
-        if (requiredRole == UserRole.Admin && userRole == UserRole.Admin)
-            return true;
-        if (
-            requiredRole == UserRole.User
-            && (userRole == UserRole.Admin || userRole == UserRole.User)
-        )
-            return true;
-
-        return false;
+        return requiredRole switch
+        {
+            UserRole.User => UserRole.IsValidRole(userRole),
+            UserRole.Admin
+                => userRole is UserRole.Admin or UserRole.UserAdmin or UserRole.OrganizationAdmin,
+            UserRole.UserAdmin => userRole is UserRole.Admin or UserRole.UserAdmin,
+            UserRole.OrganizationAdmin => userRole is UserRole.Admin or UserRole.OrganizationAdmin,
+            _ => false
+        };
     }
 
     private CcdContext getCcdContext(ActionExecutingContext context)

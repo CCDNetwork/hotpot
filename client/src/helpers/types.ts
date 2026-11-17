@@ -8,6 +8,7 @@ export interface NavigationItem {
     to: string;
     icon: LucideIcon;
     userPermissions?: string[];
+    roles?: string[];
   }[];
 }
 

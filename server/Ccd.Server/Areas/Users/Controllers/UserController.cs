@@ -36,7 +36,7 @@ public class UserController : ControllerBaseExtended
     }
 
     [HttpGet]
-    [PermissionLevel(UserRole.Admin)]
+    [PermissionLevel(UserRole.UserAdmin)]
     public async Task<ActionResult<PagedApiResponse<UserResponse>>> GetAll(
         [FromQuery] RequestParameters requestParams,
         [FromQuery] Guid? organizationId
@@ -47,7 +47,7 @@ public class UserController : ControllerBaseExtended
     }
 
     [HttpGet("{id}")]
-    [PermissionLevel(UserRole.Admin)]
+    [PermissionLevel(UserRole.UserAdmin)]
     public async Task<ActionResult<UserResponse>> GetUser(Guid id)
     {
         var user =
@@ -57,7 +57,7 @@ public class UserController : ControllerBaseExtended
     }
 
     [HttpPost]
-    [PermissionLevel(UserRole.Admin)]
+    [PermissionLevel(UserRole.UserAdmin)]
     public async Task<ActionResult<UserResponse>> Add([FromBody] UserAddRequest model)
     {
         if (model.OrganizationId == Guid.Empty)
@@ -69,6 +69,8 @@ public class UserController : ControllerBaseExtended
 
         if (!UserRole.IsValidRole(model.Role))
             throw new BadRequestException("Invalid role");
+        if (!UserRole.CanAssignRole(CurrentRole, null, model.Role))
+            throw new ForbiddenException("Only admins can assign the admin role.");
 
         var user = _mapper.Map<User>(model);
 
@@ -83,7 +85,7 @@ public class UserController : ControllerBaseExtended
     }
 
     [HttpPut("{id}")]
-    [PermissionLevel(UserRole.Admin)]
+    [PermissionLevel(UserRole.UserAdmin)]
     public async Task<ActionResult<UserResponse>> Update(
         [FromBody] UserUpdateRequest model,
         Guid id
@@ -95,6 +97,8 @@ public class UserController : ControllerBaseExtended
         ) ?? throw new NotFoundException();
         if (!UserRole.IsValidRole(model.Role))
             throw new BadRequestException("Invalid role");
+        if (!UserRole.CanAssignRole(CurrentRole, userOrganization.Role, model.Role))
+            throw new ForbiddenException("Only admins can assign the admin role.");
 
         userOrganization.Permissions = model.Permissions;
         userOrganization.Role = model.Role;
@@ -115,7 +119,7 @@ public class UserController : ControllerBaseExtended
     }
 
     [HttpPatch("{id}")]
-    [PermissionLevel(UserRole.Admin)]
+    [PermissionLevel(UserRole.UserAdmin)]
     public async Task<ActionResult<UserResponse>> Patch(Guid id, [FromBody] UserPatchRequest model)
     {
         var user = await _userService.GetUserById(id) ?? throw new NotFoundException();
@@ -126,6 +130,8 @@ public class UserController : ControllerBaseExtended
             var userTenant = await _context.UserOrganizations.FirstOrDefaultAsync(
                 e => e.UserId == user.Id
             ) ?? throw new NotFoundException();
+            if (!UserRole.CanAssignRole(CurrentRole, userTenant.Role, model.Role))
+                throw new ForbiddenException("Only admins can assign the admin role.");
             userTenant.Role = model.Role;
             _context.UserOrganizations.Update(userTenant);
         }
@@ -154,7 +160,7 @@ public class UserController : ControllerBaseExtended
     }
 
     [HttpDelete("{id}")]
-    [PermissionLevel(UserRole.Admin)]
+    [PermissionLevel(UserRole.UserAdmin)]
     public async Task<ActionResult<UserResponse>> Delete(Guid id)
     {
         var user = await _userService.GetUserById(id) ?? throw new NotFoundException();

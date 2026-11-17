@@ -20,7 +20,19 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { APP_ROUTE } from '@/helpers/constants';
 import { Checkbox } from '@/components/ui/checkbox';
-import { UserRole } from '@/services/users';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  UserRole,
+  getAssignableRoles,
+  getUserRoleLabel,
+} from '@/services/users';
+import { useAuth } from '@/providers/GlobalProvider';
 
 import { dataToUserEditFormData } from './form-transformation';
 import { defaultUserEditFormFormValues } from './const';
@@ -34,6 +46,7 @@ export const UserPage = () => {
     isCreate: false,
   });
   const { patchUser } = useUserMutation();
+  const { user: currentUser } = useAuth();
 
   const form = useForm<UserEditFormData>({
     defaultValues: defaultUserEditFormFormValues,
@@ -43,6 +56,7 @@ export const UserPage = () => {
   const { control, formState, handleSubmit, reset, watch, setValue } = form;
 
   const currentFormPermissions = watch('permissions');
+  const currentFormRole = watch('role');
 
   useEffect(() => {
     if (userData) {
@@ -54,10 +68,17 @@ export const UserPage = () => {
   const onSubmit = handleSubmit(async (values) => {
     try {
       await patchUser.mutateAsync({ data: values, userId });
+
+      // the role lives in the JWT, so a self role change applies only after a new login
+      const isOwnRoleChanged =
+        userId === currentUser.id && values.role !== userData?.role;
+
       toast({
         title: 'Success!',
         variant: 'default',
-        description: 'User successfully updated.',
+        description: isOwnRoleChanged
+          ? 'Your role has been changed. Please log in again for it to take effect.'
+          : 'User successfully updated.',
       });
     } catch (error: any) {
       toast({
@@ -162,7 +183,30 @@ export const UserPage = () => {
                       </FormItem>
                     )}
                   />
-                  {userData?.role === UserRole.User && (
+                  <FormItem>
+                    <FormLabel requiredField>Role</FormLabel>
+                    <Select
+                      onValueChange={(val: string) =>
+                        setValue('role', val as UserRole)
+                      }
+                      value={currentFormRole}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAssignableRoles(
+                          currentUser.role,
+                          userData?.role
+                        ).map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {getUserRoleLabel(role)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                  {currentFormRole === UserRole.User && (
                     <div className="flex flex-col gap-3">
                       <div className="text-sm font-medium leading-none">
                         Permissions

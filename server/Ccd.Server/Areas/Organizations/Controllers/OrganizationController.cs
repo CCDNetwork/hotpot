@@ -32,7 +32,7 @@ public class OrganizationController : ControllerBaseExtended
     }
 
     [HttpGet("{id}")]
-    [PermissionLevel(UserRole.Admin)]
+    [PermissionLevel(UserRole.OrganizationAdmin)]
     public async Task<ActionResult<OrganizationResponse>> GetOrganization(Guid id)
     {
         var organization = await _organizationService.GetOrganizationApi(id);
@@ -45,7 +45,7 @@ public class OrganizationController : ControllerBaseExtended
 
 
     [HttpPost]
-    [PermissionLevel(UserRole.Admin)]
+    [PermissionLevel(UserRole.OrganizationAdmin)]
     public async Task<ActionResult<OrganizationResponse>> Add([FromBody] OrganizationAddRequest model)
     {
         var organization = _mapper.Map<Organization>(model);
@@ -73,7 +73,7 @@ public class OrganizationController : ControllerBaseExtended
     }
 
     [HttpPut("{id}")]
-    [PermissionLevel(UserRole.Admin)]
+    [PermissionLevel(UserRole.OrganizationAdmin)]
     public async Task<ActionResult<OrganizationResponse>> Update(
         [FromBody] OrganizationUpdateRequest model,
         Guid id
@@ -131,7 +131,7 @@ public class OrganizationController : ControllerBaseExtended
     }
 
     [HttpDelete("{id}")]
-    [PermissionLevel(UserRole.Admin)]
+    [PermissionLevel(UserRole.OrganizationAdmin)]
     public async Task<ActionResult<OrganizationResponse>> Delete(Guid id)
     {
         var organization = await _organizationService.GetOrganizationById(id) ?? throw new NotFoundException();
@@ -151,7 +151,7 @@ public class OrganizationController : ControllerBaseExtended
     }
 
     [HttpPut("me")]
-    [PermissionLevel(UserRole.User)]
+    [PermissionLevel(UserRole.OrganizationAdmin)]
     public async Task<ActionResult<OrganizationResponse>> UpdateCurrentOrganization(OrganizationUpdateRequest model)
     {
         return await Update(model, this.OrganizationId);

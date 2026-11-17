@@ -1,3 +1,5 @@
+import { UserRole } from '@/services/users/consts';
+
 export const defaultUserEditFormFormValues = {
   firstName: '',
   lastName: '',
@@ -5,5 +7,6 @@ export const defaultUserEditFormFormValues = {
   password: '',
   confirmPassword: '',
   // organization: null,
+  role: UserRole.User,
   permissions: [],
 };

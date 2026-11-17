@@ -45,7 +45,12 @@ export const PrivateLayout = ({ children = <Outlet /> }: Props) => {
       );
     }
 
-    return navigationItems;
+    return navigationItems.map((item) => ({
+      ...item,
+      routes: item.routes.filter(
+        (route) => !route.roles || route.roles.includes(user.role)
+      ),
+    }));
   }, [user.permissions, user.role, homepageData]);
 
   if (user.isSuperAdmin && isLoggedIn) {

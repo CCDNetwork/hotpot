@@ -16,6 +16,8 @@ export const RoleBasedIndexRoute = () => {
 
   switch (role) {
     case UserRole.Admin:
+    case UserRole.UserAdmin:
+    case UserRole.OrganizationAdmin:
       return <Navigate to={APP_ROUTE.Dashboard} replace />;
 
     case UserRole.User:

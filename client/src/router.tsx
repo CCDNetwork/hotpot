@@ -13,7 +13,11 @@ import { GlobalProvider } from './providers/GlobalProvider';
 import { PrivateLayout } from './layouts/PrivateLayout';
 import { RoleBasedIndexRoute } from './layouts/RoleBasedIndexRoute';
 import { ProtectedRoute } from './layouts/ProtectedRoute';
-import { UserPermission } from './services/users';
+import {
+  ORGANIZATION_MANAGER_ROLES,
+  USER_MANAGER_ROLES,
+  UserPermission,
+} from './services/users';
 import { APP_ROUTE } from './helpers/constants';
 import {
   DeduplicationPage,
@@ -185,7 +189,7 @@ export const router = createBrowserRouter(
 
         {/* ADMIN */}
 
-        <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedRoute roles={ORGANIZATION_MANAGER_ROLES} />}>
           <Route
             path={APP_ROUTE.Organizations}
             element={<OrganizationsProvider />}
@@ -198,7 +202,7 @@ export const router = createBrowserRouter(
           </Route>
         </Route>
 
-        <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedRoute roles={USER_MANAGER_ROLES} />}>
           <Route path={APP_ROUTE.Users} element={<UsersProvider />}>
             <Route index element={<UsersPage />} />
             <Route

@@ -1,7 +1,7 @@
 import { formatDate } from 'date-fns';
 import { EditIcon, Trash2Icon } from 'lucide-react';
 import { TableColumn } from '@/components/DataTable/types';
-import { User } from '@/services/users';
+import { User, getUserRoleLabel } from '@/services/users';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/Tooltip';
 
@@ -45,7 +45,7 @@ export const columns = (
     cell: ({ row }) => {
       const { role } = row.original;
 
-      return <div className="capitalize">{role}</div>;
+      return <div>{getUserRoleLabel(role)}</div>;
     },
   },
   {

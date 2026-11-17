@@ -1,4 +1,8 @@
-import { UserPermission } from '@/services/users';
+import {
+  ORGANIZATION_MANAGER_ROLES,
+  USER_MANAGER_ROLES,
+  UserPermission,
+} from '@/services/users';
 import {
   BookCopyIcon,
   BookOpenTextIcon,
@@ -11,6 +15,7 @@ import {
   UsersIcon,
 } from 'lucide-react';
 import { HomepageData } from '@/providers/DirectusProvider/types.ts';
+import { NavigationItem } from '@/helpers/types';
 
 export enum PAGE_TYPE {
   Create = 'new',
@@ -44,7 +49,9 @@ export enum APP_ROUTE {
   SetNewPassword = '/reset-password',
 }
 
-export const getNavigationItems = (cmsData?: HomepageData) => [
+export const getNavigationItems = (
+  cmsData?: HomepageData
+): NavigationItem[] => [
   {
     categoryName: 'Booking',
     userPermissions: [UserPermission.Booking],
@@ -118,8 +125,14 @@ export const getNavigationItems = (cmsData?: HomepageData) => [
         name: cmsData?.organisations ?? '',
         to: APP_ROUTE.Organizations,
         icon: Building2Icon,
+        roles: ORGANIZATION_MANAGER_ROLES,
       },
-      { name: cmsData?.users ?? '', to: APP_ROUTE.Users, icon: UsersIcon },
+      {
+        name: cmsData?.users ?? '',
+        to: APP_ROUTE.Users,
+        icon: UsersIcon,
+        roles: USER_MANAGER_ROLES,
+      },
       {
         name: cmsData?.rules ?? '',
         to: APP_ROUTE.Rules,

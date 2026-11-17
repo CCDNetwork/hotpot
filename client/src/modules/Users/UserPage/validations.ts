@@ -2,6 +2,7 @@ import * as z from 'zod';
 
 import { requiredSafeHtmlString, safeHtmlString } from '@/helpers/common';
 import { passwordPolicySchema } from '@/helpers/passwordPolicy';
+import { UserRole } from '@/services/users/consts';
 
 const OrganizationSchema = z.object(
   {
@@ -22,6 +23,7 @@ export const UserEditFormSchema = z
     password: z.union([z.literal(''), passwordPolicySchema]).optional(),
     confirmPassword: safeHtmlString.optional(),
     organization: OrganizationSchema,
+    role: z.nativeEnum(UserRole),
     permissions: z.array(z.string()).default([]),
   })
   .refine(

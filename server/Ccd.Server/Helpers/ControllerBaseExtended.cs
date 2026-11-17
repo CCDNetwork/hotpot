@@ -26,6 +26,8 @@ public class ControllerBaseExtended : ControllerBase
 
     protected bool IsAdmin => getIsAdmin();
 
+    protected string CurrentRole => getCurrentRole();
+
     private Guid? getOrganizationIdOrNull()
     {
         return (Guid?)HttpContext.Items["OrganizationId"];
@@ -44,6 +46,11 @@ public class ControllerBaseExtended : ControllerBase
 
     private bool getIsAdmin()
     {
+        return getCurrentRole() == UserRole.Admin;
+    }
+
+    private string getCurrentRole()
+    {
         var organizationId = getOrganizationIdOrNull();
 
         if (organizationId == null)
@@ -51,9 +58,7 @@ public class ControllerBaseExtended : ControllerBase
 
         var organizationRoles = (string)HttpContext.Items["OrganizationRoles"];
 
-        var role = PermissionLevelAttribute.getOrganizationRole(organizationRoles, organizationId);
-
-        return role == UserRole.Admin;
+        return PermissionLevelAttribute.getOrganizationRole(organizationRoles, organizationId);
     }
 
     private CcdContext getCcdServerContext()

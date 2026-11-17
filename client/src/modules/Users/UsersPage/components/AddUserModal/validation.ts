@@ -1,6 +1,7 @@
 import * as z from 'zod';
 
 import { requiredSafeHtmlString } from '@/helpers/common';
+import { UserRole } from '@/services/users';
 
 const OrganizationSchema = z.object(
   {
@@ -18,7 +19,7 @@ export const AddUserModalFormSchema = z.object({
   lastName: requiredSafeHtmlString('Last name is required'),
   email: z.string().email(),
   organization: OrganizationSchema,
-  role: z.string(),
+  role: z.nativeEnum(UserRole),
   permissions: z.array(z.string()).default([]),
 });
 

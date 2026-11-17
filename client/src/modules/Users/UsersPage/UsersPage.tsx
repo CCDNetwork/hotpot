@@ -6,7 +6,7 @@ import { PageContainer } from '@/components/PageContainer';
 import { usePagination } from '@/helpers/pagination';
 import { useUserMutation, useUsers } from '@/services/users/api';
 import { AddUserModal } from '@/modules/Users/UsersPage/components';
-import { User } from '@/services/users';
+import { User, UserRole } from '@/services/users';
 import { APP_ROUTE } from '@/helpers/constants';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 import { toast } from '@/components/ui/use-toast';
@@ -28,7 +28,7 @@ export const UsersPage = () => {
 
   const { data: users, isLoading: queryLoading } = useUsers({
     ...pagination,
-    filters: { 'role[in]': 'admin|user' },
+    filters: { 'role[in]': Object.values(UserRole).join('|') },
   });
 
   const { deleteUser } = useUserMutation();

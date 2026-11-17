@@ -32,19 +32,26 @@ import { useUserMutation } from '@/services/users/api';
 import { toast } from '@/components/ui/use-toast';
 import { AsyncSelect } from '@/components/AsyncSelect';
 import { useOrganizationsInfinite } from '@/services/organizations/api';
+import { useAuth } from '@/providers/GlobalProvider';
+import {
+  UserRole,
+  getAssignableRoles,
+  getUserRoleLabel,
+} from '@/services/users';
 
 import { AddUserModalForm, AddUserModalFormSchema } from './validation';
 import { Checkbox } from '@/components/ui/checkbox';
 
 export const AddUserModal = () => {
   const [open, setOpen] = useState<boolean>(false);
+  const { user } = useAuth();
   const form = useForm<AddUserModalForm>({
     defaultValues: {
       firstName: '',
       lastName: '',
       email: '',
       organization: undefined,
-      role: 'user',
+      role: UserRole.User,
       permissions: ['deduplication', 'referral', 'booking'],
     },
     mode: 'onSubmit',
@@ -212,16 +219,18 @@ export const AddUserModal = () => {
               <FormItem>
                 <FormLabel requiredField>Role</FormLabel>
                 <Select
-                  onValueChange={(val: string) => setValue('role', val)}
+                  onValueChange={(val: string) =>
+                    setValue('role', val as UserRole)
+                  }
                   value={currentFormRole}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {['User', 'Admin'].map((el) => (
-                      <SelectItem key={el} value={el.toLowerCase()}>
-                        {el}
+                    {getAssignableRoles(user.role).map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {getUserRoleLabel(role)}
                       </SelectItem>
                     ))}
                   </SelectContent>
