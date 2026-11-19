@@ -14,10 +14,12 @@ import { PrivateLayout } from './layouts/PrivateLayout';
 import { RoleBasedIndexRoute } from './layouts/RoleBasedIndexRoute';
 import { ProtectedRoute } from './layouts/ProtectedRoute';
 import {
+  CHANGE_LOG_ROLES,
   ORGANIZATION_MANAGER_ROLES,
   USER_MANAGER_ROLES,
   UserPermission,
 } from './services/users';
+import { ChangeLogPage } from './modules/ChangeLog/ChangeLogPage';
 import { APP_ROUTE } from './helpers/constants';
 import {
   DeduplicationPage,
@@ -230,6 +232,10 @@ export const router = createBrowserRouter(
               element={<DynamicRoute component={<SingleHandbookPage />} />}
             />
           </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute roles={CHANGE_LOG_ROLES} />}>
+          <Route path={APP_ROUTE.ChangeLog} element={<ChangeLogPage />} />
         </Route>
 
         {/* OTHER */}

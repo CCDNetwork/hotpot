@@ -64,6 +64,8 @@ const fetchOrganizationMe = async (): Promise<Organization> => {
 
 const postOrganization = async (data: {
   name: string;
+  /** Optional allowed email domains, saved together with the organisation. */
+  emailDomains?: string[];
 }): Promise<Organization> => {
   const resp = await api.post('/organizations', organizationToReq(data));
   return resToOrganization(resp.data);

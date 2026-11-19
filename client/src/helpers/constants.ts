@@ -1,4 +1,5 @@
 import {
+  CHANGE_LOG_ROLES,
   ORGANIZATION_MANAGER_ROLES,
   USER_MANAGER_ROLES,
   UserPermission,
@@ -13,6 +14,7 @@ import {
   LogOutIcon,
   TextSelectIcon,
   UsersIcon,
+  HistoryIcon,
 } from 'lucide-react';
 import { HomepageData } from '@/providers/DirectusProvider/types.ts';
 import { NavigationItem } from '@/helpers/types';
@@ -40,6 +42,7 @@ export enum APP_ROUTE {
   Templates = '/templates',
   Dashboard = '/dashboard',
   Settings = '/settings',
+  ChangeLog = '/change-log',
   // PUBLIC
   AuthCallback = '/auth/callback',
   SignIn = '/sign-in',
@@ -143,6 +146,12 @@ export const getNavigationItems = (
         name: cmsData?.handbook_entries ?? '',
         to: APP_ROUTE.Handbook,
         icon: BookOpenTextIcon,
+      },
+      {
+        name: 'Change log',
+        to: APP_ROUTE.ChangeLog,
+        icon: HistoryIcon,
+        roles: CHANGE_LOG_ROLES,
       },
     ],
   },

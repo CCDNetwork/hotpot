@@ -53,7 +53,7 @@ namespace Ccd.Server.Migrations
                     b.HasKey("Id")
                         .HasName("pk_administrative_region");
 
-                    b.ToTable("administrative_region", (string)null);
+                    b.ToTable("administrative_region");
                 });
 
             modelBuilder.Entity("Ccd.Server.Beneficiaries.Beneficary", b =>
@@ -203,7 +203,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("UploadedById")
                         .HasDatabaseName("ix_beneficary_uploaded_by_id");
 
-                    b.ToTable("beneficary", (string)null);
+                    b.ToTable("beneficary");
                 });
 
             modelBuilder.Entity("Ccd.Server.BeneficiaryAttributes.BaBag", b =>
@@ -244,7 +244,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("BeneficiaryAttributeId")
                         .HasDatabaseName("ix_ba_bag_beneficiary_attribute_id");
 
-                    b.ToTable("ba_bag", (string)null);
+                    b.ToTable("ba_bag");
                 });
 
             modelBuilder.Entity("Ccd.Server.BeneficiaryAttributes.BeneficiaryAttribute", b =>
@@ -275,7 +275,7 @@ namespace Ccd.Server.Migrations
                     b.HasKey("Id")
                         .HasName("pk_beneficiary_attribute");
 
-                    b.ToTable("beneficiary_attribute", (string)null);
+                    b.ToTable("beneficiary_attribute");
 
                     b.HasData(
                         new
@@ -486,7 +486,7 @@ namespace Ccd.Server.Migrations
                     b.HasKey("Id")
                         .HasName("pk_beneficiary_attribute_group");
 
-                    b.ToTable("beneficiary_attribute_group", (string)null);
+                    b.ToTable("beneficiary_attribute_group");
                 });
 
             modelBuilder.Entity("Ccd.Server.Dashboards.ExchangeRate", b =>
@@ -531,7 +531,7 @@ namespace Ccd.Server.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_exchange_rate_currency_year_month_source");
 
-                    b.ToTable("exchange_rate", (string)null);
+                    b.ToTable("exchange_rate");
                 });
 
             modelBuilder.Entity("Ccd.Server.Deduplication.BeneficaryDeduplication", b =>
@@ -685,7 +685,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("UploadedById")
                         .HasDatabaseName("ix_beneficary_deduplication_uploaded_by_id");
 
-                    b.ToTable("beneficary_deduplication", (string)null);
+                    b.ToTable("beneficary_deduplication");
                 });
 
             modelBuilder.Entity("Ccd.Server.Deduplication.Booking", b =>
@@ -763,7 +763,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("UploadedById")
                         .HasDatabaseName("ix_booking_uploaded_by_id");
 
-                    b.ToTable("booking", (string)null);
+                    b.ToTable("booking");
                 });
 
             modelBuilder.Entity("Ccd.Server.Deduplication.BookingConflictEvent", b =>
@@ -853,7 +853,7 @@ namespace Ccd.Server.Migrations
                         .IsUnique()
                         .HasDatabaseName("idx_conflict_event_fingerprint");
 
-                    b.ToTable("booking_conflict_event", (string)null);
+                    b.ToTable("booking_conflict_event");
                 });
 
             modelBuilder.Entity("Ccd.Server.Deduplication.BookingLog", b =>
@@ -949,7 +949,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("IsPrebooking", "CreatedAt")
                         .HasDatabaseName("ix_booking_log_is_prebooking_created_at");
 
-                    b.ToTable("booking_log", (string)null);
+                    b.ToTable("booking_log");
                 });
 
             modelBuilder.Entity("Ccd.Server.Deduplication.List", b =>
@@ -996,7 +996,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("UserCreatedId")
                         .HasDatabaseName("ix_list_user_created_id");
 
-                    b.ToTable("list", (string)null);
+                    b.ToTable("list");
                 });
 
             modelBuilder.Entity("Ccd.Server.Handbooks.Handbook", b =>
@@ -1030,7 +1030,7 @@ namespace Ccd.Server.Migrations
                     b.HasKey("Id")
                         .HasName("pk_handbook");
 
-                    b.ToTable("handbook", (string)null);
+                    b.ToTable("handbook");
                 });
 
             modelBuilder.Entity("Ccd.Server.Organizations.Activity", b =>
@@ -1058,7 +1058,78 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("OrganizationId")
                         .HasDatabaseName("ix_activity_organization_id");
 
-                    b.ToTable("activity", (string)null);
+                    b.ToTable("activity");
+                });
+
+            modelBuilder.Entity("Ccd.Server.Organizations.ChangeLogEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .HasColumnType("text")
+                        .HasColumnName("action");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("current_timestamp");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .HasColumnType("text")
+                        .HasColumnName("entity_type");
+
+                    b.Property<string>("NewValue")
+                        .HasColumnType("text")
+                        .HasColumnName("new_value");
+
+                    b.Property<string>("OldValue")
+                        .HasColumnType("text")
+                        .HasColumnName("old_value");
+
+                    b.Property<Guid?>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("OrganizationName")
+                        .HasColumnType("text")
+                        .HasColumnName("organization_name");
+
+                    b.Property<string>("PerformedByEmail")
+                        .HasColumnType("text")
+                        .HasColumnName("performed_by_email");
+
+                    b.Property<Guid?>("PerformedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("performed_by_id");
+
+                    b.Property<string>("SubjectEmail")
+                        .HasColumnType("text")
+                        .HasColumnName("subject_email");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("current_timestamp");
+
+                    b.HasKey("Id")
+                        .HasName("pk_change_log_entry");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_change_log_entry_created_at");
+
+                    b.HasIndex("OrganizationId", "EntityType", "CreatedAt")
+                        .HasDatabaseName("ix_change_log_entry_organization_id_entity_type_created_at");
+
+                    b.ToTable("change_log_entry");
                 });
 
             modelBuilder.Entity("Ccd.Server.Organizations.Organization", b =>
@@ -1116,7 +1187,48 @@ namespace Ccd.Server.Migrations
                     b.HasKey("Id")
                         .HasName("pk_organization");
 
-                    b.ToTable("organization", (string)null);
+                    b.ToTable("organization");
+                });
+
+            modelBuilder.Entity("Ccd.Server.Organizations.OrganizationEmailDomain", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("current_timestamp");
+
+                    b.Property<string>("Domain")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("domain");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("current_timestamp");
+
+                    b.HasKey("Id")
+                        .HasName("pk_organization_email_domain");
+
+                    b.HasIndex("Domain")
+                        .HasDatabaseName("ix_organization_email_domain_domain");
+
+                    b.HasIndex("OrganizationId", "Domain")
+                        .IsUnique()
+                        .HasDatabaseName("ix_organization_email_domain_organization_id_domain");
+
+                    b.ToTable("organization_email_domain");
                 });
 
             modelBuilder.Entity("Ccd.Server.Referrals.Discussion", b =>
@@ -1170,7 +1282,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("UserUpdatedId")
                         .HasDatabaseName("ix_discussion_user_updated_id");
 
-                    b.ToTable("discussion", (string)null);
+                    b.ToTable("discussion");
                 });
 
             modelBuilder.Entity("Ccd.Server.Referrals.Referral", b =>
@@ -1422,7 +1534,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("UserUpdatedId")
                         .HasDatabaseName("ix_referral_user_updated_id");
 
-                    b.ToTable("referral", (string)null);
+                    b.ToTable("referral");
                 });
 
             modelBuilder.Entity("Ccd.Server.Settings.Settings", b =>
@@ -1493,7 +1605,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("UserUpdatedId")
                         .HasDatabaseName("ix_settings_user_updated_id");
 
-                    b.ToTable("settings", (string)null);
+                    b.ToTable("settings");
 
                     b.HasData(
                         new
@@ -1577,7 +1689,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("UserUpdatedId")
                         .HasDatabaseName("ix_file_user_updated_id");
 
-                    b.ToTable("file", (string)null);
+                    b.ToTable("file");
                 });
 
             modelBuilder.Entity("Ccd.Server.Templates.Template", b =>
@@ -1711,7 +1823,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("UserUpdatedId")
                         .HasDatabaseName("ix_template_user_updated_id");
 
-                    b.ToTable("template", (string)null);
+                    b.ToTable("template");
                 });
 
             modelBuilder.Entity("Ccd.Server.Users.User", b =>
@@ -1777,7 +1889,7 @@ namespace Ccd.Server.Migrations
                     b.HasKey("Id")
                         .HasName("pk_user");
 
-                    b.ToTable("user", (string)null);
+                    b.ToTable("user");
 
                     b.HasData(
                         new
@@ -1831,7 +1943,7 @@ namespace Ccd.Server.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_user_organization_user_id");
 
-                    b.ToTable("user_organization", (string)null);
+                    b.ToTable("user_organization");
                 });
 
             modelBuilder.Entity("Ccd.Server.Beneficiaries.Beneficary", b =>
@@ -2022,6 +2134,18 @@ namespace Ccd.Server.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_activity_organization_organization_id");
+
+                    b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("Ccd.Server.Organizations.OrganizationEmailDomain", b =>
+                {
+                    b.HasOne("Ccd.Server.Organizations.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_organization_email_domain_organization_organization_id");
 
                     b.Navigation("Organization");
                 });

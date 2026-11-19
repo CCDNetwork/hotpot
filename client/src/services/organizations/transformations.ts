@@ -36,6 +36,8 @@ export const organizationToReq = (data: any): Omit<Organization, 'id'> => {
     isProtectionActive: data.isProtectionActive ?? false,
     isIncentivePaymentsActive: data.isIncentivePaymentsActive ?? false,
     activities: data.activities ? data.activities.map(resToActivities) : [],
+    // Only sent on create; the update endpoint ignores it.
+    emailDomains: data.emailDomains ?? undefined,
   };
 
   return req;

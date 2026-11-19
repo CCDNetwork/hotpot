@@ -35,6 +35,8 @@ public class CcdContext : DbContext
     public DbSet<File> Files { get; set; }
     public DbSet<Organization> Organizations { get; set; }
     public DbSet<Activity> Activities { get; set; }
+    public DbSet<OrganizationEmailDomain> OrganizationEmailDomains { get; set; }
+    public DbSet<ChangeLogEntry> ChangeLogEntries { get; set; }
     public DbSet<UserOrganization> UserOrganizations { get; set; }
     public DbSet<Beneficary> Beneficaries { get; set; }
     public DbSet<BeneficaryDeduplication> BeneficaryDeduplications { get; set; }
@@ -252,6 +254,15 @@ public class CcdContext : DbContext
         modelBuilder.Entity<ExchangeRate>()
             .HasIndex(e => new { e.Currency, e.Year, e.Month, e.Source })
             .IsUnique();
+
+        // One entry per (organisation, normalised domain); the same domain may be
+        // shared by several organisations (e.g. offices of one agency).
+        modelBuilder.Entity<OrganizationEmailDomain>()
+            .HasIndex(e => new { e.OrganizationId, e.Domain })
+            .IsUnique();
+        modelBuilder.Entity<OrganizationEmailDomain>().HasIndex(e => e.Domain);
+        modelBuilder.Entity<ChangeLogEntry>().HasIndex(e => e.CreatedAt);
+        modelBuilder.Entity<ChangeLogEntry>().HasIndex(e => new { e.OrganizationId, e.EntityType, e.CreatedAt });
 
         modelBuilder.Entity<BookingLog>().HasIndex(e => new { e.IsPrebooking, e.CreatedAt });
         modelBuilder.Entity<BookingLog>().HasIndex(e => e.SubmissionId);

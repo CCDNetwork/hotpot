@@ -21,6 +21,13 @@ export const ORGANIZATION_MANAGER_ROLES = [
   UserRole.OrganizationAdmin,
 ];
 
+/** Roles that can open the admin Change log view. */
+export const CHANGE_LOG_ROLES = [
+  UserRole.Admin,
+  UserRole.UserAdmin,
+  UserRole.OrganizationAdmin,
+];
+
 export const getUserRoleLabel = (role: string) =>
   USER_ROLE_LABELS[role as UserRole] ?? role;
 

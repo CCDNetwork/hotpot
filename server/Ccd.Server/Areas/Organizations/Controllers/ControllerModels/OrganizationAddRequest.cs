@@ -14,4 +14,7 @@ public class OrganizationAddRequest
     [Required] public bool IsProtectionActive { get; set; }
     [Required] public bool IsIncentivePaymentsActive { get; set; }
     public List<ActivityAddRequest> Activities { get; set; }
+
+    /// <summary>Optional allowed email domains, created together with the organisation.</summary>
+    public List<string> EmailDomains { get; set; }
 }

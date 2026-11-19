@@ -210,6 +210,8 @@ public class Startup
         services.AddScoped<EmailManagerService>();
         services.AddScoped<SendGridService>();
         services.AddScoped<OrganizationService>();
+        services.AddScoped<OrganizationEmailDomainService>();
+        services.AddScoped<ChangeLogService>();
         services.AddScoped<UserService>();
         services.AddScoped<AuthenticationService>();
         services.AddScoped<B2cClaimMappingService>();

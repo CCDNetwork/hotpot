@@ -38,7 +38,7 @@ import {
 } from './validations';
 import { defaultOrganizationEditFormFormValues } from './const';
 
-import { ServiceActivities } from '../components';
+import { EmailDomainsSection, ServiceActivities } from '../components';
 
 export const OrganizationPage = () => {
   const { id: organizationId } = useIdFromParams();
@@ -362,6 +362,10 @@ export const OrganizationPage = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Saved immediately (with confirmation), independent of the Save
+              button above, which only saves name and services. */}
+          <EmailDomainsSection organizationId={organizationId} />
         </div>
       </Form>
     </PageContainer>

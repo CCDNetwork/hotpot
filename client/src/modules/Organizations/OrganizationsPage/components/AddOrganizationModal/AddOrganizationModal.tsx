@@ -27,7 +27,11 @@ import { toast } from '@/components/ui/use-toast';
 
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { ServiceActivities } from '@/modules/Organizations/components';
+import {
+  NewOrganizationEmailDomains,
+  PendingEmailDomain,
+  ServiceActivities,
+} from '@/modules/Organizations/components';
 
 import {
   AddOrganizationModalFormSchema,
@@ -44,6 +48,8 @@ import {
 
 export const AddOrganizationModal = () => {
   const [open, setOpen] = useState<boolean>(false);
+  const [emailDomains, setEmailDomains] = useState<PendingEmailDomain[]>([]);
+  const [domainDraft, setDomainDraft] = useState('');
   const form = useForm<AddOrganizationModalForm>({
     defaultValues: defaultNewOrganizationFormFormValues,
     mode: 'onSubmit',
@@ -78,8 +84,19 @@ export const AddOrganizationModal = () => {
   const { addOrganization } = useOrganizationMutation();
 
   const onSubmit = handleSubmit(async (values) => {
+    if (domainDraft.trim()) {
+      toast({
+        title: 'Domain not added',
+        variant: 'destructive',
+        description: `Click "Add" to include '${domainDraft.trim()}' in the allowed email domains, or clear the field.`,
+      });
+      return;
+    }
     try {
-      await addOrganization.mutateAsync(values);
+      await addOrganization.mutateAsync({
+        ...values,
+        emailDomains: emailDomains.map((d) => d.domain),
+      });
       toast({
         title: 'Success!',
         variant: 'default',
@@ -99,6 +116,8 @@ export const AddOrganizationModal = () => {
   const onOpenChange = () => {
     setOpen((old) => !old);
     reset();
+    setEmailDomains([]);
+    setDomainDraft('');
   };
 
   return (
@@ -109,7 +128,7 @@ export const AddOrganizationModal = () => {
           Add new
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add a new organisation</DialogTitle>
           <DialogDescription>
@@ -341,6 +360,13 @@ export const AddOrganizationModal = () => {
                       />
                     )}
                   </div>
+                  <Separator />
+                  <NewOrganizationEmailDomains
+                    value={emailDomains}
+                    onChange={setEmailDomains}
+                    draft={domainDraft}
+                    onDraftChange={setDomainDraft}
+                  />
                 </div>
               </CardContent>
               <DialogFooter>

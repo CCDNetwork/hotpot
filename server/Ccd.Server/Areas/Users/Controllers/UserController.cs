@@ -5,6 +5,9 @@ using Ccd.Server.Areas.Users.Controllers.ControllerModels;
 using Ccd.Server.Authentication;
 using Ccd.Server.Data;
 using Ccd.Server.Helpers;
+using Ccd.Server.Organizations;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,15 +22,21 @@ public class UserController : ControllerBaseExtended
     private readonly DateTimeProvider _dateTimeProvider;
     private readonly IMapper _mapper;
     private readonly UserService _userService;
+    private readonly OrganizationEmailDomainService _emailDomainService;
+    private readonly ChangeLogService _changeLog;
 
     public UserController(
         UserService userService,
         IMapper mapper,
         CcdContext context,
         DateTimeProvider dateTimeProvider,
-        AuthenticationService authenticationService
+        AuthenticationService authenticationService,
+        OrganizationEmailDomainService emailDomainService,
+        ChangeLogService changeLog
     )
     {
+        _emailDomainService = emailDomainService;
+        _changeLog = changeLog;
         _userService = userService;
         _mapper = mapper;
         _context = context;
@@ -72,10 +81,32 @@ public class UserController : ControllerBaseExtended
         if (!UserRole.CanAssignRole(CurrentRole, null, model.Role))
             throw new ForbiddenException("Only admins can assign the admin role.");
 
+        // Allowed email domains: if the organisation has a list, the new user's
+        // email must be on one of its domains (exact match). Organisations
+        // without a list are unrestricted. Email and organisation can't be
+        // changed after creation, so this is the only place the rule applies.
+        var allowedDomains = await _emailDomainService.GetAllowedDomains(model.OrganizationId);
+        if (!EmailDomainRules.IsEmailAllowed(model.Email, allowedDomains))
+            throw new BadRequestException(
+                $"The email domain '{EmailDomainRules.DomainOfEmail(model.Email)}' is not allowed for this organisation. "
+                + $"Allowed domains: {string.Join(", ", allowedDomains)}."
+            );
+
         var user = _mapper.Map<User>(model);
 
         user = await _userService.AddUser(user);
         await _userService.SetOrganizationRole(user.Id, model.OrganizationId, model.Role, model.Permissions);
+
+        await _changeLog.Add(
+            ChangeLogEntityType.User,
+            user.Id,
+            ChangeLogAction.Created,
+            UserId,
+            newValue: $"Role: {RoleLabel(model.Role)}; Permissions: {PermissionList(model.Permissions)}",
+            organizationId: model.OrganizationId,
+            subjectEmail: user.Email
+        );
+        await _context.SaveChangesAsync();
 
         await _authenticationService.InviteUser(user);
 
@@ -100,6 +131,8 @@ public class UserController : ControllerBaseExtended
         if (!UserRole.CanAssignRole(CurrentRole, userOrganization.Role, model.Role))
             throw new ForbiddenException("Only admins can assign the admin role.");
 
+        var before = Snapshot(user, userOrganization);
+
         userOrganization.Permissions = model.Permissions;
         userOrganization.Role = model.Role;
 
@@ -111,6 +144,7 @@ public class UserController : ControllerBaseExtended
             user.Password = AuthenticationHelper.HashPassword(user, model.Password);
         }
 
+        await LogUserChanges(user, userOrganization, before, passwordChanged: model.Password != null);
         user = await _userService.UpdateUser(user);
 
         var result = await _userService.GetUserApi(OrganizationId, user.Id);
@@ -123,6 +157,8 @@ public class UserController : ControllerBaseExtended
     public async Task<ActionResult<UserResponse>> Patch(Guid id, [FromBody] UserPatchRequest model)
     {
         var user = await _userService.GetUserById(id) ?? throw new NotFoundException();
+        var membership = await _context.UserOrganizations.FirstOrDefaultAsync(e => e.UserId == user.Id);
+        var before = Snapshot(user, membership);
         model.Patch(user);
 
         if (model.Role != null && UserRole.IsValidRole(model.Role))
@@ -153,6 +189,8 @@ public class UserController : ControllerBaseExtended
         }
         user.ActivatedAt = _dateTimeProvider.UtcNow;
 
+        if (membership != null)
+            await LogUserChanges(user, membership, before, passwordChanged: model.Password != null);
         var newUser = await _userService.UpdateUser(user);
         var response = await _userService.GetUserApi(id: newUser.Id);
 
@@ -166,6 +204,17 @@ public class UserController : ControllerBaseExtended
         var user = await _userService.GetUserById(id) ?? throw new NotFoundException();
 
         var result = await _userService.GetUserApi(OrganizationId, user.Id);
+
+        var membership = await _context.UserOrganizations.AsNoTracking().FirstOrDefaultAsync(e => e.UserId == user.Id);
+        await _changeLog.Add(
+            ChangeLogEntityType.User,
+            user.Id,
+            ChangeLogAction.Deleted,
+            UserId,
+            oldValue: membership == null ? null : $"Role: {RoleLabel(membership.Role)}",
+            organizationId: membership?.OrganizationId,
+            subjectEmail: user.Email
+        );
 
         await _userService.DeleteUser(user);
 
@@ -202,4 +251,60 @@ public class UserController : ControllerBaseExtended
 
         return await GetCurrentUser();
     }
+
+    // ---------------------------------------------------------------- change-log helpers
+
+    private record UserSnapshot(string Name, string Role, string Permissions);
+
+    private static UserSnapshot Snapshot(User user, UserOrganization membership) =>
+        new($"{user.FirstName} {user.LastName}".Trim(), membership?.Role, PermissionList(membership?.Permissions));
+
+    /// <summary>Logs a role change (own entry) and any other field changes (one entry).</summary>
+    private async Task LogUserChanges(User user, UserOrganization membership, UserSnapshot before, bool passwordChanged)
+    {
+        if (before.Role != membership.Role)
+            await _changeLog.Add(
+                ChangeLogEntityType.UserRole,
+                user.Id,
+                ChangeLogAction.RoleChanged,
+                UserId,
+                oldValue: RoleLabel(before.Role),
+                newValue: RoleLabel(membership.Role),
+                organizationId: membership.OrganizationId,
+                subjectEmail: user.Email
+            );
+
+        var changes = ChangeLogService.Describe(
+            ("Name", before.Name, $"{user.FirstName} {user.LastName}".Trim()),
+            ("Permissions", before.Permissions, PermissionList(membership.Permissions))
+        );
+        if (passwordChanged)
+            changes = changes == null ? "Password changed" : changes + "; Password changed";
+
+        if (changes != null)
+            await _changeLog.Add(
+                ChangeLogEntityType.User,
+                user.Id,
+                ChangeLogAction.Updated,
+                UserId,
+                newValue: changes,
+                organizationId: membership.OrganizationId,
+                subjectEmail: user.Email
+            );
+    }
+
+    private static string PermissionList(List<string> permissions)
+    {
+        var list = ChangeLogService.List(permissions);
+        return list == "" ? "(none)" : list;
+    }
+
+    private static string RoleLabel(string role) => role switch
+    {
+        UserRole.Admin => "Admin",
+        UserRole.UserAdmin => "User Admin",
+        UserRole.OrganizationAdmin => "Organisation Admin",
+        UserRole.User => "User",
+        _ => role,
+    };
 }
