@@ -35,7 +35,10 @@ export const PrivateLayout = ({ children = <Outlet /> }: Props) => {
 
   const { useHomepageData } = useDirectus();
 
-  const { data: homepageData, isLoading: isCmsDataLoading } = useHomepageData;
+  // isInitialLoading is false for a disabled query (Directus not configured),
+  // so the menu renders immediately with the English defaults.
+  const { data: homepageData, isInitialLoading: isCmsDataLoading } =
+    useHomepageData;
 
   const roleBasedNavigationItems = useMemo(() => {
     const navigationItems = getNavigationItems(homepageData);
@@ -69,8 +72,8 @@ export const PrivateLayout = ({ children = <Outlet /> }: Props) => {
           isCmsDataLoading={isCmsDataLoading}
           navigationItems={roleBasedNavigationItems}
           showHandbookRoute={user.role === UserRole.User}
-          handbookRouteName={homepageData?.handbook ?? ''}
-          dashboardRouteName={homepageData?.dashboard ?? ''}
+          handbookRouteName={homepageData?.handbook || 'Handbook'}
+          dashboardRouteName={homepageData?.dashboard || 'Dashboard'}
         />
       </div>
 
@@ -91,8 +94,8 @@ export const PrivateLayout = ({ children = <Outlet /> }: Props) => {
             isCmsDataLoading={isCmsDataLoading}
             navigationItems={roleBasedNavigationItems}
             showHandbookRoute={user.role === UserRole.User}
-            handbookRouteName={homepageData?.handbook ?? ''}
-            dashboardRouteName={homepageData?.dashboard ?? ''}
+            handbookRouteName={homepageData?.handbook || 'Handbook'}
+            dashboardRouteName={homepageData?.dashboard || 'Dashboard'}
             closeSidebar={() => setMobileSidebarOpen(false)}
           />
         </SheetContent>

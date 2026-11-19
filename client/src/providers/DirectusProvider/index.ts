@@ -1,1 +1,5 @@
-export { DirectusProvider, useDirectus } from './DirectusProvider.tsx';
+export {
+  DirectusProvider,
+  useDirectus,
+  isDirectusEnabled,
+} from './DirectusProvider.tsx';

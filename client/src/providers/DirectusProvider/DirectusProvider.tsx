@@ -14,6 +14,17 @@ type DirectusProviderProps = {
   children: ReactNode;
 };
 
+/**
+ * Directus is optional: it only supplies translated menu labels for
+ * deployments that configure it (e.g. multi-language deployments). When
+ * VITE_DIRECTUS_URL is not set, no request is made and the built-in English
+ * labels are used (see getNavigationItems).
+ */
+export const isDirectusEnabled = (): boolean => {
+  const url = (VITE_DIRECTUS_URL || '').trim();
+  return url.startsWith('http://') || url.startsWith('https://');
+};
+
 type DirectusProviderState = {
   useHomepageData: UseQueryResult<HomepageData>;
 };
@@ -27,11 +38,10 @@ export const DirectusProvider = ({
 }: DirectusProviderProps) => {
   const { language } = useLanguage();
 
-  const directusClient = createDirectus<DirectusSchema>(VITE_DIRECTUS_URL)
-    .with(staticToken(VITE_DIRECTUS_TOKEN))
-    .with(rest());
-
   const getHomepageData = async () => {
+    const directusClient = createDirectus<DirectusSchema>(VITE_DIRECTUS_URL)
+      .with(staticToken(VITE_DIRECTUS_TOKEN))
+      .with(rest());
     const data = await directusClient.request(
       readItems('homepage_translations', {
         filter: {
@@ -44,7 +54,13 @@ export const DirectusProvider = ({
     return data[0];
   };
 
-  const useHomepageData = useQuery([language], getHomepageData);
+  const useHomepageData = useQuery(
+    ['directus-homepage', language],
+    getHomepageData,
+    {
+      enabled: isDirectusEnabled(),
+    }
+  );
 
   const value = {
     useHomepageData,

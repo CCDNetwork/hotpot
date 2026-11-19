@@ -26,6 +26,7 @@ import { cn } from '@/helpers/utils';
 import { useAuth } from '@/providers/GlobalProvider';
 import { useTheme } from '@/providers/ThemeProvider';
 import { useLanguage } from '@/providers/LanguageProvider.tsx';
+import { isDirectusEnabled } from '@/providers/DirectusProvider';
 import { CheckIcon } from '@radix-ui/react-icons';
 
 export const MyProfileItemWithDropdown = ({
@@ -119,41 +120,46 @@ export const MyProfileItemWithDropdown = ({
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub>
-        <DropdownMenuSeparator />
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <LanguagesIcon className="size-5 mr-2" />
-            Language
-          </DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent>
-              <DropdownMenuItem onClick={() => setLanguage('en-US')}>
-                <CheckIcon
-                  className={cn('mr-2 h-4 w-4 hidden', {
-                    block: language === 'en-US',
-                  })}
-                />
-                English
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage('fr-FR')}>
-                <CheckIcon
-                  className={cn('mr-2 h-4 w-4 hidden', {
-                    block: language === 'fr-FR',
-                  })}
-                />
-                French
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage('uk-UA')}>
-                <CheckIcon
-                  className={cn('mr-2 h-4 w-4 hidden', {
-                    block: language === 'uk-UA',
-                  })}
-                />
-                Ukrainian
-              </DropdownMenuItem>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
+        {/* Language choice only matters when Directus supplies translations. */}
+        {isDirectusEnabled() && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <LanguagesIcon className="size-5 mr-2" />
+                Language
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => setLanguage('en-US')}>
+                    <CheckIcon
+                      className={cn('mr-2 h-4 w-4 hidden', {
+                        block: language === 'en-US',
+                      })}
+                    />
+                    English
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLanguage('fr-FR')}>
+                    <CheckIcon
+                      className={cn('mr-2 h-4 w-4 hidden', {
+                        block: language === 'fr-FR',
+                      })}
+                    />
+                    French
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLanguage('uk-UA')}>
+                    <CheckIcon
+                      className={cn('mr-2 h-4 w-4 hidden', {
+                        block: language === 'uk-UA',
+                      })}
+                    />
+                    Ukrainian
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="text-red-500 focus:text-red-500"

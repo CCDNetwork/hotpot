@@ -9,9 +9,11 @@
 #
 # Required Azure DevOps configuration:
 #   * Variable group `ccd-save-the-children` (or rename below) holding the
-#     client build-time variables: API_URL, DIRECTUS_URL, DIRECTUS_TOKEN,
+#     client build-time variables: API_URL,
 #     AUTH_PROVIDER, B2C_TENANT, B2C_CLIENT_ID, B2C_USER_FLOW, B2C_REDIRECT_URI.
-#     Mark DIRECTUS_TOKEN as a secret.
+#     Directus is intentionally not configured for this deployment: menu labels
+#     use the built-in English defaults. (Anything passed as VITE_* is embedded
+#     in the public JavaScript bundle, so no tokens belong here.)
 #   * Docker Registry service connection — `azureSubscription` below.
 #     Set its value to the name of the connection that points at ACR.
 #   * Agent must have Docker installed and reachable from the pipeline user.
@@ -70,9 +72,7 @@ stages:
                 yarn install --frozen-lockfile
                 @"
                 VITE_API_URL=$env:API_URL
-                VITE_DIRECTUS_URL=$env:DIRECTUS_URL
                 VITE_DASHBOARD_PROVIDER=$env:DASHBOARD_PROVIDER
-                VITE_DIRECTUS_TOKEN=$env:DIRECTUS_TOKEN
                 VITE_STORAGE_TYPE_ID=$env:STORAGE_TYPE_ID
                 VITE_AUTH_PROVIDER=$env:AUTH_PROVIDER
                 VITE_B2C_TENANT=$env:B2C_TENANT
@@ -87,8 +87,6 @@ stages:
                 Copy-Item deployment/nginx.conf ../client-build/
             env:
               API_URL: $(API_URL)
-              DIRECTUS_URL: $(DIRECTUS_URL)
-              DIRECTUS_TOKEN: $(DIRECTUS_TOKEN)
               STORAGE_TYPE_ID: $(STORAGE_TYPE_ID)
               AUTH_PROVIDER: $(AUTH_PROVIDER)
               B2C_TENANT: $(B2C_TENANT)

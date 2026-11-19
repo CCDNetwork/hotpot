@@ -52,6 +52,9 @@ export enum APP_ROUTE {
   SetNewPassword = '/reset-password',
 }
 
+// Menu labels: built-in English defaults. If a deployment configures Directus
+// (VITE_DIRECTUS_URL), its translated labels override these; if Directus is not
+// configured or unavailable, the English defaults are shown.
 export const getNavigationItems = (
   cmsData?: HomepageData
 ): NavigationItem[] => [
@@ -80,23 +83,23 @@ export const getNavigationItems = (
     ],
   },
   {
-    categoryName: cmsData?.deduplication ?? '',
+    categoryName: cmsData?.deduplication || 'Deduplication',
     userPermissions: [UserPermission.Deduplication],
     routes: [
       {
-        name: cmsData?.deduplication ?? '',
+        name: cmsData?.deduplication || 'Deduplicate Cases',
         to: APP_ROUTE.Deduplication,
         userPermissions: [UserPermission.Deduplication],
         icon: BookCopyIcon,
       },
       {
-        name: cmsData?.manage_duplicates ?? '',
+        name: cmsData?.manage_duplicates || 'Manage Duplicates',
         to: APP_ROUTE.BeneficiaryList,
         icon: BookUserIcon,
         userPermissions: [UserPermission.Deduplication],
       },
       {
-        name: cmsData?.manage_templates ?? '',
+        name: cmsData?.manage_templates || 'Manage Templates',
         to: APP_ROUTE.Templates,
         icon: FilesIcon,
         userPermissions: [UserPermission.Deduplication],
@@ -104,17 +107,17 @@ export const getNavigationItems = (
     ],
   },
   {
-    categoryName: cmsData?.referrals ?? '',
+    categoryName: cmsData?.referrals || 'Referrals',
     userPermissions: [UserPermission.Referrals],
     routes: [
       {
-        name: cmsData?.manage_received ?? '',
+        name: cmsData?.manage_received || 'Manage Received',
         to: APP_ROUTE.ReceivedReferrals,
         icon: LogInIcon,
         userPermissions: [UserPermission.Referrals],
       },
       {
-        name: cmsData?.manage_sent ?? '',
+        name: cmsData?.manage_sent || 'Manage Sent',
         to: APP_ROUTE.SentReferrals,
         icon: LogOutIcon,
         userPermissions: [UserPermission.Referrals],
@@ -122,28 +125,28 @@ export const getNavigationItems = (
     ],
   },
   {
-    categoryName: cmsData?.admin ?? '',
+    categoryName: cmsData?.admin || 'Admin',
     routes: [
       {
-        name: cmsData?.organisations ?? '',
+        name: cmsData?.organisations || 'Organisations',
         to: APP_ROUTE.Organizations,
         icon: Building2Icon,
         roles: ORGANIZATION_MANAGER_ROLES,
       },
       {
-        name: cmsData?.users ?? '',
+        name: cmsData?.users || 'Users',
         to: APP_ROUTE.Users,
         icon: UsersIcon,
         roles: USER_MANAGER_ROLES,
       },
       {
-        name: cmsData?.rules ?? '',
+        name: cmsData?.rules || 'Rules',
         to: APP_ROUTE.Rules,
 
         icon: TextSelectIcon,
       },
       {
-        name: cmsData?.handbook_entries ?? '',
+        name: cmsData?.handbook_entries || 'Handbook entries',
         to: APP_ROUTE.Handbook,
         icon: BookOpenTextIcon,
       },
