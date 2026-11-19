@@ -7,6 +7,7 @@ using Ccd.Server.Email;
 using Ccd.Server.Helpers;
 using Ccd.Server.Organizations;
 using Ccd.Server.Users;
+using Microsoft.Extensions.Logging;
 
 namespace Ccd.Server.Authentication;
 
@@ -14,12 +15,18 @@ public class AuthenticationService
 {
     private const int PasswordResetCodeExpiryMinutes = 15;
 
+    // Invitation links (set your first password) are valid for 2 hours,
+    // longer than the 15-minute password-reset link. A resend issues a new
+    // link and invalidates the previous one.
+    private const int InvitationCodeExpiryHours = 2;
+
     private readonly DateTimeProvider _dateTimeProvider;
     private readonly EmailManagerService _emailManagerService;
     private readonly IMapper _mapper;
     private readonly OrganizationService _organizationService;
     private readonly SendGridService _sendGridService;
     private readonly UserService _userService;
+    private readonly ILogger<AuthenticationService> _logger;
 
     public AuthenticationService(
         UserService userService,
@@ -27,9 +34,11 @@ public class AuthenticationService
         DateTimeProvider dateTimeProvider,
         IMapper mapper,
         OrganizationService organizationService,
-        SendGridService sendgridService
+        SendGridService sendgridService,
+        ILogger<AuthenticationService> logger
     )
     {
+        _logger = logger;
         _userService = userService;
         _emailManagerService = emailManagerService;
         _dateTimeProvider = dateTimeProvider;
@@ -130,25 +139,70 @@ public class AuthenticationService
         );
     }
 
-    public async Task InviteUser(User user)
+    /// <summary>
+    /// Prepares the new user for first sign-in and emails the invitation.
+    /// The user is kept even if the email cannot be sent (e.g. email service
+    /// down): returns false so the Admin can be told and resend later.
+    /// </summary>
+    public async Task<bool> InviteUser(User user)
     {
         if (StaticConfiguration.IsB2C)
         {
             user.ActivatedAt = _dateTimeProvider.UtcNow;
-            await _userService.UpdateUser(user);
-
-            await SendB2cInviteEmail(user);
         }
         else
         {
-            IssuePasswordResetCode(user);
-            await _userService.UpdateUser(user);
-
-            await SendPasswordResetEmail(
-                user,
-                StaticConfiguration.SendgridInvitationEmailTemplateId
-            );
+            IssueInvitationCode(user);
         }
+        await _userService.UpdateUser(user);
+
+        try
+        {
+            await SendInvitationEmail(user);
+            return true;
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e, "Invitation email to user {UserId} could not be sent; user kept for resend", user.Id);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Sends the invitation again. Password sign-in: issues a fresh
+    /// set-password link (only while the user has not set a password yet).
+    /// B2C: resends the sign-in link. Throws if the email cannot be sent.
+    /// </summary>
+    public async Task ResendInvitation(User user)
+    {
+        if (!StaticConfiguration.IsB2C)
+        {
+            if (user.ActivatedAt.HasValue)
+                throw new BadRequestException(
+                    "This user has already set a password. They can use 'Forgot your password?' on the sign-in page."
+                );
+
+            IssueInvitationCode(user);
+            await _userService.UpdateUser(user);
+        }
+
+        try
+        {
+            await SendInvitationEmail(user);
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning(e, "Resending invitation to user {UserId} failed", user.Id);
+            throw new BadRequestException("The invitation email could not be sent. Please try again later.");
+        }
+    }
+
+    private async Task SendInvitationEmail(User user)
+    {
+        if (StaticConfiguration.IsB2C)
+            await SendB2cInviteEmail(user);
+        else
+            await SendPasswordResetEmail(user, StaticConfiguration.SendgridInvitationEmailTemplateId);
     }
 
     public async Task ResetPassword(string email, string passwordResetCode, string password)
@@ -179,6 +233,12 @@ public class AuthenticationService
             user.ActivatedAt = _dateTimeProvider.UtcNow;
 
         await _userService.UpdateUser(user);
+    }
+
+    private void IssueInvitationCode(User user)
+    {
+        user.PasswordResetCode = Guid.NewGuid().ToString();
+        user.PasswordResetCodeExpiresAt = _dateTimeProvider.UtcNow.AddHours(InvitationCodeExpiryHours);
     }
 
     private void IssuePasswordResetCode(User user)

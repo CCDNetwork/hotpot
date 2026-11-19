@@ -43,6 +43,8 @@ const describe = (e: ChangeLogEntry) => {
       if (e.action === 'created')
         return `User ${e.subjectEmail} created (${e.newValue})`;
       if (e.action === 'deleted') return `User ${e.subjectEmail} deleted`;
+      if (e.action === 'invitation_resent')
+        return `Invitation resent to ${e.subjectEmail}`;
       return `User ${e.subjectEmail} edited: ${e.newValue}`;
     case 'user_role':
       return `${e.subjectEmail}: role changed from ${e.oldValue} to ${e.newValue}`;

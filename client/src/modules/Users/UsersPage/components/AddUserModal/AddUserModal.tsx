@@ -67,12 +67,22 @@ export const AddUserModal = () => {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      await addUser.mutateAsync(values);
-      toast({
-        title: 'Success!',
-        variant: 'default',
-        description: 'User successfully created.',
-      });
+      const created = await addUser.mutateAsync(values);
+      if (created.invitationEmailSent === false) {
+        // The user exists; only the email failed (e.g. email service down).
+        toast({
+          title: 'User created — invitation email not sent',
+          variant: 'default',
+          description:
+            'The user was created, but the invitation email could not be sent. Use "Resend invitation" on the Users page once email is working again.',
+        });
+      } else {
+        toast({
+          title: 'Success!',
+          variant: 'default',
+          description: 'User successfully created and invitation sent.',
+        });
+      }
       setOpen(false);
     } catch (error: any) {
       toast({

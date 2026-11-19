@@ -60,4 +60,7 @@ public static class ChangeLogAction
 
     // Roles
     public const string RoleChanged = "role_changed";
+
+    // Users
+    public const string InvitationResent = "invitation_resent";
 }

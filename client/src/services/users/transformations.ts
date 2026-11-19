@@ -17,6 +17,8 @@ export const resToUser = (res: any): User => {
       : [],
     permissions: res.permissions ?? [],
     isSuperAdmin: res.isSuperAdmin ?? false,
+    invitationPending: res.invitationPending ?? false,
+    invitationEmailSent: res.invitationEmailSent ?? null,
   };
 };
 

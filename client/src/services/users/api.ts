@@ -49,6 +49,10 @@ const postUser = async (data: any): Promise<User> => {
   return resToUser(resp.data);
 };
 
+const resendInvitation = async (userId: string): Promise<void> => {
+  await api.post(`/users/${userId}/resend-invitation`);
+};
+
 const putUser = async ({
   payload,
   userId,
@@ -193,6 +197,9 @@ export const useUserMutation = () => {
       onSuccess: () => queryClient.invalidateQueries([QueryKeys.UserMe]),
     }),
     patchUser: useMutation(patchUser, {
+      onSuccess: () => queryClient.invalidateQueries([QueryKeys.Users]),
+    }),
+    resendInvitation: useMutation(resendInvitation, {
       onSuccess: () => queryClient.invalidateQueries([QueryKeys.Users]),
     }),
   };

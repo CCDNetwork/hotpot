@@ -1,13 +1,16 @@
 import { formatDate } from 'date-fns';
-import { EditIcon, Trash2Icon } from 'lucide-react';
+import { EditIcon, MailIcon, Trash2Icon } from 'lucide-react';
 import { TableColumn } from '@/components/DataTable/types';
 import { User, getUserRoleLabel } from '@/services/users';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/Tooltip';
+import { Badge } from '@/components/ui/badge';
+import { isB2CEnabled } from '@/config/msalConfig';
 
 export const columns = (
   setUserToDelete: React.Dispatch<React.SetStateAction<User | null>>,
-  onUserTableRowClick: (userRow: User) => void
+  onUserTableRowClick: (userRow: User) => void,
+  onResendInvitation: (userRow: User) => void
 ): TableColumn<User>[] => [
   {
     accessorKey: 'firstName',
@@ -23,6 +26,17 @@ export const columns = (
     accessorKey: 'email',
     id: 'email',
     header: 'Email',
+    cell: ({ row }) => {
+      const { email, invitationPending } = row.original;
+      return (
+        <div className="flex flex-wrap items-center gap-2">
+          <span>{email}</span>
+          {invitationPending && (
+            <Badge variant="secondary">Invitation pending</Badge>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: 'organizations',
@@ -68,8 +82,28 @@ export const columns = (
     cell: ({ row }) => {
       const user = row.original;
 
+      // Password sign-in: only users who have not set a password yet.
+      // B2C: the email only carries the sign-in link, so it can always be resent.
+      const canResend =
+        !user.isSuperAdmin && (user.invitationPending || isB2CEnabled());
+
       return (
         <div className="text-right">
+          {canResend && (
+            <Tooltip tooltipContent={'Resend invitation'}>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Resend invitation"
+                onClick={(e: React.SyntheticEvent) => {
+                  e.stopPropagation();
+                  onResendInvitation(user);
+                }}
+              >
+                <MailIcon className="size-5" />
+              </Button>
+            </Tooltip>
+          )}
           <Tooltip tooltipContent={'Edit'}>
             <Button
               variant="ghost"

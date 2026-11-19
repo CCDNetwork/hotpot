@@ -21,4 +21,16 @@ public class UserResponse
 
     public bool IsSuperAdmin => Id == User.SYSTEM_USER.Id;
 
+    /// <summary>
+    /// Password sign-in only: the user was invited but has not set a password
+    /// yet. (With B2C, users are activated at invitation, so this is false.)
+    /// </summary>
+    public bool InvitationPending => !StaticConfiguration.IsB2C && ActivatedAt == null && !IsSuperAdmin;
+
+    /// <summary>
+    /// Only set in the response to creating a user: false when the user was
+    /// created but the invitation email could not be sent.
+    /// </summary>
+    public bool? InvitationEmailSent { get; set; }
+
 }

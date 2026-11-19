@@ -13,6 +13,10 @@ export interface User {
   organizations: Organization[];
   permissions: string[];
   isSuperAdmin: false;
+  /** Password sign-in: invited but has not set a password yet. */
+  invitationPending: boolean;
+  /** Only in the create-user response: false if the invitation email failed. */
+  invitationEmailSent?: boolean | null;
 }
 
 export interface UserProfileRequestPayload {

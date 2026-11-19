@@ -31,7 +31,26 @@ export const UsersPage = () => {
     filters: { 'role[in]': Object.values(UserRole).join('|') },
   });
 
-  const { deleteUser } = useUserMutation();
+  const { deleteUser, resendInvitation } = useUserMutation();
+
+  const handleResendInvitation = async (userRow: User) => {
+    try {
+      await resendInvitation.mutateAsync(userRow.id);
+      toast({
+        title: 'Invitation sent',
+        variant: 'default',
+        description: `A new invitation email was sent to ${userRow.email}.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Invitation not sent',
+        variant: 'destructive',
+        description:
+          error.response?.data?.errorMessage ||
+          'The invitation email could not be sent.',
+      });
+    }
+  };
 
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
@@ -73,7 +92,11 @@ export const UsersPage = () => {
         pageSizeClicked={onPageSizeChange}
         headerClicked={onSortChange}
         onSearchChange={onSearchChange}
-        columns={columns(setUserToDelete, onUserTableRowClick)}
+        columns={columns(
+          setUserToDelete,
+          onUserTableRowClick,
+          handleResendInvitation
+        )}
       />
       <ConfirmationDialog
         open={!!userToDelete}

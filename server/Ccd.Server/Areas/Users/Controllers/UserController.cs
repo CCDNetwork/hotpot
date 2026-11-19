@@ -108,11 +108,43 @@ public class UserController : ControllerBaseExtended
         );
         await _context.SaveChangesAsync();
 
-        await _authenticationService.InviteUser(user);
+        // The user is kept even if the email fails (e.g. email service down);
+        // the Admin is told and can use "Resend invitation".
+        var invitationSent = await _authenticationService.InviteUser(user);
 
         var result = await _userService.GetUserApi(model.OrganizationId, user.Id);
+        result.InvitationEmailSent = invitationSent;
 
         return Created("", result);
+    }
+
+    /// <summary>
+    /// Sends the invitation email again (e.g. after an email outage or an
+    /// expired link). Password sign-in: only while the user has not set a
+    /// password yet; each resend issues a new link.
+    /// </summary>
+    [HttpPost("{id}/resend-invitation")]
+    [PermissionLevel(UserRole.UserAdmin)]
+    public async Task<ActionResult> ResendInvitation(Guid id)
+    {
+        var user = await _userService.GetUserById(id) ?? throw new NotFoundException();
+        if (user.Id == Ccd.Server.Users.User.SYSTEM_USER.Id)
+            throw new BadRequestException("Invitations cannot be sent to the system account.");
+
+        await _authenticationService.ResendInvitation(user);
+
+        var membership = await _context.UserOrganizations.AsNoTracking().FirstOrDefaultAsync(e => e.UserId == user.Id);
+        await _changeLog.Add(
+            ChangeLogEntityType.User,
+            user.Id,
+            ChangeLogAction.InvitationResent,
+            UserId,
+            organizationId: membership?.OrganizationId,
+            subjectEmail: user.Email
+        );
+        await _context.SaveChangesAsync();
+
+        return Ok();
     }
 
     [HttpPut("{id}")]

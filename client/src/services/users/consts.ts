@@ -62,4 +62,5 @@ export const initialUser: User = {
   organizations: [],
   permissions: [],
   isSuperAdmin: false,
+  invitationPending: false,
 };
