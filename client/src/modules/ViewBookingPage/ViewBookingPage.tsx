@@ -237,11 +237,17 @@ export const ViewBookingPage = () => {
                 { label: 'Released', value: 'released' },
               ]}
             />
+            {/* "Active between": every booking that overlaps the selected
+                period — its last covered day is on/after "from" and it
+                starts on/before "to". The API returns the inclusive End
+                Date, and [gt] is ">=" while [lt] is "<" (so "to" is sent
+                as the following day). */}
             <DateRangePickerFilter
               setCurrentFilters={setFilters}
-              filterNameFrom="startDate[gt]"
-              filterNameTo="endDate[lt]"
-              placeholder="Filter by start and end date"
+              filterNameFrom="endDate[gt]"
+              filterNameTo="startDate[lt]"
+              dateOnly
+              placeholder="Active between"
             />
             <DateRangePickerFilter
               setCurrentFilters={setFilters}

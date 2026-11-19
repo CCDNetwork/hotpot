@@ -38,8 +38,23 @@ public class BookingService
     }
 
     private readonly string _selectSql =
+    // Dates are returned as plain dates. end_date is stored and returned as the
+    // INCLUSIVE end (last covered day, see BookingDates), so the generic
+    // filter/sort in PagedApiResponse and the activity conditions below all use
+    // the same value.
     @$"SELECT DISTINCT ON (b.id)
-                 b.*
+                 b.id,
+                 b.household_id,
+                 b.spouse_id,
+                 b.currency,
+                 b.amount,
+                 b.rounds,
+                 b.modality,
+                 (b.start_date AT TIME ZONE 'UTC')::date AS start_date,
+                 (b.end_date AT TIME ZONE 'UTC')::date AS end_date,
+                 b.organization_id,
+                 b.created_at,
+                 b.updated_at
             FROM
                  booking as b
             WHERE
@@ -47,11 +62,11 @@ public class BookingService
                 AND (
                     @activities::text[] IS NULL AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL
                     OR @activities::text[] IS NOT NULL AND (
-                        -- End Date is exclusive (first day NOT covered): a booking with end_date = today
-                        -- has already stopped covering as of yesterday, so it belongs to 'previous', not 'current'.
-                        ('previous' = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.end_date <= CURRENT_DATE)
+                        -- End Date is inclusive (last covered day): a booking with end_date = today
+                        -- still covers today, so it is 'current'; it becomes 'previous' tomorrow.
+                        ('previous' = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.end_date < CURRENT_DATE)
                         OR
-                        ('current'  = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.start_date <= CURRENT_DATE AND b.end_date > CURRENT_DATE)
+                        ('current'  = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.start_date <= CURRENT_DATE AND b.end_date >= CURRENT_DATE)
                         OR
                         ('upcoming' = ANY(@activities::text[]) AND b.start_date IS NOT NULL AND b.end_date IS NOT NULL AND b.start_date > CURRENT_DATE)
                         OR
@@ -433,16 +448,15 @@ public class BookingService
             Booking dbRecord = null;
 
             // Check HoH ID (encrypt for comparison against encrypted DB values).
-            // End Date is exclusive (first day NOT covered), so a booking whose
-            // end date equals the incoming start date is back-to-back — no
-            // overlap, no conflict. Strict `>` correctly separates adjacent
-            // bookings (e.g. Org A ends Feb 1 / Org B starts Feb 1).
+            // End Date is inclusive (last covered day), so a booking overlaps
+            // when it ends on or after the incoming start date. Adjacent
+            // bookings (Org A ends Jan 31 / Org B starts Feb 1) don't conflict.
             if (!string.IsNullOrWhiteSpace(hohId))
             {
                 var encryptedHohId = IdEncryptor.Encrypt(hohId);
                 dbRecord = existingBookings.FirstOrDefault(b =>
                     (b.HouseholdId == encryptedHohId || b.SpouseId == encryptedHohId) &&
-                    b.EndDate > startDate
+                    b.EndDate >= startDate
                 );
 
                 if (dbRecord != null)
@@ -455,7 +469,7 @@ public class BookingService
                 var encryptedSpouseId = IdEncryptor.Encrypt(spouseId);
                 dbRecord = existingBookings.FirstOrDefault(b =>
                     (b.HouseholdId == encryptedSpouseId || b.SpouseId == encryptedSpouseId) &&
-                    b.EndDate > startDate
+                    b.EndDate >= startDate
                 );
 
                 if (dbRecord != null)
@@ -579,6 +593,7 @@ public class BookingService
             }
 
             var startDate = ParseExcelDateUtc(worksheet.Cell(row, startDateIndex).GetString());
+            // End Date is the last covered day, stored as uploaded. See BookingDates.
             var endDate = ParseExcelDateUtc(worksheet.Cell(row, endDateIndex).GetString());
             var amount = decimal.Parse(worksheet.Cell(row, amountIndex).GetString().Replace(",", ""));
             var rounds = int.Parse(worksheet.Cell(row, roundsIndex).GetString());

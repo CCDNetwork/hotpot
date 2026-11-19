@@ -141,10 +141,11 @@ public static class ExcelFieldValidator
     }
 
     // ----------------------------
-    // DATE RANGE: START <= END
+    // DATE RANGE: End Date is the LAST covered day (inclusive) and must equal
+    // Start Date + rounds calendar months - 1 day.
     // ----------------------------
-    public static bool IsDateRangeValid(DateTime start, DateTime end, int rounds)
+    public static bool IsDateRangeValid(DateTime start, DateTime inclusiveEnd, int rounds)
     {
-        return end >= start && end == start.AddMonths(rounds);
+        return inclusiveEnd >= start && inclusiveEnd == BookingDates.ExpectedInclusiveEnd(start, rounds);
     }
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { XIcon } from 'lucide-react';
 import { CalendarIcon } from '@radix-ui/react-icons';
-import { format } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
@@ -21,10 +21,18 @@ export const DateRangePickerFilter = ({
   setCurrentFilters,
   filterNameFrom = 'createdAt[gt]',
   filterNameTo = 'createdAt[lt]',
+  dateOnly = false,
 }: React.HTMLAttributes<HTMLDivElement> & {
   placeholder?: string;
   filterNameFrom?: string;
   filterNameTo?: string;
+  /**
+   * Send calendar dates (yyyy-MM-dd) instead of timestamps, for columns that
+   * hold plain dates. "From" is the selected day; "to" is the day AFTER the
+   * selected day, so a strict "<" filter includes the whole selected day.
+   * Avoids the time-zone shift that toISOString() introduces.
+   */
+  dateOnly?: boolean;
   setCurrentFilters: React.Dispatch<
     React.SetStateAction<Record<string, string>>
   >;
@@ -39,14 +47,18 @@ export const DateRangePickerFilter = ({
     if (date.from) {
       setCurrentFilters((old) => ({
         ...old,
-        [filterNameFrom]: date.from!.toISOString(),
+        [filterNameFrom]: dateOnly
+          ? format(date.from!, 'yyyy-MM-dd')
+          : date.from!.toISOString(),
       }));
     }
 
     if (date.to) {
       setCurrentFilters((old) => ({
         ...old,
-        [filterNameTo]: date.to!.toISOString(),
+        [filterNameTo]: dateOnly
+          ? format(addDays(date.to!, 1), 'yyyy-MM-dd')
+          : date.to!.toISOString(),
       }));
     }
   };

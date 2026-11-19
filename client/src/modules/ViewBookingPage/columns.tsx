@@ -61,9 +61,7 @@ export const getColumns = (
 
       return (
         <div className="flex flex-col">
-          <span>
-            {startDate ? formatDate(startDate, 'dd/MM/yyyy HH:mm') : '-'}
-          </span>
+          <span>{startDate ? formatDate(startDate, 'dd/MM/yyyy') : '-'}</span>
         </div>
       );
     },
@@ -82,7 +80,7 @@ export const getColumns = (
 
       return (
         <div className="flex flex-col">
-          <span>{endDate ? formatDate(endDate, 'dd/MM/yyyy HH:mm') : '-'}</span>
+          <span>{endDate ? formatDate(endDate, 'dd/MM/yyyy') : '-'}</span>
         </div>
       );
     },
@@ -97,11 +95,7 @@ export const getColumns = (
       if (isReleased) return null;
 
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onRelease(id)}
-        >
+        <Button variant="outline" size="sm" onClick={() => onRelease(id)}>
           Release
         </Button>
       );

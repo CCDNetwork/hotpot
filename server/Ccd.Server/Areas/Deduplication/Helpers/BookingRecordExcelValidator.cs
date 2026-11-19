@@ -82,7 +82,7 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         if (!ExcelFieldValidator.IsDateValid(record.EndDate, out var end))
         {
-            errors.Add("Invalid End Date — expected an 8-digit YYYYMMDD value (e.g., 20260301)");
+            errors.Add("Invalid End Date — expected an 8-digit YYYYMMDD value (e.g., 20260228)");
             MarkInvalid("enddate");
         }
 
@@ -97,21 +97,18 @@ public static class BookingRecordExcelValidator
 
         // ----------------------------
         // RANGE CHECK (only if fields parsed)
-        // The check is exact equality: End Date must equal Start Date + rounds
-        // calendar months (day-of-month preserved). A range too short OR too
-        // long fails the same way — surface the specific expected end date so
-        // the user can see whether to shorten, extend, or adjust rounds.
+        // The check is exact equality: End Date is the LAST covered day and
+        // must equal Start Date + rounds calendar months - 1 day. A range too
+        // short OR too long fails the same way — surface the specific expected
+        // end date so the user can see whether to shorten, extend, or adjust
+        // rounds. (Stored as uploaded; see BookingDates.)
         // ----------------------------
         if (errors.Count == 0 && !ExcelFieldValidator.IsDateRangeValid(start, end, roundsValue))
         {
-            // End Date is exclusive: the first calendar day NOT covered by the
-            // booking. So a rounds=1 booking starting on the 1st of a month
-            // has End Date = the 1st of the next month (last covered day is
-            // the last day of the start month). Message makes that explicit.
-            var expectedEnd = start.AddMonths(roundsValue);
+            var expectedEnd = BookingDates.ExpectedInclusiveEnd(start, roundsValue);
             errors.Add(
-                $"End Date must be Start Date + {roundsValue} calendar month(s) — "
-                + $"expected {expectedEnd:yyyyMMdd} (the first day NOT covered) "
+                $"End Date must be the last day covered: Start Date + {roundsValue} calendar month(s) - 1 day — "
+                + $"expected {expectedEnd:yyyyMMdd} "
                 + $"for Start Date {start:yyyyMMdd} with Rounds {roundsValue} "
                 + $"(got {end:yyyyMMdd})"
             );

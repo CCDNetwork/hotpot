@@ -338,7 +338,11 @@ public class Startup
         if (ccdContext.Database.GetPendingMigrations().Any())
         {
             Console.WriteLine("Applying DB migrations");
+            // Data migrations (e.g. ConvertBookingEndDateToInclusive) touch every
+            // booking row; the 30 s default would abort them on a large table.
+            ccdContext.Database.SetCommandTimeout(TimeSpan.FromMinutes(15));
             ccdContext.Database.Migrate();
+            ccdContext.Database.SetCommandTimeout((int?)null);
         }
     }
 }
