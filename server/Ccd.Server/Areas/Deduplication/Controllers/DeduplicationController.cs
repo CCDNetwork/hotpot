@@ -26,22 +26,16 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpGet("listings")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult<DeduplicationListResponse>> GetAllListings([FromQuery] RequestParameters requestParameters)
     {
         var listings = await _deduplicationService.GetAllListings(this.OrganizationId, requestParameters);
         return Ok(listings);
     }
 
-    [HttpDelete]
-    [PermissionLevel(UserRole.Admin)]
-    public async Task<ActionResult> DeleteListings()
-    {
-        await _deduplicationService.DeleteListings();
-        return NoContent();
-    }
-
     [HttpPost("dataset")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult<DatasetDeduplicationResponse>> DatasetDeduplicate([FromForm] DatasetDeduplicationRequest model)
     {
         if (model.TemplateId == Guid.Empty) throw new BadRequestException("Template ID is required.");
@@ -52,6 +46,7 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpPost("same-organization")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult> SameOrganizationDeduplication([FromBody] SameOrganizationDeduplicationRequest model)
     {
         if (model.TemplateId == Guid.Empty) throw new BadRequestException("Template ID is required.");
@@ -62,6 +57,7 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpPost("system-organizations")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult> SystemOrganizationsDeduplication([FromBody] SystemOrganizationsDeduplicationRequest model)
     {
         var result = await _deduplicationService.SystemOrganizationsDeduplication(this.OrganizationId, this.UserId, model);
@@ -70,6 +66,7 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpPost("finish")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult> FinishDeduplication([FromBody] SystemOrganizationsDeduplicationRequest model)
     {
         var result = await _deduplicationService.FinishDeduplication(this.OrganizationId, this.UserId, model);
@@ -78,6 +75,7 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpPost("booking/step-1")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Booking)]
     public async Task<ActionResult> BookingDeduplicateStep1([FromForm] BookingDeduplicationRequestStep1 model)
     {
         var (isValid, savedFileUrl, savedFileId) = await _bookingService.BookingDeduplicationStep1(this.OrganizationId, this.UserId, model);
@@ -86,6 +84,7 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpPost("booking/step-2")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Booking)]
     public async Task<ActionResult> BookingDeduplicateStep2([FromBody] BookingDeduplicationRequestStep2 model)
     {
         var (isValid, savedFileUrl, savedFileId) = await _bookingService.BookingDeduplicationStep2(this.OrganizationId, this.UserId, model, model.IsPrebooking);
@@ -94,6 +93,7 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpPost("wizard-finish")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Booking)]
     public async Task<ActionResult> WizardFinish([FromBody] WizardFinishRequest model)
     {
         await _bookingService.WizardFinish(this.UserId, model.FileId);
@@ -102,6 +102,7 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpGet("bookings/export")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Booking)]
     public async Task<ActionResult> ExportBookings(
         [FromQuery] RequestParameters requestParameters,
         string activity
@@ -126,6 +127,7 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpGet("bookings")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Booking)]
     public async Task<ActionResult<PagedApiResponse<BookingResponse>>> GetAllBookingListings([FromQuery] RequestParameters requestParameters, string activity)
     {
         var bookings = await _bookingService.GetAllBookingsApi(this.OrganizationId, requestParameters, activity);
@@ -134,6 +136,7 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpPost("booking/{id}/release")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Booking)]
     public async Task<ActionResult> ReleaseBooking(Guid id)
     {
         await _bookingService.ReleaseBooking(id, this.OrganizationId);
@@ -142,6 +145,7 @@ public class DeduplicationController : ControllerBaseExtended
 
     [HttpPost("booking/batch-release")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Booking)]
     public async Task<ActionResult<BatchReleaseBookingResponse>> BatchReleaseBookings(
         [FromForm] BatchReleaseBookingRequest model
     )

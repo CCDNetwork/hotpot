@@ -34,6 +34,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpGet]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult<PagedApiResponse<ReferralResponse>>> GetAll(
         [FromQuery] RequestParameters requestParams,
         [FromQuery] bool received = false
@@ -49,6 +50,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpGet("{id}")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult<ReferralResponse>> GetReferral(Guid id)
     {
         var referral = await _referralService.GetReferralApi(OrganizationId, id);
@@ -70,6 +72,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpPost]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult<ReferralResponse>> Add([FromBody] ReferralAddRequest model)
     {
         if (!model.IsDraft)
@@ -107,6 +110,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpPatch("{id}")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult<ReferralResponse>> Update(
         Guid id,
         [FromBody] ReferralPatchRequest model
@@ -146,6 +150,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpDelete("{id}")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult<ReferralResponse>> Delete(Guid id)
     {
         var referral =
@@ -161,6 +166,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpPatch("{id}/withdraw")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult<ReferralResponse>> RefferalWithdraw(
         Guid id,
         [FromBody] DiscussionAddRequest model
@@ -202,6 +208,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpPatch("{id}/reject")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult<ReferralResponse>> RefferalReject(
         Guid id,
         [FromBody] DiscussionAddRequest model
@@ -239,6 +246,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpGet("{id}/discussions")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult<List<DiscussionResponse>>> GetDiscussions(Guid id)
     {
         var result = await _referralService.GetDiscussionsApi(id);
@@ -247,6 +255,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpPost("{id}/discussions")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult<DiscussionResponse>> AddDiscussion(
         Guid id,
         [FromBody] DiscussionAddRequest model
@@ -260,6 +269,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpGet("focal-point/users")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult<PagedApiResponse<FocalPointUsersResponse>>> GetFocalPointUsers(
         [FromQuery] RequestParameters requestParams,
         [FromQuery] string permission
@@ -281,6 +291,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpPost("batch-create")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult<BatchCreateResponse>> BatchCreate(
         [FromForm] BatchCreateRequest model
     )
@@ -291,6 +302,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpGet("export")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult> ExportReferrals(
         [FromQuery] RequestParameters requestParameters,
         [FromQuery] bool received = false
@@ -315,6 +327,7 @@ public class ReferralController : ControllerBaseExtended
 
     [HttpGet("template")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Referral)]
     public async Task<ActionResult> DownloadTemplate()
     {
         var resourceStream = typeof(ReferralService).Assembly.GetManifestResourceStream(

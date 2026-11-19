@@ -16,6 +16,14 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
 
 export const USER_MANAGER_ROLES = [UserRole.Admin, UserRole.UserAdmin];
 
+/**
+ * Admins and User Admins see every module (Booking, Deduplication, Referrals);
+ * everyone else, incl. Organisation Admins, only the modules they are ticked
+ * for. The server enforces the same rule.
+ */
+export const bypassesModulePermissions = (role: string) =>
+  role === UserRole.Admin || role === UserRole.UserAdmin;
+
 export const ORGANIZATION_MANAGER_ROLES = [
   UserRole.Admin,
   UserRole.OrganizationAdmin,

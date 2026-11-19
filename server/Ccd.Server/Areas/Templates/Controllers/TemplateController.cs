@@ -22,6 +22,7 @@ public class TemplateController : ControllerBaseExtended
 
     [HttpGet]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult<PagedApiResponse<TemplateResponse>>> GetAll(
         [FromQuery] RequestParameters requestParams
     )
@@ -32,6 +33,7 @@ public class TemplateController : ControllerBaseExtended
 
     [HttpGet("{id}")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult<TemplateResponse>> GetTemplate(Guid id)
     {
         var template = await _templateService.GetTemplateApi(OrganizationId, id);
@@ -45,6 +47,7 @@ public class TemplateController : ControllerBaseExtended
 
     [HttpPost]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult<TemplateResponse>> Add([FromBody] TemplateAddRequest model)
     {
         var newTemplate = await _templateService.AddTemplate(OrganizationId, model);
@@ -55,6 +58,7 @@ public class TemplateController : ControllerBaseExtended
 
     [HttpPatch("{id}")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult<TemplateResponse>> Update(
         [FromBody] TemplatePatchRequest model,
         Guid id
@@ -75,6 +79,7 @@ public class TemplateController : ControllerBaseExtended
 
     [HttpDelete("{id}")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult<TemplateResponse>> Delete(Guid id)
     {
         var template = await _templateService.GetTemplateById(OrganizationId, id) ??

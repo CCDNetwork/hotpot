@@ -1,7 +1,11 @@
 import { ReactNode } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 
-import { UserPermission, UserRole } from '@/services/users';
+import {
+  bypassesModulePermissions,
+  UserPermission,
+  UserRole,
+} from '@/services/users';
 import { useAuth } from '@/providers/GlobalProvider';
 
 export const ProtectedRoute = ({
@@ -13,8 +17,11 @@ export const ProtectedRoute = ({
   console.log('ProtectedRoute userPermissions:', userPermissions);
   console.log('ProtectedRoute user.permissions:', user.permissions);
 
+  // Module routes: everyone except Admins and User Admins needs one of the
+  // permissions (matches the server). Plain users also can't open admin routes.
   if (
-    user.role === UserRole.User &&
+    (user.role === UserRole.User ||
+      (userPermissions && !bypassesModulePermissions(user.role))) &&
     !user.permissions.some((p) =>
       userPermissions?.includes(p as UserPermission)
     )

@@ -17,6 +17,9 @@ namespace Ccd.Server.Helpers;
 /// </summary>
 public class PermissionLevelMiddleware
 {
+    /// <summary>HttpContext item: organisationId → module permissions (from the database).</summary>
+    public const string OrganizationPermissionsKey = "OrganizationPermissions";
+
     private readonly RequestDelegate _next;
 
     public PermissionLevelMiddleware(RequestDelegate next)
@@ -64,15 +67,46 @@ public class PermissionLevelMiddleware
 
         if (isUserAuthenticated)
         {
-            var key = "UserId";
-
             var userIdClaim = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var userIdGuid))
             {
-                context.Items[key] = userIdGuid;
-            }
+                if (userIdGuid == Users.User.SYSTEM_USER.Id)
+                {
+                    // Password-login superadmin: not role-based, keep the token claim.
+                    context.Items["UserId"] = userIdGuid;
+                    context.Items["OrganizationRoles"] = role;
+                }
+                else
+                {
+                    // Roles and module permissions are read from the database on
+                    // EVERY request, not from the sign-in token (valid up to 60 min),
+                    // so role changes and deletions apply on the next request.
+                    // A user who no longer exists gets no UserId → 401.
+                    var userExists = await ccdContext.Users
+                        .AsNoTracking()
+                        .AnyAsync(u => u.Id == userIdGuid && !u.IsDeleted);
 
-            context.Items["OrganizationRoles"] = role;
+                    if (userExists)
+                    {
+                        var memberships = await ccdContext.UserOrganizations
+                            .AsNoTracking()
+                            .Where(uo => uo.UserId == userIdGuid)
+                            .Select(uo => new { uo.OrganizationId, uo.Role, uo.Permissions })
+                            .ToListAsync();
+
+                        context.Items["UserId"] = userIdGuid;
+                        // Same JSON shape as the old token claim: {"orgId":"role"}.
+                        context.Items["OrganizationRoles"] = Json.Serialize(
+                            memberships
+                                .GroupBy(m => m.OrganizationId)
+                                .ToDictionary(g => g.Key.ToString(), g => g.First().Role)
+                        );
+                        context.Items[OrganizationPermissionsKey] = memberships
+                            .GroupBy(m => m.OrganizationId)
+                            .ToDictionary(g => g.Key, g => g.First().Permissions ?? new List<string>());
+                    }
+                }
+            }
         }
 
         // Call the next delegate/middleware in the pipeline

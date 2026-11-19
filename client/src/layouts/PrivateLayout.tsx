@@ -4,7 +4,7 @@ import { HamburgerMenuIcon } from '@radix-ui/react-icons';
 
 import { useAuth } from '@/providers/GlobalProvider';
 import { APP_ROUTE, getNavigationItems } from '@/helpers/constants';
-import { UserRole } from '@/services/users';
+import { bypassesModulePermissions, UserRole } from '@/services/users';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useDirectus } from '@/providers/DirectusProvider';
 import { toast } from '@/components/ui/use-toast';
@@ -48,12 +48,21 @@ export const PrivateLayout = ({ children = <Outlet /> }: Props) => {
       );
     }
 
-    return navigationItems.map((item) => ({
-      ...item,
-      routes: item.routes.filter(
-        (route) => !route.roles || route.roles.includes(user.role)
-      ),
-    }));
+    // Admins and User Admins see every module; Organisation Admins only the
+    // modules they are ticked for (admin items are filtered by role below).
+    const hasModule = (permissions?: string[]) =>
+      bypassesModulePermissions(user.role) ||
+      !permissions ||
+      permissions.some((p) => user.permissions.includes(p));
+
+    return navigationItems
+      .filter((item) => hasModule(item.userPermissions))
+      .map((item) => ({
+        ...item,
+        routes: item.routes.filter(
+          (route) => !route.roles || route.roles.includes(user.role)
+        ),
+      }));
   }, [user.permissions, user.role, homepageData]);
 
   if (user.isSuperAdmin && isLoggedIn) {

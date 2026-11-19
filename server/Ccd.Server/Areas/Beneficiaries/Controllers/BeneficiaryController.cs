@@ -19,6 +19,7 @@ public class BeneficiaryController : ControllerBaseExtended
 
     [HttpGet]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult<PagedApiResponse<BeneficaryResponse>>> GetBeneficiaries([FromQuery] RequestParameters requestParameters)
     {
         var response = await _beneficaryService.GetBeneficiariesApi(requestParameters, this.OrganizationId);
@@ -27,6 +28,7 @@ public class BeneficiaryController : ControllerBaseExtended
 
     [HttpGet("{id}")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult<BeneficaryResponse>> GetBeneficiary(Guid id)
     {
         var response = await _beneficaryService.GetBeneficiaryApi(this.OrganizationId, id);
@@ -35,6 +37,7 @@ public class BeneficiaryController : ControllerBaseExtended
 
     [HttpPatch("{id}/status")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult<BeneficaryResponse>> PatchBeneficiaryStatus(Guid id, [FromBody] BeneficaryStatusPatchRequest model)
     {
         var response = await _beneficaryService.PatchBeneficiaryStatus(this.OrganizationId, id, model);
@@ -43,6 +46,7 @@ public class BeneficiaryController : ControllerBaseExtended
 
     [HttpDelete("{id}")]
     [PermissionLevel(UserRole.User)]
+    [RequireModulePermission(UserPermission.Deduplication)]
     public async Task<ActionResult> DeleteBeneficiary(Guid id)
     {
         await _beneficaryService.DeleteBeneficiary(this.OrganizationId, id);
