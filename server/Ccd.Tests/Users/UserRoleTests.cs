@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -24,6 +24,8 @@ public class UserRoleTests
     public async Task UserAdmin_CanManageUsers_ButNotOrganizations()
     {
         var (organization, _, adminHeaders) = await _api.CreateOrganization(role: UserRole.Admin);
+        // These tests are about what each role can do, not who can get it.
+        await _api.MarkAdminRoles(organization.Id, userAdmin: true, organizationAdmin: true);
         var (_, userAdminHeaders) = await addUserToOrganization(organization, adminHeaders, UserRole.UserAdmin);
 
         // users CRUD is allowed
@@ -67,6 +69,8 @@ public class UserRoleTests
     public async Task OrganizationAdmin_CanManageOrganizations_ButNotUsers()
     {
         var (organization, adminUser, adminHeaders) = await _api.CreateOrganization(role: UserRole.Admin);
+        // These tests are about what each role can do, not who can get it.
+        await _api.MarkAdminRoles(organization.Id, userAdmin: true, organizationAdmin: true);
         var (_, organizationAdminHeaders) =
             await addUserToOrganization(organization, adminHeaders, UserRole.OrganizationAdmin);
 
@@ -105,6 +109,8 @@ public class UserRoleTests
     public async Task UserAdmin_CannotGrantAdminRole()
     {
         var (organization, adminUser, adminHeaders) = await _api.CreateOrganization(role: UserRole.Admin);
+        // These tests are about what each role can do, not who can get it.
+        await _api.MarkAdminRoles(organization.Id, userAdmin: true, organizationAdmin: true);
         var (_, userAdminHeaders) = await addUserToOrganization(organization, adminHeaders, UserRole.UserAdmin);
 
         // can't create an admin
@@ -144,7 +150,8 @@ public class UserRoleTests
     [InlineData(UserRole.OrganizationAdmin)]
     public async Task Admin_CanChangeOwnRole(string newRole)
     {
-        var (_, adminUser, adminHeaders) = await _api.CreateOrganization(role: UserRole.Admin);
+        var (organization, adminUser, adminHeaders) = await _api.CreateOrganization(role: UserRole.Admin);
+        await _api.MarkAdminRoles(organization.Id, userAdmin: true, organizationAdmin: true);
 
         var result = await _api.Request<UserResponse>($"/api/v1/users/{adminUser.Id}", HttpMethod.Put,
             adminHeaders, userUpdateRequest(newRole), HttpStatusCode.OK);

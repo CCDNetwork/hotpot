@@ -17,6 +17,10 @@ public class OrganizationResponse
     public bool IsLivelihoodsActive { get; set; }
     public bool IsProtectionActive { get; set; }
     public bool IsIncentivePaymentsActive { get; set; }
+    /// <summary>Users of this organisation can be User Admins (set by deployment, read-only).</summary>
+    public bool AllowsUserAdmin { get; set; }
+    /// <summary>Users of this organisation can be Organisation Admins (set by deployment, read-only).</summary>
+    public bool AllowsOrganizationAdmin { get; set; }
     public List<Activity> Activities { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -71,9 +71,10 @@ public class OrganizationEmailDomainService
     /// <summary>
     /// Validates the whole list for a new organisation before anything is
     /// saved. Returns the normalised, de-duplicated domains or throws one
-    /// BadRequest naming every invalid entry.
+    /// BadRequest naming every invalid entry, including domains that already
+    /// belong to another organisation.
     /// </summary>
-    public List<string> ValidateForNewOrganization(IEnumerable<string> inputs)
+    public async Task<List<string>> ValidateForNewOrganization(IEnumerable<string> inputs)
     {
         var domains = new List<string>();
         var errors = new List<string>();
@@ -93,6 +94,11 @@ public class OrganizationEmailDomainService
                 errors.Add(error);
             }
         }
+
+        var taken = await GetSharingOrganizations(domains, null);
+        foreach (var domain in domains)
+            if (taken.TryGetValue(domain, out var names))
+                errors.Add(DomainTakenMessage(domain, names));
 
         if (errors.Count > 0)
             throw new BadRequestException(string.Join(" ", errors));
@@ -135,14 +141,17 @@ public class OrganizationEmailDomainService
                 throw new BadRequestException($"'{domain}' is already on this organisation's list.");
         }
 
+        // An email domain can belong to only one organisation.
         var sharedWith = await GetSharingOrganizations(new List<string> { domain }, organizationId);
+        if (sharedWith.TryGetValue(domain, out var names))
+            throw new BadRequestException(DomainTakenMessage(domain, names));
 
-        return new EmailDomainCheckResponse
-        {
-            Domain = domain,
-            AlsoUsedBy = sharedWith.TryGetValue(domain, out var names) ? names : new List<string>(),
-        };
+        return new EmailDomainCheckResponse { Domain = domain };
     }
+
+    private static string DomainTakenMessage(string domain, List<string> organizationNames) =>
+        $"'{domain}' is already an allowed email domain of {string.Join(", ", organizationNames)}. "
+        + "An email domain can belong to only one organisation; remove it there first.";
 
     public async Task<OrganizationEmailDomainResponse> Add(Guid organizationId, string input, Guid performedById)
     {
@@ -168,10 +177,13 @@ public class OrganizationEmailDomainService
     {
         var organization = await EnsureOrganization(organizationId);
         var entity = await FindDomain(organizationId, domainId);
-        var check = await Check(organizationId, input, excludeDomainId: domainId);
 
-        if (check.Domain == entity.Domain)
-            return ToResponse(entity, check.AlsoUsedBy);
+        // Unchanged (e.g. only letter case or spaces differ): nothing to check,
+        // even for a domain that was shared before duplicates were blocked.
+        if (EmailDomainRules.TryNormalize(input, out var normalized, out _) && normalized == entity.Domain)
+            return ToResponse(entity, await SharedWith(entity.Domain, organizationId));
+
+        var check = await Check(organizationId, input, excludeDomainId: domainId);
 
         var oldDomain = entity.Domain;
         entity.Domain = check.Domain;
@@ -242,6 +254,10 @@ public class OrganizationEmailDomainService
                    .FirstOrDefaultAsync(d => d.Id == domainId && d.OrganizationId == organizationId)
                ?? throw new NotFoundException("Domain not found");
     }
+
+    private async Task<List<string>> SharedWith(string domain, Guid organizationId) =>
+        (await GetSharingOrganizations(new List<string> { domain }, organizationId))
+            .TryGetValue(domain, out var names) ? names : new List<string>();
 
     private async Task<Dictionary<string, List<string>>> GetSharingOrganizations(List<string> domains, Guid? organizationId)
     {

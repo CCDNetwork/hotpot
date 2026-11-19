@@ -29,6 +29,8 @@ export const initialOrganization: Organization = {
   isIncentivePaymentsActive: false,
   isShelterActive: false,
   isWashActive: false,
+  allowsUserAdmin: false,
+  allowsOrganizationAdmin: false,
   name: '',
   updatedAt: null,
   createdAt: null,

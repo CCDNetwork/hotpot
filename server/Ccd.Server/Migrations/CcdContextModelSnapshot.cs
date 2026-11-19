@@ -1139,6 +1139,14 @@ namespace Ccd.Server.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<bool>("AllowsOrganizationAdmin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("allows_organization_admin");
+
+                    b.Property<bool>("AllowsUserAdmin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("allows_user_admin");
+
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")

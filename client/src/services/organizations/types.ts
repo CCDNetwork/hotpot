@@ -14,6 +14,10 @@ export interface Organization {
   isLivelihoodsActive: boolean;
   isProtectionActive: boolean;
   isIncentivePaymentsActive: boolean;
+  /** Users of this organisation can be User Admins (set by deployment, read-only). */
+  allowsUserAdmin: boolean;
+  /** Users of this organisation can be Organisation Admins (set by deployment, read-only). */
+  allowsOrganizationAdmin: boolean;
   activities: OrganizationActivity[];
   createdAt: Date | null;
   updatedAt: Date | null;

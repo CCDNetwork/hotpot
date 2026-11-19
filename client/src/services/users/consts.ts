@@ -39,17 +39,37 @@ export const CHANGE_LOG_ROLES = [
 export const getUserRoleLabel = (role: string) =>
   USER_ROLE_LABELS[role as UserRole] ?? role;
 
-// Only admins can grant the admin role; an existing admin keeps it when others edit them.
+/**
+ * Roles that can be assigned to a user of the given organisation (same rule as
+ * the server, UserRole.AssignableRoles):
+ * - User: always;
+ * - User Admin: if the organisation allows it (USER_ADMIN_ORGANIZATION), and
+ *   also in the Organisation Admin organisation (UNICEF can take over user management);
+ * - Organisation Admin: only if it allows it (ORGANIZATION_ADMIN_ORGANIZATION);
+ * - Admin: only granted by an Admin; an existing Admin keeps it when others edit them.
+ * Without an organisation (not chosen yet) only User and Admin are offered.
+ */
 export const getAssignableRoles = (
   currentUserRole: string,
+  organization?: {
+    allowsUserAdmin?: boolean;
+    allowsOrganizationAdmin?: boolean;
+  } | null,
   targetCurrentRole?: string
-) =>
-  Object.values(UserRole).filter(
-    (role) =>
-      role !== UserRole.Admin ||
-      currentUserRole === UserRole.Admin ||
-      targetCurrentRole === UserRole.Admin
-  );
+): UserRole[] => {
+  const roles: UserRole[] = [];
+  if (
+    currentUserRole === UserRole.Admin ||
+    targetCurrentRole === UserRole.Admin
+  )
+    roles.push(UserRole.Admin);
+  if (organization?.allowsUserAdmin || organization?.allowsOrganizationAdmin)
+    roles.push(UserRole.UserAdmin);
+  if (organization?.allowsOrganizationAdmin)
+    roles.push(UserRole.OrganizationAdmin);
+  roles.push(UserRole.User);
+  return roles;
+};
 
 export enum UserPermission {
   Deduplication = 'deduplication',

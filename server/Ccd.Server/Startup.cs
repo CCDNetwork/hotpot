@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -273,7 +274,8 @@ public class Startup
         IWebHostEnvironment env,
         CcdContext ccdContext,
         IRecurringJobManager recurringJobs,
-        IBackgroundJobClient backgroundJobs
+        IBackgroundJobClient backgroundJobs,
+        ILogger<Startup> logger
     )
     {
         if (string.IsNullOrWhiteSpace(StaticConfiguration.ConflictEventHmacKey))
@@ -344,5 +346,9 @@ public class Startup
             ccdContext.Database.Migrate();
             ccdContext.Database.SetCommandTimeout((int?)null);
         }
+
+        // Which organisation's users can be User Admins / Organisation Admins
+        // (deployment settings USER_ADMIN_ORGANIZATION, ORGANIZATION_ADMIN_ORGANIZATION).
+        OrganizationAdminRoleSetup.Apply(ccdContext, logger);
     }
 }

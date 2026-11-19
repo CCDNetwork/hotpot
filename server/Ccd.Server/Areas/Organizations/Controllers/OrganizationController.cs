@@ -65,7 +65,7 @@ public class OrganizationController : ControllerBaseExtended
     {
         // Validate the allowed email domains before anything is saved, so an
         // invalid domain never leaves a half-created organisation behind.
-        var emailDomains = _emailDomainService.ValidateForNewOrganization(model.EmailDomains);
+        var emailDomains = await _emailDomainService.ValidateForNewOrganization(model.EmailDomains);
 
         await using var transaction = await _context.Database.BeginTransactionAsync();
 

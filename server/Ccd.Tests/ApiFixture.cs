@@ -218,6 +218,19 @@ public class ApiFixture
         return (organization, user, headers);
     }
 
+    /// <summary>
+    /// Marks an organisation as allowed for the User Admin and/or Organisation
+    /// Admin role (normally done at startup from the deployment settings).
+    /// </summary>
+    public async Task MarkAdminRoles(Guid organizationId, bool userAdmin, bool organizationAdmin)
+    {
+        var context = GetCcdContext();
+        var organization = await context.Organizations.FirstAsync(o => o.Id == organizationId);
+        organization.AllowsUserAdmin = userAdmin;
+        organization.AllowsOrganizationAdmin = organizationAdmin;
+        await context.SaveChangesAsync();
+    }
+
     public Headers GetUserHeaders(User user, Organization organization, string role)
     {
         var headers = new Headers

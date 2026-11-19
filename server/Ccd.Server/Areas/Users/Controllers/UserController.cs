@@ -78,8 +78,7 @@ public class UserController : ControllerBaseExtended
 
         if (!UserRole.IsValidRole(model.Role))
             throw new BadRequestException("Invalid role");
-        if (!UserRole.CanAssignRole(CurrentRole, null, model.Role))
-            throw new ForbiddenException("Only admins can assign the admin role.");
+        await EnsureRoleAllowed(model.OrganizationId, null, model.Role);
 
         // Allowed email domains: if the organisation has a list, the new user's
         // email must be on one of its domains (exact match). Organisations
@@ -160,8 +159,7 @@ public class UserController : ControllerBaseExtended
         ) ?? throw new NotFoundException();
         if (!UserRole.IsValidRole(model.Role))
             throw new BadRequestException("Invalid role");
-        if (!UserRole.CanAssignRole(CurrentRole, userOrganization.Role, model.Role))
-            throw new ForbiddenException("Only admins can assign the admin role.");
+        await EnsureRoleAllowed(userOrganization.OrganizationId, userOrganization.Role, model.Role);
 
         var before = Snapshot(user, userOrganization);
 
@@ -198,8 +196,7 @@ public class UserController : ControllerBaseExtended
             var userTenant = await _context.UserOrganizations.FirstOrDefaultAsync(
                 e => e.UserId == user.Id
             ) ?? throw new NotFoundException();
-            if (!UserRole.CanAssignRole(CurrentRole, userTenant.Role, model.Role))
-                throw new ForbiddenException("Only admins can assign the admin role.");
+            await EnsureRoleAllowed(userTenant.OrganizationId, userTenant.Role, model.Role);
             userTenant.Role = model.Role;
             _context.UserOrganizations.Update(userTenant);
         }
@@ -331,12 +328,35 @@ public class UserController : ControllerBaseExtended
         return list == "" ? "(none)" : list;
     }
 
-    private static string RoleLabel(string role) => role switch
+    private static string RoleLabel(string role) => UserRole.Label(role);
+
+    /// <summary>
+    /// The role must be one the user's organisation allows (UserRole.AssignableRoles):
+    /// User Admin only in the USER_ADMIN_ORGANIZATION, Organisation Admin only in
+    /// the ORGANIZATION_ADMIN_ORGANIZATION, Admin only granted by an Admin.
+    /// Also applies when an existing role is kept, so a role that no longer
+    /// fits has to be corrected when the user is edited.
+    /// </summary>
+    private async Task EnsureRoleAllowed(Guid organizationId, string currentTargetRole, string newRole)
     {
-        UserRole.Admin => "Admin",
-        UserRole.UserAdmin => "User Admin",
-        UserRole.OrganizationAdmin => "Organisation Admin",
-        UserRole.User => "User",
-        _ => role,
-    };
+        var organization = await _context.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.Id == organizationId)
+            ?? throw new BadRequestException("Organisation not found.");
+
+        var allowed = UserRole.AssignableRoles(
+            CurrentRole,
+            organization.AllowsUserAdmin,
+            organization.AllowsOrganizationAdmin,
+            currentTargetRole
+        );
+        if (allowed.Contains(newRole))
+            return;
+
+        if (newRole == UserRole.Admin)
+            throw new ForbiddenException("Only admins can assign the admin role.");
+
+        throw new BadRequestException(
+            $"The role '{RoleLabel(newRole)}' can't be assigned to users of '{organization.Name}'. "
+            + $"Allowed roles: {string.Join(", ", allowed.Select(RoleLabel))}."
+        );
+    }
 }

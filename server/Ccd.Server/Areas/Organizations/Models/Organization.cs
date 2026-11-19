@@ -17,6 +17,21 @@ public class Organization
     public bool IsLivelihoodsActive { get; set; }
     public bool IsProtectionActive { get; set; }
     public bool IsIncentivePaymentsActive { get; set; }
+
+    /// <summary>
+    /// Users of this organisation can be given the User Admin role. Set only at
+    /// startup from the USER_ADMIN_ORGANIZATION deployment setting
+    /// (OrganizationAdminRoleSetup); never editable in the app, so renaming the
+    /// organisation doesn't affect it.
+    /// </summary>
+    public bool AllowsUserAdmin { get; set; }
+
+    /// <summary>
+    /// Users of this organisation can be given the Organisation Admin role. Set
+    /// only at startup from ORGANIZATION_ADMIN_ORGANIZATION; never editable in the app.
+    /// </summary>
+    public bool AllowsOrganizationAdmin { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

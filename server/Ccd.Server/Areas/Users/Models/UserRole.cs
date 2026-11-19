@@ -1,4 +1,6 @@
-﻿namespace Ccd.Server.Users;
+﻿using System.Collections.Generic;
+
+namespace Ccd.Server.Users;
 
 public class UserRole
 {
@@ -14,14 +16,42 @@ public class UserRole
     }
 
     /// <summary>
-    ///     Only admins can grant the admin role. Keeping an existing admin as admin is always allowed,
-    ///     so non-admins can still edit other fields of an admin user.
+    /// Roles that can be assigned to a user of the given organisation:
+    /// - User: always;
+    /// - User Admin: if the organisation is marked AllowsUserAdmin
+    ///   (USER_ADMIN_ORGANIZATION, e.g. Save the Children) OR AllowsOrganizationAdmin
+    ///   (UNICEF can also hold User Admin, e.g. to take over user management);
+    /// - Organisation Admin: only if marked AllowsOrganizationAdmin
+    ///   (ORGANIZATION_ADMIN_ORGANIZATION, e.g. UNICEF);
+    /// - Admin: unchanged rule — only an Admin can grant it, in any organisation;
+    ///   a user who already is Admin keeps it when others edit them.
+    /// An existing User Admin / Organisation Admin in an organisation without the
+    /// mark is NOT kept: the role must be corrected when the user is next edited.
     /// </summary>
-    public static bool CanAssignRole(string actorRole, string currentTargetRole, string newRole)
+    public static List<string> AssignableRoles(
+        string actorRole,
+        bool allowsUserAdmin,
+        bool allowsOrganizationAdmin,
+        string currentTargetRole = null
+    )
     {
-        if (newRole != Admin || actorRole == Admin)
-            return true;
-
-        return currentTargetRole == Admin;
+        var roles = new List<string>();
+        if (actorRole == Admin || currentTargetRole == Admin)
+            roles.Add(Admin);
+        if (allowsUserAdmin || allowsOrganizationAdmin)
+            roles.Add(UserAdmin);
+        if (allowsOrganizationAdmin)
+            roles.Add(OrganizationAdmin);
+        roles.Add(User);
+        return roles;
     }
+
+    public static string Label(string role) => role switch
+    {
+        Admin => "Admin",
+        UserAdmin => "User Admin",
+        OrganizationAdmin => "Organisation Admin",
+        User => "User",
+        _ => role,
+    };
 }

@@ -8,14 +8,14 @@ import { checkEmailDomainForNewOrganization } from '@/services/organizations/ema
 export interface PendingEmailDomain {
   /** Normalised domain, as it will be saved. */
   domain: string;
-  /** Existing organisations that already allow this domain. */
+  /** Always empty: a domain already used by another organisation is refused. */
   alsoUsedBy: string[];
 }
 
 /**
  * Allowed email domains on the Add Organisation form. Each entry is validated
- * by the server as it is added (format, public providers, normalisation) and
- * shows a warning when another organisation already uses it. The domains are
+ * by the server as it is added (format, public providers, normalisation, not
+ * already allowed for another organisation). The domains are
  * saved together with the organisation when the form is submitted.
  */
 export const NewOrganizationEmailDomains = ({
@@ -85,12 +85,6 @@ export const NewOrganizationEmailDomains = ({
                   <XIcon className="h-4 w-4" />
                 </Button>
               </div>
-              {d.alsoUsedBy.length > 0 && (
-                <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
-                  Already allowed for: {d.alsoUsedBy.join(', ')}. Users with
-                  this domain could be created in either organisation.
-                </p>
-              )}
             </li>
           ))}
         </ul>

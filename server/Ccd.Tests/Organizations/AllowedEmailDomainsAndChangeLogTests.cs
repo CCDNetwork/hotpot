@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -28,6 +28,10 @@ public class AllowedEmailDomainsAndChangeLogTests
     }
 
     private CcdContext Db() => _api.GetService<CcdContext>();
+
+    // A domain can belong to only one organisation, and the test database keeps
+    // organisations between runs, so every test uses its own domains.
+    private readonly string _s = Guid.NewGuid().ToString("N")[..8];
 
     private static OrganizationAddRequest NewOrganization(params string[] domains) => new()
     {
@@ -61,18 +65,18 @@ public class AllowedEmailDomainsAndChangeLogTests
     {
         var (_, _, headers) = await _api.CreateOrganization(role: role);
 
-        var org = await CreateOrganization(headers, "@Example-Agency.ORG", "second.example.net");
+        var org = await CreateOrganization(headers, $"@Agency-{_s}.ORG", $"second-{_s}.example.net");
         var domains = await _api.Request<List<OrganizationEmailDomainResponse>>(
             $"/api/v1/organizations/{org.Id}/email-domains", HttpMethod.Get, headers, null, HttpStatusCode.OK);
-        Assert.Equal(new[] { "example-agency.org", "second.example.net" }, domains.Select(d => d.Domain));
+        Assert.Equal(new[] { $"agency-{_s}.org", $"second-{_s}.example.net" }, domains.Select(d => d.Domain));
 
         // Add, edit, remove later.
         var added = await _api.Request<OrganizationEmailDomainResponse>(
             $"/api/v1/organizations/{org.Id}/email-domains", HttpMethod.Post, headers,
-            new EmailDomainRequest { Domain = "third.example.org" }, HttpStatusCode.OK);
+            new EmailDomainRequest { Domain = $"third-{_s}.example.org" }, HttpStatusCode.OK);
         await _api.Request<OrganizationEmailDomainResponse>(
             $"/api/v1/organizations/{org.Id}/email-domains/{added.Id}", HttpMethod.Put, headers,
-            new EmailDomainRequest { Domain = "fourth.example.org" }, HttpStatusCode.OK);
+            new EmailDomainRequest { Domain = $"fourth-{_s}.example.org" }, HttpStatusCode.OK);
         await _api.Request<object>(
             $"/api/v1/organizations/{org.Id}/email-domains/{added.Id}", HttpMethod.Delete, headers, null,
             HttpStatusCode.NoContent);
@@ -84,22 +88,22 @@ public class AllowedEmailDomainsAndChangeLogTests
     public async Task UserAdminAndUser_CannotSeeOrManageDomains(string role)
     {
         var (_, _, admin) = await _api.CreateOrganization(role: UserRole.Admin);
-        var org = await CreateOrganization(admin, "example-agency.org");
+        var org = await CreateOrganization(admin, $"agency-{_s}.org");
         var (_, _, headers) = await _api.CreateOrganization(role: role);
 
         await _api.Request<object>($"/api/v1/organizations/{org.Id}/email-domains", HttpMethod.Get,
             headers, null, HttpStatusCode.Forbidden);
         await _api.Request<object>($"/api/v1/organizations/{org.Id}/email-domains", HttpMethod.Post,
-            headers, new EmailDomainRequest { Domain = "x.example.org" }, HttpStatusCode.Forbidden);
+            headers, new EmailDomainRequest { Domain = $"x-{_s}.example.org" }, HttpStatusCode.Forbidden);
         await _api.Request<object>("/api/v1/organizations", HttpMethod.Post, headers,
-            NewOrganization("y.example.org"), HttpStatusCode.Forbidden);
+            NewOrganization($"y-{_s}.example.org"), HttpStatusCode.Forbidden);
     }
 
     [Fact]
     public async Task InvalidDomain_CreatesNothing()
     {
         var (_, _, headers) = await _api.CreateOrganization(role: UserRole.OrganizationAdmin);
-        var request = NewOrganization("good.example.org", "gmail.com");
+        var request = NewOrganization($"good-{_s}.example.org", "gmail.com");
 
         await _api.Request<object>("/api/v1/organizations", HttpMethod.Post, headers, request,
             HttpStatusCode.BadRequest);
@@ -112,7 +116,7 @@ public class AllowedEmailDomainsAndChangeLogTests
     public async Task UsersCanOnlyBeCreatedOnAllowedDomains_UnrestrictedWithoutDomains()
     {
         var (_, _, orgAdmin) = await _api.CreateOrganization(role: UserRole.OrganizationAdmin);
-        var restricted = await CreateOrganization(orgAdmin, "example-agency.org");
+        var restricted = await CreateOrganization(orgAdmin, $"agency-{_s}.org");
         var open = await CreateOrganization(orgAdmin);
 
         var (_, _, userAdmin) = await _api.CreateOrganization(role: UserRole.UserAdmin);
@@ -120,9 +124,9 @@ public class AllowedEmailDomainsAndChangeLogTests
         await _api.Request<object>("/api/v1/users", HttpMethod.Post, userAdmin,
             NewUser(restricted.Id, $"u{Guid.NewGuid():N}@other.org"), HttpStatusCode.BadRequest);
         await _api.Request<object>("/api/v1/users", HttpMethod.Post, userAdmin,
-            NewUser(restricted.Id, $"u{Guid.NewGuid():N}@sub.example-agency.org"), HttpStatusCode.BadRequest);
+            NewUser(restricted.Id, $"u{Guid.NewGuid():N}@sub.agency-{_s}.org"), HttpStatusCode.BadRequest);
         await _api.Request<UserResponse>("/api/v1/users", HttpMethod.Post, userAdmin,
-            NewUser(restricted.Id, $"u{Guid.NewGuid():N}@EXAMPLE-AGENCY.org"), HttpStatusCode.Created);
+            NewUser(restricted.Id, $"u{Guid.NewGuid():N}@AGENCY-{_s}.org"), HttpStatusCode.Created);
         await _api.Request<UserResponse>("/api/v1/users", HttpMethod.Post, userAdmin,
             NewUser(open.Id, $"u{Guid.NewGuid():N}@gmail.com"), HttpStatusCode.Created);
     }
@@ -147,7 +151,7 @@ public class AllowedEmailDomainsAndChangeLogTests
         var (_, _, admin) = await _api.CreateOrganization(role: UserRole.Admin);
 
         // Organisation created (with a domain), then edited.
-        var org = await CreateOrganization(orgAdmin, "example-agency.org");
+        var org = await CreateOrganization(orgAdmin, $"agency-{_s}.org");
         var update = new OrganizationUpdateRequest
         {
             Name = org.Name + " X", IsMpcaActive = true, IsWashActive = true, IsShelterActive = false,
@@ -158,7 +162,8 @@ public class AllowedEmailDomainsAndChangeLogTests
             update, HttpStatusCode.OK);
 
         // User created by an Admin, then role and permissions changed, then deleted.
-        var email = $"u{Guid.NewGuid():N}@example-agency.org";
+        await _api.MarkAdminRoles(org.Id, userAdmin: false, organizationAdmin: true);
+        var email = $"u{Guid.NewGuid():N}@agency-{_s}.org";
         var created = await _api.Request<UserResponse>("/api/v1/users", HttpMethod.Post, admin,
             NewUser(org.Id, email), HttpStatusCode.Created);
         await _api.Request<UserResponse>($"/api/v1/users/{created.Id}", HttpMethod.Patch, admin,
@@ -177,7 +182,7 @@ public class AllowedEmailDomainsAndChangeLogTests
         Assert.NotNull(orgCreated);
         Assert.Equal(orgAdminUser.Email, orgCreated.PerformedByEmail);
         Assert.NotNull(Find(ChangeLogEntityType.OrganizationEmailDomain, ChangeLogAction.Added,
-            e => e.NewValue == "example-agency.org" && e.OrganizationName == org.Name));
+            e => e.NewValue == $"agency-{_s}.org" && e.OrganizationName == org.Name));
         var orgUpdated = Find(ChangeLogEntityType.Organization, ChangeLogAction.Updated, e => e.OrganizationName == org.Name + " X");
         Assert.Contains("Name:", orgUpdated.NewValue);
         Assert.Contains("WASH", orgUpdated.NewValue);
@@ -188,5 +193,81 @@ public class AllowedEmailDomainsAndChangeLogTests
         Assert.Equal("Organisation Admin", role.NewValue);
         Assert.Contains("Permissions:", Find(ChangeLogEntityType.User, ChangeLogAction.Updated, e => e.SubjectEmail == email).NewValue);
         Assert.NotNull(Find(ChangeLogEntityType.User, ChangeLogAction.Deleted, e => e.SubjectEmail == email));
+    }
+
+    // ------------------------------------------------------------ one organisation per domain
+
+    [Fact]
+    public async Task Domain_CannotBeAllowedForTwoOrganisations()
+    {
+        var (_, _, orgAdmin) = await _api.CreateOrganization(role: UserRole.OrganizationAdmin);
+        var first = await CreateOrganization(orgAdmin, $"agency-{_s}.org");
+        var second = await CreateOrganization(orgAdmin, $"other-{_s}.org");
+
+        // Adding it to another organisation (any letter case) is refused, naming the owner.
+        var error = await _api.Request<ErrorBody>(
+            $"/api/v1/organizations/{second.Id}/email-domains", HttpMethod.Post, orgAdmin,
+            new EmailDomainRequest { Domain = $"@AGENCY-{_s}.org" }, HttpStatusCode.BadRequest);
+        Assert.Equal(
+            $"'agency-{_s}.org' is already an allowed email domain of {first.Name}. "
+            + "An email domain can belong to only one organisation; remove it there first.",
+            error.ErrorMessage);
+
+        // The check used by the form gives the same answer.
+        await _api.Request<object>($"/api/v1/organizations/{second.Id}/email-domains/check", HttpMethod.Post,
+            orgAdmin, new EmailDomainRequest { Domain = $"agency-{_s}.org" }, HttpStatusCode.BadRequest);
+
+        // Changing an existing domain into it is refused.
+        var other = (await Db().OrganizationEmailDomains.AsNoTracking()
+            .FirstAsync(d => d.OrganizationId == second.Id)).Id;
+        await _api.Request<object>($"/api/v1/organizations/{second.Id}/email-domains/{other}", HttpMethod.Put,
+            orgAdmin, new EmailDomainRequest { Domain = $"agency-{_s}.org" }, HttpStatusCode.BadRequest);
+
+        // A new organisation with it is refused, and nothing is created.
+        var request = NewOrganization($"agency-{_s}.org");
+        await _api.Request<object>("/api/v1/organizations", HttpMethod.Post, orgAdmin, request,
+            HttpStatusCode.BadRequest);
+        Assert.False(await Db().Organizations.AnyAsync(o => o.Name == request.Name));
+
+        // Once removed from the first organisation, it can be added to the second.
+        var owned = (await Db().OrganizationEmailDomains.AsNoTracking()
+            .FirstAsync(d => d.OrganizationId == first.Id)).Id;
+        await _api.Request<object>($"/api/v1/organizations/{first.Id}/email-domains/{owned}", HttpMethod.Delete,
+            orgAdmin, null, HttpStatusCode.NoContent);
+        await _api.Request<object>($"/api/v1/organizations/{second.Id}/email-domains", HttpMethod.Post, orgAdmin,
+            new EmailDomainRequest { Domain = $"agency-{_s}.org" }, HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task DomainSharedBeforeTheRule_IsShown_AndCanStillBeEditedOrRemoved()
+    {
+        var (_, _, orgAdmin) = await _api.CreateOrganization(role: UserRole.OrganizationAdmin);
+        var first = await CreateOrganization(orgAdmin, $"agency-{_s}.org");
+        var second = await CreateOrganization(orgAdmin);
+
+        // Simulate data from before the rule: the same domain on both organisations.
+        var db = Db();
+        db.OrganizationEmailDomains.Add(new OrganizationEmailDomain
+        {
+            OrganizationId = second.Id, Domain = $"agency-{_s}.org",
+            CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow,
+        });
+        await db.SaveChangesAsync();
+
+        var list = await _api.Request<List<OrganizationEmailDomainResponse>>(
+            $"/api/v1/organizations/{second.Id}/email-domains", HttpMethod.Get, orgAdmin, null, HttpStatusCode.OK);
+        var shared = Assert.Single(list);
+        Assert.Equal(new[] { first.Name }, shared.AlsoUsedBy);
+
+        // Saving it unchanged is fine; it can be removed.
+        await _api.Request<object>($"/api/v1/organizations/{second.Id}/email-domains/{shared.Id}", HttpMethod.Put,
+            orgAdmin, new EmailDomainRequest { Domain = $"Agency-{_s}.org" }, HttpStatusCode.OK);
+        await _api.Request<object>($"/api/v1/organizations/{second.Id}/email-domains/{shared.Id}",
+            HttpMethod.Delete, orgAdmin, null, HttpStatusCode.NoContent);
+    }
+
+    private class ErrorBody
+    {
+        public string ErrorMessage { get; set; }
     }
 }

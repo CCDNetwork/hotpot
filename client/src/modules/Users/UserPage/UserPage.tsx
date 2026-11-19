@@ -58,6 +58,17 @@ export const UserPage = () => {
   const currentFormPermissions = watch('permissions');
   const currentFormRole = watch('role');
 
+  // The roles offered depend on the user's organisation (see getAssignableRoles).
+  const assignableRoles = getAssignableRoles(
+    currentUser.role,
+    userData?.organizations?.[0],
+    userData?.role
+  );
+  // A role given before the rule existed (e.g. User Admin outside the User
+  // Admin organisation) is kept until the user is edited, then must change.
+  const roleNoLongerAllowed =
+    !!userData?.role && !assignableRoles.includes(userData.role as UserRole);
+
   useEffect(() => {
     if (userData) {
       reset(dataToUserEditFormData(userData));
@@ -189,22 +200,33 @@ export const UserPage = () => {
                       onValueChange={(val: string) =>
                         setValue('role', val as UserRole)
                       }
-                      value={currentFormRole}
+                      value={
+                        assignableRoles.includes(currentFormRole)
+                          ? currentFormRole
+                          : ''
+                      }
                     >
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Choose a role" />
                       </SelectTrigger>
                       <SelectContent>
-                        {getAssignableRoles(
-                          currentUser.role,
-                          userData?.role
-                        ).map((role) => (
+                        {assignableRoles.map((role) => (
                           <SelectItem key={role} value={role}>
                             {getUserRoleLabel(role)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {roleNoLongerAllowed &&
+                      !assignableRoles.includes(currentFormRole) && (
+                        <p className="text-sm text-destructive">
+                          {getUserRoleLabel(userData!.role)} can no longer be
+                          assigned to users of{' '}
+                          {userData?.organizations?.[0]?.name ??
+                            'this organisation'}
+                          . Choose a new role to save changes.
+                        </p>
+                      )}
                   </FormItem>
                   {currentFormRole === UserRole.User && (
                     <div className="flex flex-col gap-3">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SendHorizonal, UserPlus2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -62,6 +62,19 @@ export const AddUserModal = () => {
 
   const currentFormPermissions = watch('permissions');
   const currentFormRole = watch('role');
+  const selectedOrganization = watch('organization') as
+    | { allowsUserAdmin?: boolean; allowsOrganizationAdmin?: boolean }
+    | undefined;
+  // The roles offered depend on the chosen organisation (see getAssignableRoles).
+  const assignableRoles = getAssignableRoles(user.role, selectedOrganization);
+
+  // Changing the organisation can make the chosen role invalid: fall back to User.
+  useEffect(() => {
+    if (!assignableRoles.includes(currentFormRole)) {
+      setValue('role', UserRole.User);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOrganization]);
 
   const { addUser } = useUserMutation();
 
@@ -238,13 +251,20 @@ export const AddUserModal = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAssignableRoles(user.role).map((role) => (
+                    {assignableRoles.map((role) => (
                       <SelectItem key={role} value={role}>
                         {getUserRoleLabel(role)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {selectedOrganization &&
+                  !selectedOrganization.allowsUserAdmin &&
+                  !selectedOrganization.allowsOrganizationAdmin && (
+                    <p className="text-xs text-muted-foreground">
+                      Users of this organisation can only have the User role.
+                    </p>
+                  )}
               </FormItem>
               <DialogFooter>
                 <div className="w-full">

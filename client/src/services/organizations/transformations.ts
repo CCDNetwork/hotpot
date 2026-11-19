@@ -19,6 +19,8 @@ export const resToOrganization = (res: any): Organization => {
     isLivelihoodsActive: res.isLivelihoodsActive ?? false,
     isProtectionActive: res.isProtectionActive ?? false,
     isIncentivePaymentsActive: res.isIncentivePaymentsActive ?? false,
+    allowsUserAdmin: res.allowsUserAdmin ?? false,
+    allowsOrganizationAdmin: res.allowsOrganizationAdmin ?? false,
     activities: res.activities ? res.activities.map(resToActivities) : [],
     createdAt: res.createdAt ? new Date(res.createdAt) : null,
     updatedAt: res.updatedAt ? new Date(res.updatedAt) : null,

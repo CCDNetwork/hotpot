@@ -84,6 +84,23 @@ public class StaticConfiguration
         Environment.GetEnvironmentVariable("SENDGRID_PASSWORD_RESET_EMAIL_TEMPLATE_ID")
         ?? _configuration.GetValue<string>("SendgridPasswordResetEmailTemplateId");
 
+    /// <summary>
+    /// Name of the one organisation whose users can be User Admins (e.g.
+    /// "Save the Children"). Matched case-insensitively at startup; see
+    /// OrganizationAdminRoleSetup. Empty = leave the current marking unchanged.
+    /// </summary>
+    public static string UserAdminOrganization =>
+        Environment.GetEnvironmentVariable("USER_ADMIN_ORGANIZATION")
+        ?? _configuration.GetValue<string>("UserAdminOrganization");
+
+    /// <summary>
+    /// Name of the one organisation whose users can be Organisation Admins
+    /// (e.g. "UNICEF"). Matched case-insensitively at startup.
+    /// </summary>
+    public static string OrganizationAdminOrganization =>
+        Environment.GetEnvironmentVariable("ORGANIZATION_ADMIN_ORGANIZATION")
+        ?? _configuration.GetValue<string>("OrganizationAdminOrganization");
+
     public static string SuperadminPassword =>
         Environment.GetEnvironmentVariable("SUPERADMIN_PASSWORD")
         ?? _configuration.GetValue<string>("SuperadminPassword");

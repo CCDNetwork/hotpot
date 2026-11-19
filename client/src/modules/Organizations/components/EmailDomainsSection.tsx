@@ -53,15 +53,6 @@ const describeChange = (change: EmailDomainChange) => {
   }
 };
 
-const SharedWarning = ({ names }: { names: string[] }) =>
-  names.length > 0 ? (
-    // span, not p: rendered inside the dialog's description paragraph.
-    <span className="mt-3 block text-sm font-medium text-amber-700 dark:text-amber-400">
-      This domain is already allowed for: {names.join(', ')}. Users with this
-      domain could then be created in either organisation.
-    </span>
-  ) : null;
-
 /**
  * Allowed email domains for an organisation. When the list is not empty, a
  * new user can only be created in this organisation with an email address on
@@ -178,7 +169,6 @@ export const EmailDomainsSection = ({
             {domains.length > 0 ? ' or another domain on the list' : ''}. Check
             the spelling: a mistyped domain blocks new users until it is
             corrected. Existing users are not affected.
-            <SharedWarning names={pending.alsoUsedBy} />
           </>
         ),
         label: 'Add domain',
@@ -192,7 +182,6 @@ export const EmailDomainsSection = ({
             New users with an <strong>@{pending.from}</strong> address will no
             longer be accepted; <strong>@{pending.domain}</strong> addresses
             will be. Existing users are not affected.
-            <SharedWarning names={pending.alsoUsedBy} />
           </>
         ),
         label: 'Save change',
@@ -277,12 +266,13 @@ export const EmailDomainsSection = ({
                   <>
                     <span className="font-medium">@{d.domain}</span>
                     {d.alsoUsedBy.length > 0 && (
+                      // Only for domains shared before this was blocked: a
+                      // domain can belong to only one organisation.
                       <Badge
-                        variant="secondary"
-                        title={`Also allowed for: ${d.alsoUsedBy.join(', ')}`}
+                        variant="destructive"
+                        title={`Also allowed for: ${d.alsoUsedBy.join(', ')}. A domain can belong to only one organisation; remove it from one of them.`}
                       >
-                        shared with {d.alsoUsedBy.length} other
-                        {d.alsoUsedBy.length === 1 ? '' : 's'}
+                        also on {d.alsoUsedBy.join(', ')}
                       </Badge>
                     )}
                     {!readOnly && (
