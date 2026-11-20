@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -499,9 +499,9 @@ public class BookingService
                 try
                 {
                     var endDate = ParseExcelDateUtc(worksheet.Cell(row, endDateIndex).GetString().Trim());
-                    var amount = decimal.Parse(worksheet.Cell(row, amountIndex).GetString().Replace(",", ""));
+                    var amount = ExcelFieldValidator.ParseAmount(worksheet.Cell(row, amountIndex).GetString());
                     var rounds = int.Parse(worksheet.Cell(row, roundsIndex).GetString());
-                    var currency = worksheet.Cell(row, currencyIndex).GetString().Trim();
+                    var currency = worksheet.Cell(row, currencyIndex).GetString().Trim().ToUpperInvariant();
                     var modality = worksheet.Cell(row, modalityIndex).GetString().Trim();
 
                     conflicts[row] = new ConflictDetectionContext(
@@ -595,10 +595,10 @@ public class BookingService
             var startDate = ParseExcelDateUtc(worksheet.Cell(row, startDateIndex).GetString());
             // End Date is the last covered day, stored as uploaded. See BookingDates.
             var endDate = ParseExcelDateUtc(worksheet.Cell(row, endDateIndex).GetString());
-            var amount = decimal.Parse(worksheet.Cell(row, amountIndex).GetString().Replace(",", ""));
+            var amount = ExcelFieldValidator.ParseAmount(worksheet.Cell(row, amountIndex).GetString());
             var rounds = int.Parse(worksheet.Cell(row, roundsIndex).GetString());
 
-            var currency = worksheet.Cell(row, currencyIndex).GetString().Trim();
+            var currency = worksheet.Cell(row, currencyIndex).GetString().Trim().ToUpperInvariant();
             var modality = worksheet.Cell(row, modalityIndex).GetString().Trim();
 
             // Encrypt IDs before storing

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,21 +17,6 @@ public static class ExcelFieldValidator
         "MPCA"
     ];
 
-    private static readonly HashSet<string> AllowedCurrencies =
-    [
-        "AED","AFN","ALL","AMD","ANG","AOA","ARS","AUD","AWG","AZN",
-        "BAM","BBD","BDT","BGN","BHD","BIF","BMD","BND","BOB","BOV","BRL","BSD","BTN","BWP","BYN","BZD",
-        "CAD","CDF","CHE","CHF","CHW","CLF","CLP","CNY","COP","COU","CRC","CUC","CUP","CVE","CZK",
-        "DJF","DKK","DOP","DZD", "EGP","ERN","ETB","EUR", "FJD","FKP", "GBP","GEL","GHS","GIP","GMD","GNF","GTQ","GYD",
-        "HKD","HNL","HTG","HUF", "IDR","ILS","INR","IQD","IRR","ISK", "JMD","JOD","JPY",
-        "KES","KGS","KHR","KMF","KPW","KRW","KWD","KYD","KZT", "LAK","LBP","LKR","LRD","LSL","LYD",
-        "MAD","MDL","MGA","MKD","MMK","MNT","MOP","MRU","MUR","MVR","MWK","MXN","MXV","MYR","MZN", "NAD","NGN","NIO","NOK","NPR","NZD",
-        "OMR", "PAB","PEN","PGK","PHP","PKR","PLN","PYG", "QAR", "RON","RSD","CNY","RUB","RWF",
-        "SAR","SBD","SCR","SDG","SEK","SGD","SHP","SLE","SLL","SOS","SRD","SSP","STN","SVC","SYP","SZL",
-        "THB","TJS","TMT","TND","TOP","TRY","TTD","TWD","TZS", "UAH","UGX","USD","USN","UYI","UYU","UYW","UZS",
-        "VED","VES","VND","VUV", "WST", "XAF","XAG","XAU","XBA","XBB","XBC","XBD","XCD","XDR","XOF",
-        "XPD","XPF","XPT","XSU","XTS","XUA","XXX", "YER", "ZAR","ZMW","ZWL"
-    ];
 
     // ----------------------------
     // NATIONAL ID
@@ -79,16 +64,7 @@ public static class ExcelFieldValidator
         return AllowedActivities.Contains(modality.Trim().ToUpper());
     }
 
-    // ----------------------------
-    // CURRENCY (ISO-4217 simplified)
-    // ----------------------------
-    public static bool IsCurrencyValid(string currency)
-    {
-        if (string.IsNullOrWhiteSpace(currency))
-            return false;
-
-        return AllowedCurrencies.Contains(currency.Trim().ToUpper());
-    }
+    // Currency: see BookingAmountRule (allowed currencies and agreed amounts).
 
     // ----------------------------
     // ROUNDS
@@ -113,10 +89,26 @@ public static class ExcelFieldValidator
         if (string.IsNullOrWhiteSpace(amount))
             return false;
 
-        var cleaned = amount.Replace(",", "").Trim();
-
-        return decimal.TryParse(cleaned, out value) && value > 0;
+        return TryParseAmount(amount, out value) && value > 0;
     }
+
+    /// <summary>
+    /// Amount as written in the upload: '.' is the decimal point and ',' a
+    /// thousands separator (1,250.00), independent of the server's culture.
+    /// Used by validation and by saving, so both read the same number.
+    /// </summary>
+    public static bool TryParseAmount(string amount, out decimal value) =>
+        decimal.TryParse(
+            (amount ?? "").Replace(",", "").Trim(),
+            System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out value
+        );
+
+    public static decimal ParseAmount(string amount) =>
+        TryParseAmount(amount, out var value)
+            ? value
+            : throw new FormatException($"Invalid amount '{amount}'");
 
     // ----------------------------
     // DATE FORMAT (YYYYMMDD)

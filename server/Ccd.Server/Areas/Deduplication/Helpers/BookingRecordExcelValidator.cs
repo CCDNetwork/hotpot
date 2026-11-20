@@ -1,4 +1,4 @@
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using System;
 using System.Collections.Generic;
 
@@ -53,18 +53,21 @@ public static class BookingRecordExcelValidator
         // ----------------------------
         // AMOUNT
         // ----------------------------
-        if (!ExcelFieldValidator.IsAmountValid(record.Amount, out var _))
+        if (!ExcelFieldValidator.IsAmountValid(record.Amount, out var amountValue))
         {
             errors.Add("Invalid Amount — expected a positive number (e.g., 1250.00)");
             MarkInvalid("amount");
         }
 
         // ----------------------------
-        // CURRENCY
+        // CURRENCY — must be in BookingAmountRule (today ILS only: the CWG
+        // defined the transfer value in ILS)
         // ----------------------------
-        if (!ExcelFieldValidator.IsCurrencyValid(record.Currency))
+        var currencyValid = BookingAmountRule.IsAllowedCurrency(record.Currency);
+        if (!currencyValid)
         {
-            errors.Add("Invalid Currency — expected an ISO-4217 code (e.g., ILS, USD, EUR)");
+            var got = string.IsNullOrWhiteSpace(record.Currency) ? "empty" : record.Currency.Trim();
+            errors.Add($"Currency must be {BookingAmountRule.AllowedCurrenciesText} — got {got}");
             MarkInvalid("currency");
         }
 
@@ -93,6 +96,21 @@ public static class BookingRecordExcelValidator
         {
             errors.Add("Invalid Rounds — expected 1, 2 or 3");
             MarkInvalid("rounds");
+        }
+        else if (currencyValid
+                 && ExcelFieldValidator.IsAmountValid(record.Amount, out _)
+                 && !BookingAmountRule.IsExpectedAmount(amountValue, record.Currency, roundsValue))
+        {
+            // ----------------------------
+            // AMOUNT ↔ ROUNDS (CWG-agreed amount per currency; see BookingAmountRule)
+            // ----------------------------
+            var currency = BookingAmountRule.Normalize(record.Currency);
+            var expected = BookingAmountRule.ExpectedAmount(currency, roundsValue);
+            errors.Add(
+                $"Amount must be {BookingAmountRule.Format(expected)} {currency} for Rounds {roundsValue} — got "
+                + $"{BookingAmountRule.Format(amountValue)} {currency}"
+            );
+            MarkInvalid("amount");
         }
 
         // ----------------------------
